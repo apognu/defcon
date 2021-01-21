@@ -1,0 +1,69 @@
+name: Continuous master build
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  clippy:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-01-20
+          override: true
+          components: clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+
+  build:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    strategy:
+      matrix:
+        arch:
+          - { name: 'x86_64', os: 'ubuntu-latest', target: 'x86_64-unknown-linux-gnu', cross: false }
+    runs-on: ${{ matrix.arch.os }}
+    steps:
+      - name: Install dependencies
+        run: sudo apt install -y libcap-dev
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: target/
+          key: cargo-cache-${{ matrix.arch.target }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly-2021-01-20
+          override: true
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --target=${{ matrix.arch.target }}
+          use-cross: ${{ matrix.arch.cross }}
+      - name: Rename artifact
+        run: mv target/${{ matrix.arch.target }}/release/defcon target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: defcon-tip-${{ matrix.arch.name }}
+          path: target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}
+
+  package:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: target/out
+      - name: Create release
+        uses: eine/tip@tip
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: target/out/*/*
+          rm: true
