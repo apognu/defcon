@@ -2,6 +2,7 @@ mod alerters;
 mod checks;
 pub mod error;
 mod events;
+pub mod middlewares;
 mod outages;
 pub mod types;
 

@@ -30,7 +30,7 @@ use sqlx::{
   Pool,
 };
 
-use crate::{config::Config, inhibitor::Inhibitor, model::migrations};
+use crate::{api::middlewares::ApiLogger, config::Config, inhibitor::Inhibitor, model::migrations};
 
 pub fn log_error(err: &Error) {
   let desc = err.to_string();
@@ -108,6 +108,7 @@ async fn run_api(pool: Pool<MySql>, config: Arc<Config>) -> Result<()> {
 
   rocket::custom(provider)
     .manage(pool)
+    .attach(ApiLogger::new())
     .mount("/", api::routes())
     .register(catchers![api::not_found, api::unprocessable])
     .launch()
