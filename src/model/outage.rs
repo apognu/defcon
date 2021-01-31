@@ -21,8 +21,8 @@ pub struct Outage {
   pub uuid: String,
   #[serde(skip_serializing)]
   pub check_id: u64,
-  pub passing_strikes: i32,
-  pub failing_strikes: i32,
+  pub passing_strikes: u8,
+  pub failing_strikes: u8,
   pub started_on: Option<DateTime<Utc>>,
   pub ended_on: Option<DateTime<Utc>>,
   pub comment: Option<String>,
@@ -116,10 +116,10 @@ impl Outage {
         if outage.failing_strikes < check.failing_threshold && event.status == 1 {
           sqlx::query(
             "
-            UPDATE outages
-            SET failing_strikes = failing_strikes + 1, passing_strikes = 0
-            WHERE id = ?
-          ",
+              UPDATE outages
+              SET failing_strikes = failing_strikes + 1, passing_strikes = 0
+              WHERE id = ?
+            ",
           )
           .bind(outage.id)
           .execute(&mut *conn)
@@ -177,9 +177,9 @@ impl Outage {
 
           sqlx::query(
             "
-            INSERT INTO outages (uuid, check_id, passing_strikes, failing_strikes, started_on)
-            VALUES ( ?, ?, 0, 1, NOW() )
-          ",
+              INSERT INTO outages (uuid, check_id, passing_strikes, failing_strikes, started_on)
+              VALUES ( ?, ?, 0, 1, NOW() )
+            ",
           )
           .bind(&uuid)
           .bind(event.check_id)

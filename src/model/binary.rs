@@ -16,7 +16,7 @@ pub struct Binary(Vec<u8>);
 
 impl Display for Binary {
   fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-    write!(formatter, "TEST")
+    write!(formatter, "<binary>")
   }
 }
 

@@ -19,7 +19,7 @@ impl<T> Run<T> for Option<T> {
   }
 }
 
-pub fn to_true() -> bool {
+pub const fn to_true() -> bool {
   true
 }
 

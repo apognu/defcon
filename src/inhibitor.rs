@@ -39,9 +39,9 @@ impl Inhibitor {
     }
   }
 
-  pub fn inhibit_for(&mut self, check: &str, secs: u64) {
+  pub fn inhibit_for(&mut self, check: &str, duration: Duration) {
     if let Ok(mut inhibitor) = self.lock() {
-      if let Some(instant) = Instant::now().checked_add(Duration::from_secs(secs)) {
+      if let Some(instant) = Instant::now().checked_add(duration) {
         inhibitor.insert(check.to_owned(), Delay::Until(instant));
       }
     }

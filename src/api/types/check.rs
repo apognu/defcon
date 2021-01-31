@@ -21,9 +21,9 @@ pub struct CheckPatch {
   pub alerter: Option<String>,
   pub name: Option<String>,
   pub enabled: Option<bool>,
-  pub interval: Option<i32>,
-  pub passing_threshold: Option<i32>,
-  pub failing_threshold: Option<i32>,
+  pub interval: Option<db::Duration>,
+  pub passing_threshold: Option<u8>,
+  pub failing_threshold: Option<u8>,
   pub silent: Option<bool>,
   pub spec: Option<api::Spec>,
 }

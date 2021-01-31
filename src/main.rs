@@ -65,27 +65,27 @@ async fn start() -> Result<()> {
     return Err(anyhow!("all processes disabled, aborting"));
   }
 
-  tokio::spawn({
-    let config = config.clone();
-    let pool = pool.clone();
+  if config.handler {
+    tokio::spawn({
+      let config = config.clone();
+      let pool = pool.clone();
 
-    async move {
-      if config.handler {
+      async move {
         run_defcon(&pool, config).await;
       }
-    }
-  });
+    });
+  }
 
-  tokio::spawn({
-    let config = config.clone();
-    let pool = pool.clone();
+  if config.cleaner {
+    tokio::spawn({
+      let config = config.clone();
+      let pool = pool.clone();
 
-    async move {
-      if config.cleaner {
+      async move {
         run_cleaner(&pool, config).await;
       }
-    }
-  });
+    });
+  }
 
   match config.api {
     true => {

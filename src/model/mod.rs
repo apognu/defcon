@@ -5,6 +5,7 @@ mod alerter_kind;
 mod binary;
 mod check;
 mod check_kind;
+mod duration;
 mod event;
 mod outage;
 
@@ -16,6 +17,7 @@ pub use self::{
   binary::Binary,
   check::Check,
   check_kind::CheckKind,
+  duration::Duration,
   event::{status, Event},
   outage::Outage,
 };

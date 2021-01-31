@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::Utc;
 use sqlx::{FromRow, MySqlConnection};
 
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
   },
   ext,
   handlers::*,
-  model::{specs, Alerter, CheckKind, Event},
+  model::{specs, Alerter, CheckKind, Duration, Event},
 };
 
 use super::Outage;
@@ -26,9 +27,9 @@ pub struct Check {
   pub enabled: bool,
   #[serde(skip_serializing, skip_deserializing)]
   pub kind: CheckKind,
-  pub interval: i32,
-  pub passing_threshold: i32,
-  pub failing_threshold: i32,
+  pub interval: Duration,
+  pub passing_threshold: u8,
+  pub failing_threshold: u8,
   #[serde(default = "ext::to_false")]
   pub silent: bool,
 }
@@ -219,6 +220,22 @@ impl Check {
       PlayStore => Box::new(PlayStoreHandler { check: &self }),
       AppStore => Box::new(AppStoreHandler { check: &self }),
       Whois => Box::new(WhoisHandler { check: &self }),
+    }
+  }
+
+  pub async fn stale(&self, conn: &mut MySqlConnection) -> bool {
+    let event = self.last_event(&mut *conn).await.unwrap_or(None);
+
+    match event {
+      None => true,
+
+      Some(event) => {
+        if let Some(date) = event.created_at {
+          Utc::now().signed_duration_since(date) >= chrono::Duration::from_std(*self.interval).unwrap()
+        } else {
+          false
+        }
+      }
     }
   }
 

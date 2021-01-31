@@ -10,7 +10,7 @@ pub struct Whois {
   #[serde(skip_serializing, skip_deserializing)]
   pub check_id: u64,
   pub domain: String,
-  pub window: u32,
+  pub window: u8,
   pub attribute: Option<String>,
 }
 

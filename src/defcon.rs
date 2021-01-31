@@ -1,7 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
-use chrono::Utc;
 use kvlogger::*;
 use rand::Rng;
 use sqlx::{MySql, Pool};
@@ -36,28 +35,20 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, inhibitor: Inhibitor) 
 
         async move {
           let inner = async move || -> Result<()> {
-            let last_event = {
+            let should_run = {
               let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
 
-              check.last_event(&mut *conn).await.unwrap_or(None)
+              check.stale(&mut *conn).await
             };
 
-            match last_event {
-              None => run_check(pool, config, check, inhibitor).await?,
+            if should_run {
+              inhibitor.inhibit(&check.uuid);
 
-              Some(last_event) => {
-                if let Some(date) = last_event.created_at {
-                  if Utc::now().signed_duration_since(date) >= chrono::Duration::seconds(check.interval as i64) {
-                    inhibitor.inhibit(&check.uuid);
-
-                    if let Some(spread) = spread {
-                      tokio::time::delay_for(Duration::from_millis(spread)).await
-                    }
-
-                    run_check(pool, config, check, inhibitor).await?;
-                  }
-                }
+              if let Some(spread) = spread {
+                tokio::time::delay_for(Duration::from_millis(spread)).await
               }
+
+              run_check(pool, config, check, inhibitor).await?;
             }
 
             Ok(())
@@ -83,7 +74,7 @@ async fn run_check(pool: Pool<MySql>, config: Arc<Config>, check: Check, mut inh
 
     match handler.check(&mut *conn, config).await {
       Err(err) => {
-        inhibitor.inhibit_for(&check.uuid, check.interval as u64);
+        inhibitor.inhibit_for(&check.uuid, *check.interval);
 
         kvlog!(Error, format!("{}: {}", err, err.root_cause()), {
           "kind" => check.kind,

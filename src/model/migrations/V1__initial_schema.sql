@@ -12,9 +12,9 @@ CREATE TABLE checks (
   `name` VARCHAR(255) NOT NULL,
   `enabled` TINYINT(1) NOT NULL DEFAULT 1,
   `kind` VARCHAR(255) NOT NULL,
-  `interval` INT NOT NULL,
-  `passing_threshold` INT NOT NULL,
-  `failing_threshold` INT NOT NULL,
+  `interval` INT UNSIGNED NOT NULL,
+  `passing_threshold` TINYINT UNSIGNED NOT NULL,
+  `failing_threshold` TINYINT UNSIGNED NOT NULL,
   `silent` TINYINT(1) NOT NULL DEFAULT 0,
 
   CONSTRAINT fk_check_alerter FOREIGN KEY (alerter_id) REFERENCES alerters (id)
@@ -54,7 +54,7 @@ CREATE TABLE tls_specs (
   `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   `check_id` BIGINT UNSIGNED NOT NULL,
   `domain` VARCHAR(255) NOT NULL,
-  `window` SMALLINT UNSIGNED,
+  `window` TINYINT UNSIGNED,
 
   CONSTRAINT fk_tls_check FOREIGN KEY (check_id) REFERENCES checks (id)
 );
@@ -101,7 +101,7 @@ CREATE TABLE whois_specs (
   `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   `check_id` BIGINT UNSIGNED NOT NULL,
   `domain` VARCHAR(255) NOT NULL,
-  `window` SMALLINT UNSIGNED,
+  `window` TINYINT UNSIGNED,
   `attribute` VARCHAR(255),
 
   CONSTRAINT fk_whois_check FOREIGN KEY (check_id) REFERENCES checks (id)
@@ -111,8 +111,8 @@ CREATE TABLE outages (
   `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   `uuid` CHAR(37) NOT NULL UNIQUE,
   `check_id` BIGINT UNSIGNED NOT NULL,
-  `passing_strikes` INT NOT NULL,
-  `failing_strikes` INT NOT NULL,
+  `passing_strikes` TINYINT UNSIGNED NOT NULL,
+  `failing_strikes` TINYINT UNSIGNED NOT NULL,
   `started_on` DATETIME NOT NULL,
   `ended_on` DATETIME NULL DEFAULT NULL,
   `comment` VARCHAR(255) NULL DEFAULT NULL,
