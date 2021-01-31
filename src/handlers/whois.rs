@@ -29,13 +29,12 @@ impl<'h> Handler for WhoisHandler<'h> {
     let now = Utc::now().naive_utc();
     let expires_in = NaiveDateTime::parse_from_str(expiration, "%Y-%m-%dt%H:%M:%Sz")
       .context("could not parse expiry date")?
-      .signed_duration_since(now)
-      .num_days();
+      .signed_duration_since(now);
 
-    let (status, message) = if (spec.window as i64) < expires_in {
-      (OK, format!("domain is expiring in {} days", expires_in))
+    let (status, message) = if spec.window.as_secs() < expires_in.num_seconds() as u64 {
+      (OK, format!("domain is expiring in {} days", expires_in.num_days()))
     } else {
-      (WARNING, format!("domain is expiring in {} days", expires_in))
+      (WARNING, format!("domain is expiring in {} days", expires_in.num_days()))
     };
 
     let event = Event {

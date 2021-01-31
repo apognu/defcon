@@ -13,9 +13,9 @@ chrono = "0.4"
 dns-lookup = "^1.0"
 ekko = "0.2"
 futures = "0.3"
+humantime = "^2.1"
 kvlogger = { version = "0.4", features = ["datetime"] }
 log = "*"
-parse_duration = "^2.1"
 rand = "0.8"
 refinery = { version = "0.5", features = ["mysql"] }
 reqwest = { version = "0.10", features = ["json"] }

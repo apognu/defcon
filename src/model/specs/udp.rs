@@ -1,7 +1,7 @@
 use anyhow::Result;
 use sqlx::{FromRow, MySqlConnection};
 
-use crate::model::{specs::SpecMeta, Binary, Check};
+use crate::model::{specs::SpecMeta, Binary, Check, Duration};
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Udp {
@@ -13,7 +13,7 @@ pub struct Udp {
   pub port: u16,
   pub message: Binary,
   pub content: Binary,
-  pub timeout: Option<u8>,
+  pub timeout: Option<Duration>,
 }
 
 impl SpecMeta for Udp {

@@ -3,13 +3,12 @@ use std::{net::ToSocketAddrs, sync::Arc};
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use sqlx::MySqlConnection;
-use std::time::Duration;
 use tokio::{net::UdpSocket, time};
 
 use crate::{
   config::Config,
   handlers::Handler,
-  model::{specs::Udp, status::*, Check, Event},
+  model::{specs::Udp, status::*, Check, Duration, Event},
 };
 
 pub struct UdpHandler<'h> {
@@ -20,7 +19,7 @@ pub struct UdpHandler<'h> {
 impl<'h> Handler for UdpHandler<'h> {
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
     let spec = Udp::for_check(conn, self.check).await?;
-    let timeout = Duration::from_secs(spec.timeout.unwrap_or(5) as u64);
+    let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
 
     let addr = format!("{}:{}", spec.host, spec.port);
     let addr = addr.to_socket_addrs().context("could not parse host")?.next().ok_or_else(|| anyhow!("could not parse host"))?;
@@ -31,7 +30,7 @@ impl<'h> Handler for UdpHandler<'h> {
     socket.connect(addr).await.context("could not connect socket")?;
     socket.send(&spec.message).await.context("could not send datagram")?;
 
-    let (status, message) = match time::timeout(timeout, socket.recv(&mut buf)).await? {
+    let (status, message) = match time::timeout(*timeout, socket.recv(&mut buf)).await? {
       Ok(_) => match buf.windows(spec.content.len()).any(|window| window == *spec.content) {
         true => (OK, String::new()),
         false => (CRITICAL, "expected content not found".to_string()),

@@ -50,7 +50,7 @@ A check is defined as so (here, for an HTTP request check):
   "uuid": "50a5c57f-6971-446a-b9a2-42cb7c7b5427",
   "alerter": "df2dcc77-00c1-4dc1-a8a3-6ba0bc64d486",
   "enabled": true,
-  "interval": 60,
+  "interval": "1m",
   "passing_threshold": 3,
   "failing_threshold": 2,
   "silent": false,
@@ -121,6 +121,7 @@ Defcon exposes an **unauthenticated** API used to manipulate and retrieve the da
 | GET    | /api/outages?from=`YYYY-MM-DD`&end=`YYYY-MM-DD` | List all outages during a time period           |
 | GET    | /api/outages/`uuid`                             | Get information on a specific outage            |
 | GET    | /api/outages/`uuid`/events                      | Get all events related to an outage             |
+| PUT    | /api/outages/`uuid`/comment                     | Add a comment to an outage                      |
 | GET    | /api/alerters                                   | Get all configured alerters                     |
 | GET    | /api/alerters/`uuid`                            | Get information on a specific alerter           |
 | POST   | /api/alerters                                   | Create a new alerter                            |

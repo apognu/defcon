@@ -1,10 +1,6 @@
-use std::{
-  fmt::{self, Formatter},
-  ops::Deref,
-  time::Duration as StdDuration,
-};
+use std::{convert::TryFrom, ops::Deref, time::Duration as StdDuration};
 
-use serde::{de, ser};
+use humantime::parse_duration;
 use sqlx::{
   encode::IsNull,
   error::BoxDynError,
@@ -13,7 +9,7 @@ use sqlx::{
   Decode, Encode, MySql,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Duration(pub StdDuration);
 
 impl Deref for Duration {
@@ -24,15 +20,11 @@ impl Deref for Duration {
   }
 }
 
-impl AsRef<StdDuration> for Duration {
-  fn as_ref(&self) -> &StdDuration {
-    &self.0
-  }
-}
+impl TryFrom<String> for Duration {
+  type Error = anyhow::Error;
 
-impl From<u32> for Duration {
-  fn from(seconds: u32) -> Duration {
-    Duration(StdDuration::from_secs(seconds as u64))
+  fn try_from(value: String) -> Result<Duration, Self::Error> {
+    Ok(Duration(parse_duration(&value)?))
   }
 }
 
@@ -44,11 +36,11 @@ impl From<u64> for Duration {
 
 impl Type<MySql> for Duration {
   fn type_info() -> MySqlTypeInfo {
-    <u32 as Type<MySql>>::type_info()
+    <u64 as Type<MySql>>::type_info()
   }
 
   fn compatible(ty: &MySqlTypeInfo) -> bool {
-    <u32 as Type<MySql>>::compatible(ty)
+    <u64 as Type<MySql>>::compatible(ty)
   }
 }
 
@@ -57,51 +49,16 @@ impl Encode<'_, MySql> for Duration {
   where
     Self: Sized,
   {
-    <u32 as sqlx::Encode<MySql>>::encode(self.as_secs() as u32, buf)
+    <u64 as sqlx::Encode<MySql>>::encode(self.as_secs(), buf)
   }
 
   fn encode_by_ref(&self, buf: &mut Vec<u8>) -> IsNull {
-    <&u32 as sqlx::Encode<MySql>>::encode(&(self.as_secs() as u32), buf)
+    <&u64 as sqlx::Encode<MySql>>::encode(&self.as_secs(), buf)
   }
 }
 
 impl Decode<'_, MySql> for Duration {
   fn decode(value: MySqlValueRef<'_>) -> Result<Self, BoxDynError> {
-    Ok(Duration(StdDuration::from_secs(<u32 as Decode<MySql>>::decode(value)? as u64)))
-  }
-}
-
-impl ser::Serialize for Duration {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: ser::Serializer,
-  {
-    serializer.serialize_u64(self.as_secs())
-  }
-}
-
-struct DurationVisitor;
-
-impl<'de> de::Visitor<'de> for DurationVisitor {
-  type Value = Duration;
-
-  fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-    formatter.write_str("a number of seconds representing a duration")
-  }
-
-  fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
-  where
-    E: de::Error,
-  {
-    Ok(Duration::from(value))
-  }
-}
-
-impl<'de> de::Deserialize<'de> for Duration {
-  fn deserialize<D>(deserializer: D) -> Result<Duration, D::Error>
-  where
-    D: de::Deserializer<'de>,
-  {
-    deserializer.deserialize_u64(DurationVisitor)
+    Ok(Duration(StdDuration::from_secs(<u64 as Decode<MySql>>::decode(value)?)))
   }
 }

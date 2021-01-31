@@ -1,7 +1,7 @@
 use anyhow::Result;
 use sqlx::{FromRow, MySqlConnection};
 
-use crate::model::{specs::SpecMeta, Check};
+use crate::model::{specs::SpecMeta, Check, Duration};
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Tls {
@@ -10,7 +10,7 @@ pub struct Tls {
   #[serde(skip_serializing, skip_deserializing)]
   pub check_id: u64,
   pub domain: String,
-  pub window: u8,
+  pub window: Duration,
 }
 
 impl SpecMeta for Tls {
@@ -42,7 +42,7 @@ impl Tls {
   pub async fn insert(pool: &mut MySqlConnection, check: &Check, spec: Tls) -> Result<()> {
     sqlx::query(
       "
-        INSERT INTO tls_specs ( check_id, domains, window )
+        INSERT INTO tls_specs ( check_id, domain, window )
         VALUES ( ?, ?, ? )
       ",
     )
@@ -59,7 +59,7 @@ impl Tls {
     sqlx::query(
       "
         UPDATE tls_specs
-        SET domains = ?, window = ?
+        SET domain = ?, window = ?
         WHERE check_id = ?
       ",
     )

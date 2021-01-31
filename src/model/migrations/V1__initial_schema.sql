@@ -12,7 +12,7 @@ CREATE TABLE checks (
   `name` VARCHAR(255) NOT NULL,
   `enabled` TINYINT(1) NOT NULL DEFAULT 1,
   `kind` VARCHAR(255) NOT NULL,
-  `interval` INT UNSIGNED NOT NULL,
+  `interval` BIGINT UNSIGNED NOT NULL,
   `passing_threshold` TINYINT UNSIGNED NOT NULL,
   `failing_threshold` TINYINT UNSIGNED NOT NULL,
   `silent` TINYINT(1) NOT NULL DEFAULT 0,
@@ -54,7 +54,7 @@ CREATE TABLE tls_specs (
   `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   `check_id` BIGINT UNSIGNED NOT NULL,
   `domain` VARCHAR(255) NOT NULL,
-  `window` TINYINT UNSIGNED,
+  `window` BIGINT UNSIGNED,
 
   CONSTRAINT fk_tls_check FOREIGN KEY (check_id) REFERENCES checks (id)
 );
@@ -80,7 +80,7 @@ CREATE TABLE tcp_specs (
   `check_id` BIGINT UNSIGNED NOT NULL,
   `host` VARCHAR(255) NOT NULL,
   `port` SMALLINT UNSIGNED NOT NULL,
-  `timeout` TINYINT UNSIGNED,
+  `timeout` BIGINT UNSIGNED,
 
   CONSTRAINT fk_tcp_check FOREIGN KEY (check_id) REFERENCES checks (id)
 );
@@ -92,7 +92,7 @@ CREATE TABLE udp_specs (
   `port` SMALLINT UNSIGNED NOT NULL,
   `message` VARBINARY(255),
   `content` VARBINARY(255),
-  `timeout` TINYINT UNSIGNED,
+  `timeout` BIGINT UNSIGNED,
 
   CONSTRAINT fk_udp_check FOREIGN KEY (check_id) REFERENCES checks (id)
 );
@@ -101,7 +101,7 @@ CREATE TABLE whois_specs (
   `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   `check_id` BIGINT UNSIGNED NOT NULL,
   `domain` VARCHAR(255) NOT NULL,
-  `window` TINYINT UNSIGNED,
+  `window` BIGINT UNSIGNED,
   `attribute` VARCHAR(255),
 
   CONSTRAINT fk_whois_check FOREIGN KEY (check_id) REFERENCES checks (id)

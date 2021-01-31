@@ -6,6 +6,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use humantime::parse_duration;
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -40,16 +41,16 @@ impl Config {
     let api_port = env::var("API_PORT").unwrap_or_else(|_| "8000".into()).parse::<u16>().unwrap_or(8000);
 
     let handler = env::var("HANDLER_ENABLE").unwrap_or_else(|_| "1".into()) == "1";
-    let handler_interval = parse_duration::parse(&env::var("HANDLER_INTERVAL").unwrap_or_default()).unwrap_or_else(|_| Duration::from_secs(1)); // 1 second
+    let handler_interval = parse_duration(&env::var("HANDLER_INTERVAL").unwrap_or_default()).unwrap_or_else(|_| Duration::from_secs(1)); // 1 second
 
-    let handler_spread = match parse_duration::parse(&env::var("HANDLER_SPREAD").unwrap_or_default()).unwrap_or_else(|_| Duration::from_secs(0)) {
+    let handler_spread = match parse_duration(&env::var("HANDLER_SPREAD").unwrap_or_default()).unwrap_or_else(|_| Duration::from_secs(0)) {
       duration if duration == Duration::from_nanos(0) => None,
       duration => Some(duration),
     };
 
     let cleaner = env::var("CLEANER_ENABLE").unwrap_or_default() == "1";
-    let cleaner_interval = parse_duration::parse(&env::var("CLEANER_INTERVAL").unwrap_or_default()).unwrap_or_else(|_| Duration::from_secs(600)); // 10 minutes
-    let cleaner_threshold = parse_duration::parse(&env::var("CLEANER_THRESHOLD").unwrap_or_default()).unwrap_or_else(|_| Duration::from_secs(31536000)); // 1 year
+    let cleaner_interval = parse_duration(&env::var("CLEANER_INTERVAL").unwrap_or_default()).unwrap_or_else(|_| Duration::from_secs(600)); // 10 minutes
+    let cleaner_threshold = parse_duration(&env::var("CLEANER_THRESHOLD").unwrap_or_default()).unwrap_or_else(|_| Duration::from_secs(31536000)); // 1 year
 
     let dns_resolver = match env::var("DNS_RESOLVER") {
       Ok(resolver) => SocketAddr::new(resolver.parse().context("dns resolver")?, 53),

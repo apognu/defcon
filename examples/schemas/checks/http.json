@@ -2,7 +2,7 @@
   "name": "ACME corporate website",
   "alerter": "df2dcc77-00c1-4dc1-a8a3-6ba0bc64d486",
   "enabled": true,
-  "interval": 60,
+  "interval": "1m",
   "passing_threshold": 3,
   "failing_threshold": 2,
   "silent": false,

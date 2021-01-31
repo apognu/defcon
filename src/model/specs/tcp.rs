@@ -1,7 +1,7 @@
 use anyhow::Result;
 use sqlx::{FromRow, MySqlConnection};
 
-use crate::model::{specs::SpecMeta, Check};
+use crate::model::{specs::SpecMeta, Check, Duration};
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Tcp {
@@ -11,7 +11,7 @@ pub struct Tcp {
   pub check_id: u64,
   pub host: String,
   pub port: u16,
-  pub timeout: Option<u8>,
+  pub timeout: Option<Duration>,
 }
 
 impl SpecMeta for Tcp {

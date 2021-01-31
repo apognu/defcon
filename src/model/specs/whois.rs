@@ -1,7 +1,7 @@
 use anyhow::Result;
 use sqlx::{FromRow, MySqlConnection};
 
-use crate::model::{specs::SpecMeta, Check};
+use crate::model::{specs::SpecMeta, Check, Duration};
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Whois {
@@ -10,7 +10,7 @@ pub struct Whois {
   #[serde(skip_serializing, skip_deserializing)]
   pub check_id: u64,
   pub domain: String,
-  pub window: u8,
+  pub window: Duration,
   pub attribute: Option<String>,
 }
 

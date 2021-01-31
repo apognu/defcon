@@ -21,11 +21,10 @@ impl<'h> Handler for TlsHandler<'h> {
     let spec = Tls::for_check(conn, self.check).await.context("no spec found")?;
     let expiration = SslExpiration::from_domain_name(&spec.domain).map_err(|err| anyhow!("{}", err)).context("could not fetch certificate")?;
 
-    let days = expiration.days();
-    let (status, message) = if days > spec.window as i32 {
+    let (status, message) = if expiration.secs() as u64 > spec.window.as_secs() {
       (OK, String::new())
     } else {
-      (CRITICAL, format!("TLS certificate for {} expires in {} days", spec.domain, days))
+      (CRITICAL, format!("TLS certificate for {} expires in {} days", spec.domain, expiration.days()))
     };
 
     let event = Event {
