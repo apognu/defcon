@@ -48,7 +48,7 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, inhibitor: Inhibitor) 
                 tokio::time::delay_for(Duration::from_millis(spread)).await
               }
 
-              run_check(pool, config, check, inhibitor).await?;
+              run(pool, config, check, inhibitor).await?;
             }
 
             Ok(())
@@ -65,7 +65,7 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, inhibitor: Inhibitor) 
   Ok(())
 }
 
-async fn run_check(pool: Pool<MySql>, config: Arc<Config>, check: Check, mut inhibitor: Inhibitor) -> Result<()> {
+async fn run(pool: Pool<MySql>, config: Arc<Config>, check: Check, mut inhibitor: Inhibitor) -> Result<()> {
   let inner = async move || -> Result<()> {
     use crate::handlers::*;
 

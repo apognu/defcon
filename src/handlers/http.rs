@@ -12,7 +12,7 @@ use sqlx::MySqlConnection;
 use crate::{
   config::Config,
   handlers::Handler,
-  model::{specs::Http, status::*, Check, Event},
+  model::{specs::Http, status::*, Check, Duration, Event},
 };
 
 pub struct HttpHandler<'h> {
@@ -24,6 +24,13 @@ impl<'h> Handler for HttpHandler<'h> {
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
     let spec = Http::for_check(conn, self.check).await.context("no spec found for check {}")?;
 
+    self.run(spec).await
+  }
+}
+
+impl<'h> HttpHandler<'h> {
+  async fn run(&self, spec: Http) -> Result<Event> {
+    let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
     let headers: HeaderMap = spec
       .headers
       .iter()
@@ -34,7 +41,7 @@ impl<'h> Handler for HttpHandler<'h> {
       })
       .collect();
 
-    let client = HttpClient::new();
+    let client = HttpClient::builder().timeout(*timeout).build()?;
     let response = client.get(&spec.url).headers(headers).send().await;
 
     let event = match response {
@@ -42,7 +49,7 @@ impl<'h> Handler for HttpHandler<'h> {
         let code = response.status().as_u16();
         let body = response.text().await.unwrap_or_default();
 
-        let code_ok = code == spec.code.unwrap_or(200);
+        let code_ok = code == spec.code.unwrap_or(code);
         let content_ok = match spec.content {
           Some(content) => body.contains(&content),
           None => true,
@@ -76,12 +83,173 @@ impl<'h> Handler for HttpHandler<'h> {
 
       Err(err) => Event {
         check_id: self.check.id,
-        status: 1,
+        status: CRITICAL,
         message: err.to_string(),
         ..Default::default()
       },
     };
 
     Ok(event)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::collections::HashMap;
+
+  use tokio_test::*;
+
+  use super::HttpHandler;
+  use crate::model::{
+    specs::{Http, HttpHeaders},
+    status::*,
+    Check, Duration,
+  };
+
+  #[test]
+  fn handler_http_headers() {
+    let mut headers = HashMap::default();
+    headers.insert("lorem".to_string(), "ipsum".to_string());
+
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "https://httpbin.org/headers".to_string(),
+      headers: HttpHeaders(headers),
+      timeout: None,
+      code: None,
+      content: Some(r#""Lorem": "ipsum""#.to_string()),
+      digest: None,
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+    assert_eq!(result.message, String::new());
+  }
+
+  #[test]
+  fn handler_http_ok() {
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "https://example.com".to_string(),
+      headers: Default::default(),
+      timeout: None,
+      code: Some(200),
+      content: Some("Example Domain".to_string()),
+      digest: Some("d06b93c883f8126a04589937a884032df031b05518eed9d433efb6447834df2596aebd500d69b8283e5702d988ed49655ae654c1683c7a4ae58bfa6b92f2b73a".to_string()),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+    assert_eq!(result.message, String::new());
+  }
+
+  #[test]
+  fn handler_http_invalid_status() {
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "https://example.com".to_string(),
+      headers: Default::default(),
+      timeout: None,
+      code: Some(201),
+      content: None,
+      digest: None,
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, CRITICAL);
+    assert_eq!(result.message, "status code was 200".to_string());
+  }
+
+  #[test]
+  fn handler_http_invalid_content() {
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "https://example.com".to_string(),
+      headers: Default::default(),
+      code: None,
+      timeout: None,
+      content: Some("INVALIDCONTENT".to_string()),
+      digest: None,
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, CRITICAL);
+    assert_eq!(result.message, "content mismatch".to_string());
+  }
+
+  #[test]
+  fn handler_http_invalid_digest() {
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "https://example.com".to_string(),
+      headers: Default::default(),
+      code: None,
+      timeout: None,
+      content: None,
+      digest: Some("INVALIDDIGEST".to_string()),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, CRITICAL);
+    assert_eq!(result.message, "digest mismatch".to_string());
+  }
+
+  #[test]
+  fn handler_http_timeout() {
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "http://192.0.2.1".to_string(),
+      headers: Default::default(),
+      timeout: Some(Duration::from(1)),
+      code: Some(200),
+      content: None,
+      digest: None,
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, CRITICAL);
+    assert_eq!(result.message, "error sending request for url (http://192.0.2.1/): operation timed out".to_string());
   }
 }

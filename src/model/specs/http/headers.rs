@@ -9,7 +9,7 @@ use sqlx::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct HttpHeaders(HashMap<String, String>);
+pub struct HttpHeaders(pub HashMap<String, String>);
 
 impl Default for HttpHeaders {
   fn default() -> HttpHeaders {

@@ -3,7 +3,7 @@ use sqlx::{FromRow, MySqlConnection};
 
 use crate::model::{
   specs::{http::HttpHeaders, SpecMeta},
-  Check,
+  Check, Duration,
 };
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
@@ -15,6 +15,7 @@ pub struct Http {
   pub url: String,
   #[serde(default)]
   pub headers: HttpHeaders,
+  pub timeout: Option<Duration>,
   pub code: Option<u16>,
   pub content: Option<String>,
   pub digest: Option<String>,
@@ -34,7 +35,7 @@ impl Http {
   pub async fn for_check(conn: &mut MySqlConnection, check: &Check) -> Result<Http> {
     let spec = sqlx::query_as::<_, Http>(
       "
-        SELECT id, check_id, url, headers, code, content, digest
+        SELECT id, check_id, url, timeout, headers, code, content, digest
         FROM http_specs
         WHERE check_id = ?
       ",
@@ -49,13 +50,14 @@ impl Http {
   pub async fn insert(pool: &mut MySqlConnection, check: &Check, spec: Http) -> Result<()> {
     sqlx::query(
       "
-        INSERT INTO http_specs ( check_id, url, headers, code, content, digest )
-        VALUES ( ?, ?, ?, ?, ?, ? )
+        INSERT INTO http_specs ( check_id, url, headers, timeout, code, content, digest )
+        VALUES ( ?, ?, ?, ?, ?, ?, ? )
       ",
     )
     .bind(check.id)
     .bind(spec.url)
     .bind(spec.headers)
+    .bind(spec.timeout)
     .bind(spec.code)
     .bind(spec.content)
     .bind(spec.digest)
@@ -69,12 +71,13 @@ impl Http {
     sqlx::query(
       "
         UPDATE http_specs
-        SET url = ?, headers = ?, code = ?, content = ?, digest = ?
+        SET url = ?, headers = ?, timeout = ?, code = ?, content = ?, digest = ?
         WHERE check_id = ?
       ",
     )
     .bind(spec.url)
     .bind(spec.headers)
+    .bind(spec.timeout)
     .bind(spec.code)
     .bind(spec.content)
     .bind(spec.digest)

@@ -19,6 +19,13 @@ pub struct TcpHandler<'h> {
 impl<'h> Handler for TcpHandler<'h> {
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
     let spec = Tcp::for_check(conn, self.check).await.context("no spec found")?;
+
+    self.run(spec).await
+  }
+}
+
+impl<'h> TcpHandler<'h> {
+  async fn run(&self, spec: Tcp) -> Result<Event> {
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
 
     let addr = format!("{}:{}", spec.host, spec.port);
@@ -37,5 +44,70 @@ impl<'h> Handler for TcpHandler<'h> {
     };
 
     Ok(event)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use tokio_test::*;
+
+  use super::TcpHandler;
+  use crate::model::{specs::Tcp, status::*, Check, Duration};
+
+  #[test]
+  fn handler_tcp_ok() {
+    let handler = TcpHandler { check: &Check::default() };
+    let spec = Tcp {
+      id: 0,
+      check_id: 0,
+      host: "example.com".to_string(),
+      port: 80,
+      timeout: None,
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+  }
+
+  #[test]
+  fn handler_tcp_critical() {
+    let handler = TcpHandler { check: &Check::default() };
+    let spec = Tcp {
+      id: 0,
+      check_id: 0,
+      host: "example.com".to_string(),
+      port: 81,
+      timeout: Some(Duration::from(1)),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, CRITICAL);
+    assert_eq!(result.message, "deadline has elapsed".to_string());
+  }
+
+  #[test]
+  fn handler_tcp_invalid() {
+    let handler = TcpHandler { check: &Check::default() };
+    let spec = Tcp {
+      id: 0,
+      check_id: 0,
+      host: "300.300.300.300".to_string(),
+      port: 81,
+      timeout: None,
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_err!(&result);
   }
 }

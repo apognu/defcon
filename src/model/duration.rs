@@ -34,6 +34,14 @@ impl From<u64> for Duration {
   }
 }
 
+impl TryFrom<&str> for Duration {
+  type Error = anyhow::Error;
+
+  fn try_from(value: &str) -> Result<Duration, Self::Error> {
+    Ok(Duration(parse_duration(value)?))
+  }
+}
+
 impl Type<MySql> for Duration {
   fn type_info() -> MySqlTypeInfo {
     <u64 as Type<MySql>>::type_info()

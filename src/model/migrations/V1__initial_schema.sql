@@ -43,6 +43,7 @@ CREATE TABLE http_specs (
   `check_id` BIGINT UNSIGNED NOT NULL,
   `url` VARCHAR(255) NOT NULL,
   `headers` TEXT,
+  `timeout` BIGINT UNSIGNED,
   `code` SMALLINT UNSIGNED,
   `content` VARCHAR(255),
   `digest` CHAR(132),

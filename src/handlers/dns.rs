@@ -31,6 +31,12 @@ impl<'h> Handler for DnsHandler<'h> {
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
     let spec = Dns::for_check(conn, self.check).await.context("no spec found for check")?;
 
+    self.run(spec).await
+  }
+}
+
+impl<'h> DnsHandler<'h> {
+  async fn run(&self, spec: Dns) -> Result<Event> {
     let conn = UdpClientConnection::new("8.8.8.8:53".parse()?)?;
     let client = SyncClient::new(conn);
 
@@ -71,5 +77,173 @@ impl<'h> Handler for DnsHandler<'h> {
     };
 
     Ok(event)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use tokio_test::*;
+
+  use super::DnsHandler;
+  use crate::model::{
+    specs::{Dns, DnsRecord},
+    status::*,
+    Check,
+  };
+
+  #[test]
+  fn handler_dns_ns_ok() {
+    let handler = DnsHandler { check: &Check::default() };
+    let spec = Dns {
+      id: 0,
+      check_id: 0,
+      record: DnsRecord::NS,
+      domain: "example.com".to_string(),
+      value: "a.iana-servers.net".to_string(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+  }
+
+  #[test]
+  fn handler_dns_mx_ok() {
+    let handler = DnsHandler { check: &Check::default() };
+    let spec = Dns {
+      id: 0,
+      check_id: 0,
+      record: DnsRecord::MX,
+      domain: "github.com".to_string(),
+      value: "aspmx.l.google.com".to_string(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+  }
+
+  #[test]
+  fn handler_dns_a_ok() {
+    let handler = DnsHandler { check: &Check::default() };
+    let spec = Dns {
+      id: 0,
+      check_id: 0,
+      record: DnsRecord::A,
+      domain: "example.com".to_string(),
+      value: "93.184.216.34".to_string(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+  }
+
+  #[test]
+  fn handler_dns_aaaa_ok() {
+    let handler = DnsHandler { check: &Check::default() };
+    let spec = Dns {
+      id: 0,
+      check_id: 0,
+      record: DnsRecord::AAAA,
+      domain: "example.com".to_string(),
+      value: "2606:2800:220:1:248:1893:25c8:1946".to_string(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+  }
+
+  #[test]
+  fn handler_dns_cname_ok() {
+    let handler = DnsHandler { check: &Check::default() };
+    let spec = Dns {
+      id: 0,
+      check_id: 0,
+      record: DnsRecord::CNAME,
+      domain: "www.github.com".to_string(),
+      value: "github.com".to_string(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+  }
+
+  #[test]
+  fn handler_dns_caa_ok() {
+    let handler = DnsHandler { check: &Check::default() };
+    let spec = Dns {
+      id: 0,
+      check_id: 0,
+      record: DnsRecord::CAA,
+      domain: "google.com".to_string(),
+      value: "pki.goog".to_string(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+  }
+
+  #[test]
+  fn handler_dns_ns_critical() {
+    let handler = DnsHandler { check: &Check::default() };
+    let spec = Dns {
+      id: 0,
+      check_id: 0,
+      record: DnsRecord::A,
+      domain: "example.com".to_string(),
+      value: "1.2.3.4".to_string(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, CRITICAL);
+  }
+
+  #[test]
+  fn handler_dns_ns_invalid() {
+    let handler = DnsHandler { check: &Check::default() };
+    let spec = Dns {
+      id: 0,
+      check_id: 0,
+      record: DnsRecord::A,
+      domain: "example.com".to_string(),
+      value: "example.com".to_string(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_err!(&result);
   }
 }

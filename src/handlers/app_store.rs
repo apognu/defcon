@@ -25,6 +25,12 @@ impl<'h> Handler for AppStoreHandler<'h> {
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
     let spec = AppStore::for_check(conn, self.check).await.context("no spec found for check {}")?;
 
+    self.run(spec).await
+  }
+}
+
+impl<'h> AppStoreHandler<'h> {
+  async fn run(&self, spec: AppStore) -> Result<Event> {
     let url = format!("https://itunes.apple.com/lookup?bundleId={}", spec.bundle_id);
     let response = reqwest::get(&url).await.context("did not receive a valid response")?;
 
@@ -48,5 +54,49 @@ impl<'h> Handler for AppStoreHandler<'h> {
     };
 
     Ok(event)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use tokio_test::*;
+
+  use super::AppStoreHandler;
+  use crate::model::{specs::AppStore, status::*, Check};
+
+  #[test]
+  fn handler_app_store_ok() {
+    let handler = AppStoreHandler { check: &Check::default() };
+    let spec = AppStore {
+      id: 0,
+      check_id: 0,
+      bundle_id: "com.apple.Maps".to_string(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+  }
+
+  #[test]
+  fn handler_app_store_missing() {
+    let handler = AppStoreHandler { check: &Check::default() };
+    let spec = AppStore {
+      id: 0,
+      check_id: 0,
+      bundle_id: "2e0a5188-7220-41bf-b684-82d6a54b868a".to_string(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, CRITICAL);
   }
 }

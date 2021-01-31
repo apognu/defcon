@@ -20,6 +20,13 @@ pub struct WhoisHandler<'h> {
 impl<'h> Handler for WhoisHandler<'h> {
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
     let spec = Whois::for_check(conn, self.check).await?;
+
+    self.run(spec).await
+  }
+}
+
+impl<'h> WhoisHandler<'h> {
+  async fn run(&self, spec: Whois) -> Result<Event> {
     let attribute = spec.attribute.unwrap_or_else(|| "registry expiry date".to_string());
 
     let mut whois = WhoisClient::new();
@@ -45,5 +52,107 @@ impl<'h> Handler for WhoisHandler<'h> {
     };
 
     Ok(event)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::convert::TryFrom;
+
+  use tokio_test::*;
+
+  use super::WhoisHandler;
+  use crate::model::{specs::Whois, status::*, Check, Duration};
+
+  #[test]
+  fn handler_whois_ok() {
+    let handler = WhoisHandler { check: &Check::default() };
+    let spec = Whois {
+      id: 0,
+      check_id: 0,
+      domain: "github.com".to_string(),
+      attribute: None,
+      window: Duration::try_from("90 days").unwrap(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, OK);
+  }
+
+  #[test]
+  fn handler_whois_warning() {
+    let handler = WhoisHandler { check: &Check::default() };
+    let spec = Whois {
+      id: 0,
+      check_id: 0,
+      domain: "github.com".to_string(),
+      attribute: None,
+      window: Duration::try_from("10 years").unwrap(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, WARNING);
+  }
+
+  #[test]
+  fn handler_whois_attribute_warning() {
+    let handler = WhoisHandler { check: &Check::default() };
+    let spec = Whois {
+      id: 0,
+      check_id: 0,
+      domain: "france.fr".to_string(),
+      attribute: Some("expiry date".to_string()),
+      window: Duration::try_from("100 years").unwrap(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_ok!(&result);
+
+    let result = result.unwrap();
+
+    assert_eq!(result.status, WARNING);
+  }
+
+  #[test]
+  fn handler_whois_invalid() {
+    let handler = WhoisHandler { check: &Check::default() };
+    let spec = Whois {
+      id: 0,
+      check_id: 0,
+      domain: "example.com".to_string(),
+      attribute: None,
+      window: Duration::try_from("10 years").unwrap(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_err!(&result);
+  }
+
+  #[test]
+  fn handler_whois_error() {
+    let handler = WhoisHandler { check: &Check::default() };
+    let spec = Whois {
+      id: 0,
+      check_id: 0,
+      domain: "be83fb82-1203-49d0-8f88-c25cb42b2ef0.com".to_string(),
+      attribute: None,
+      window: Duration::try_from("10 years").unwrap(),
+    };
+
+    let result = block_on(handler.run(spec));
+
+    assert_err!(&result);
   }
 }

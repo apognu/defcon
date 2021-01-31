@@ -11,7 +11,7 @@ mod whois;
 pub use self::{
   app_store::AppStore,
   dns::{Dns, DnsRecord},
-  http::Http,
+  http::{Http, HttpHeaders},
   ping::Ping,
   play_store::PlayStore,
   tcp::Tcp,
