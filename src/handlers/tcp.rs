@@ -1,11 +1,9 @@
-use std::{
-  net::{TcpStream, ToSocketAddrs},
-  sync::Arc,
-};
+use std::{net::ToSocketAddrs, sync::Arc};
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use sqlx::MySqlConnection;
+use tokio::{net::TcpStream, time};
 
 use crate::{
   config::Config,
@@ -26,7 +24,7 @@ impl<'h> Handler for TcpHandler<'h> {
     let addr = format!("{}:{}", spec.host, spec.port);
     let addr = addr.to_socket_addrs().context("could not parse host")?.next().ok_or_else(|| anyhow!("could not parse host"))?;
 
-    let (status, message) = match TcpStream::connect_timeout(&addr, *timeout) {
+    let (status, message) = match time::timeout(*timeout, TcpStream::connect(&addr)).await {
       Ok(_) => (OK, String::new()),
       Err(err) => (CRITICAL, err.to_string()),
     };

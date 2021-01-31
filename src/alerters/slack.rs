@@ -6,7 +6,7 @@ use sqlx::MySqlConnection;
 
 use crate::{
   alerters::Webhook,
-  model::{status::*, Alerter, Check, Outage},
+  model::{status::*, Alerter, Check, Event, Outage},
 };
 
 const COLOR_UNKNOWN: &str = "#95a5a6";
@@ -25,13 +25,9 @@ impl Webhook for SlackAlerter {
     let down = outage.ended_on.is_none();
 
     let (level, color) = match check.last_event(conn).await {
-      Ok(Some(event)) => match event.status {
-        OK => ("(ok)", COLOR_OK),
-        CRITICAL => ("(critical)", COLOR_CRITICAL),
-        WARNING => ("(warning)", COLOR_WARNING),
-        _ => ("", COLOR_UNKNOWN),
-      },
-
+      Ok(Some(Event { status: OK, .. })) => ("(ok)", COLOR_OK),
+      Ok(Some(Event { status: CRITICAL, .. })) => ("(critical)", COLOR_CRITICAL),
+      Ok(Some(Event { status: WARNING, .. })) => ("(warning)", COLOR_WARNING),
       _ => ("", COLOR_UNKNOWN),
     };
 

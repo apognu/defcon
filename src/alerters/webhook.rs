@@ -4,7 +4,7 @@ use sqlx::MySqlConnection;
 use crate::{
   alerters::Webhook,
   api::types as api,
-  model::{status::*, Alerter, Check, Outage},
+  model::{status::*, Alerter, Check, Event, Outage},
 };
 
 #[derive(Debug, Serialize)]
@@ -22,13 +22,9 @@ pub struct WebhookAlerter(pub Alerter);
 impl Webhook for WebhookAlerter {
   async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
     let level = match check.last_event(&mut *conn).await {
-      Ok(Some(event)) => match event.status {
-        OK => Some("ok"),
-        CRITICAL => Some("critical"),
-        WARNING => Some("warning"),
-        _ => None,
-      },
-
+      Ok(Some(Event { status: OK, .. })) => Some("ok"),
+      Ok(Some(Event { status: CRITICAL, .. })) => Some("critical"),
+      Ok(Some(Event { status: WARNING, .. })) => Some("warning"),
       _ => None,
     };
 
