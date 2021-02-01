@@ -8,12 +8,16 @@ on:
 jobs:
   clippy:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: target/
+          key: cargo-clippy-cache-${{ matrix.arch.target }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2021-01-20
+          toolchain: nightly-2021-01-21
           override: true
           components: clippy
       - uses: actions-rs/cargo@v1
@@ -25,7 +29,7 @@ jobs:
     strategy:
       matrix:
         arch:
-          - { name: 'x86_64', os: 'ubuntu-latest', target: 'x86_64-unknown-linux-gnu', cross: false }
+          - { name: 'x86_64', os: 'ubuntu-20.04', target: 'x86_64-unknown-linux-gnu', cross: false }
     runs-on: ${{ matrix.arch.os }}
     services:
       mysql:
@@ -41,10 +45,10 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: target/
-          key: cargo-cache-${{ matrix.arch.target }}
+          key: cargo-test-cache-${{ matrix.arch.target }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2021-01-20
+          toolchain: nightly-2021-01-21
           override: true
       - name: Test
         uses: actions-rs/cargo@v1
@@ -59,7 +63,7 @@ jobs:
     strategy:
       matrix:
         arch:
-          - { name: 'x86_64', os: 'ubuntu-latest', target: 'x86_64-unknown-linux-gnu', cross: false }
+          - { name: 'x86_64', os: 'ubuntu-20.04', target: 'x86_64-unknown-linux-gnu', cross: false }
     runs-on: ${{ matrix.arch.os }}
     steps:
       - name: Install dependencies
@@ -68,10 +72,10 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: target/
-          key: cargo-cache-${{ matrix.arch.target }}
+          key: cargo-build-cache-${{ matrix.arch.target }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2021-01-20
+          toolchain: nightly-2021-01-21
           override: true
       - name: Build
         uses: actions-rs/cargo@v1
@@ -88,7 +92,7 @@ jobs:
           path: target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}
 
   package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: [clippy, test, build]
     steps:
       - name: Download artifacts
