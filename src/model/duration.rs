@@ -20,14 +20,6 @@ impl Deref for Duration {
   }
 }
 
-impl TryFrom<String> for Duration {
-  type Error = anyhow::Error;
-
-  fn try_from(value: String) -> Result<Duration, Self::Error> {
-    Ok(Duration(parse_duration(&value)?))
-  }
-}
-
 impl From<u64> for Duration {
   fn from(seconds: u64) -> Duration {
     Duration(StdDuration::from_secs(seconds))
@@ -39,6 +31,14 @@ impl TryFrom<&str> for Duration {
 
   fn try_from(value: &str) -> Result<Duration, Self::Error> {
     Ok(Duration(parse_duration(value)?))
+  }
+}
+
+impl TryFrom<String> for Duration {
+  type Error = anyhow::Error;
+
+  fn try_from(value: String) -> Result<Duration, Self::Error> {
+    Duration::try_from(value.as_ref())
   }
 }
 
@@ -68,5 +68,31 @@ impl Encode<'_, MySql> for Duration {
 impl Decode<'_, MySql> for Duration {
   fn decode(value: MySqlValueRef<'_>) -> Result<Self, BoxDynError> {
     Ok(Duration(StdDuration::from_secs(<u64 as Decode<MySql>>::decode(value)?)))
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use std::convert::TryFrom;
+
+  use super::Duration;
+
+  #[test]
+  fn try_from_str() {
+    assert_eq!(Duration::try_from("10s").is_ok(), true);
+    assert_eq!(Duration::try_from("10s").unwrap().as_secs(), 10);
+
+    assert_eq!(Duration::try_from("10m").is_ok(), true);
+    assert_eq!(Duration::try_from("10m").unwrap().as_secs(), 600);
+
+    assert_eq!(Duration::try_from("2d").is_ok(), true);
+    assert_eq!(Duration::try_from("2d").unwrap().as_secs(), 172800);
+  }
+
+  #[test]
+  fn from_u64() {
+    assert_eq!(Duration::from(10).as_secs(), 10);
+    assert_eq!(Duration::from(300).as_secs(), 300);
+    assert_eq!(Duration::from(172800).as_secs(), 172800);
   }
 }

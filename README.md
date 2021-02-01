@@ -107,25 +107,25 @@ You can find example schemas for all these specs (to be used in the API, describ
 
 Defcon exposes an **unauthenticated** API used to manipulate and retrieve the data it uses internally. The available endpoints are detailed in the table below:
 
-| Method | Endpoint                                        | Description                                     |
-| ------ | ----------------------------------------------- | ----------------------------------------------- |
-| GET    | /api/-/health                                   | Health endpoint                                 |
-| GET    | /api/checks                                     | List all enabled checks                         |
-| GET    | /api/check?all=true                             | List all defined checks                         |
-| GET    | /api/checks/`uuid`                              | Get information on a specific check             |
-| POST   | /api/checks                                     | Create a new check                              |
-| PUT    | /api/checks/`uuid`                              | Update a check                                  |
-| PATCH  | /api/checks/`uuid`                              | Update a check, with only attributes to update  |
-| DELETE | /api/checks/`uuid`                              | Disables a check                                |
-| GET    | /api/outages                                    | List all active outages, with the related check |
-| GET    | /api/outages?from=`YYYY-MM-DD`&end=`YYYY-MM-DD` | List all outages during a time period           |
-| GET    | /api/outages/`uuid`                             | Get information on a specific outage            |
-| GET    | /api/outages/`uuid`/events                      | Get all events related to an outage             |
-| PUT    | /api/outages/`uuid`/comment                     | Add a comment to an outage                      |
-| GET    | /api/alerters                                   | Get all configured alerters                     |
-| GET    | /api/alerters/`uuid`                            | Get information on a specific alerter           |
-| POST   | /api/alerters                                   | Create a new alerter                            |
-| PUT    | /api/alerters/`uuid`                            | Update an existing alerter                      |
+| Method | Endpoint                                                           | Description                                     |
+| ------ | ------------------------------------------------------------------ | ----------------------------------------------- |
+| GET    | /api/-/health                                                      | Health endpoint                                 |
+| GET    | /api/checks                                                        | List all enabled checks                         |
+| GET    | /api/check?all=true                                                | List all defined checks                         |
+| GET    | /api/checks/`uuid`                                                 | Get information on a specific check             |
+| POST   | /api/checks                                                        | Create a new check                              |
+| PUT    | /api/checks/`uuid`                                                 | Update a check                                  |
+| PATCH  | /api/checks/`uuid`                                                 | Update a check, with only attributes to update  |
+| DELETE | /api/checks/`uuid`                                                 | Disables a check                                |
+| GET    | /api/outages                                                       | List all active outages, with the related check |
+| GET    | /api/outages?start=`YYYY-MM-DDTHH:MM:SS`&end=`YYYY-MM-DDTHH:MM:SS` | List all outages during a time period           |
+| GET    | /api/outages/`uuid`                                                | Get information on a specific outage            |
+| GET    | /api/outages/`uuid`/events                                         | Get all events related to an outage             |
+| PUT    | /api/outages/`uuid`/comment                                        | Add a comment to an outage                      |
+| GET    | /api/alerters                                                      | Get all configured alerters                     |
+| GET    | /api/alerters/`uuid`                                               | Get information on a specific alerter           |
+| POST   | /api/alerters                                                      | Create a new alerter                            |
+| PUT    | /api/alerters/`uuid`                                               | Update an existing alerter                      |
 
 Did you pay attention to the fact that this API is **NOT AUTHENTICATED** and should therefore be used behind some kind of reverse proxy that will add some semblance of security to it?
 

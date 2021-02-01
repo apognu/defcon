@@ -62,3 +62,129 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
 
   Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+  use anyhow::Result;
+  use rocket::http::Status;
+  use rocket_contrib::json;
+
+  use crate::{
+    model::{Alerter, AlerterKind},
+    spec,
+  };
+
+  #[tokio::test]
+  async fn list() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    pool.create_alerter().await?;
+
+    let response = client.get("/api/alerters").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let checks: Vec<Alerter> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(checks.len(), 1);
+    assert_eq!(checks[0].kind, AlerterKind::Webhook);
+    assert_eq!(&checks[0].webhook, "https://webhooks.example.com/1");
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn get() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    pool.create_alerter().await?;
+
+    let response = client.get("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let checks: Alerter = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(checks.kind, AlerterKind::Webhook);
+    assert_eq!(&checks.webhook, "https://webhooks.example.com/1");
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn get_not_found() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    pool.create_alerter().await?;
+
+    let response = client.get("/api/alerters/nonexistant").dispatch().await;
+    assert_eq!(response.status(), Status::NotFound);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn create() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    let payload = json!({
+      "kind": "webhook",
+      "webhook": "https://hooks.example.com/1"
+    });
+
+    let response = client.post("/api/alerters").body(payload.to_string().as_bytes()).dispatch().await;
+    assert_eq!(response.status(), Status::Created);
+
+    let check = sqlx::query_as::<_, (String, String)>("SELECT kind, webhook FROM alerters").fetch_one(&*pool).await?;
+    assert_eq!(&check.0, "webhook");
+    assert_eq!(&check.1, "https://hooks.example.com/1");
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn update() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    pool.create_alerter().await?;
+
+    let payload = json!({
+      "kind": "webhook",
+      "webhook": "https://hooks.example.com/2"
+    });
+
+    let response = client.put("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(payload.to_string().as_bytes()).dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let check = sqlx::query_as::<_, (String, String)>("SELECT kind, webhook FROM alerters").fetch_one(&*pool).await?;
+    assert_eq!(&check.0, "webhook");
+    assert_eq!(&check.1, "https://hooks.example.com/2");
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn update_bad_request() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    pool.create_alerter().await?;
+
+    let payload = json!({
+      "kind": "hello",
+      "webhook": "https://hooks.example.com/2"
+    });
+
+    let response = client.put("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(payload.to_string().as_bytes()).dispatch().await;
+    assert_eq!(response.status(), Status::BadRequest);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+}

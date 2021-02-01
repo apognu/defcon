@@ -49,3 +49,35 @@ impl<'de> de::Deserialize<'de> for Duration {
     deserializer.deserialize_str(DurationVisitor)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use anyhow::Result;
+
+  use super::Duration;
+
+  #[derive(Serialize, Deserialize)]
+  struct Struct {
+    duration: Duration,
+  }
+
+  #[test]
+  fn serialize() -> Result<()> {
+    let data = Struct { duration: Duration::from(3600) };
+    let result = serde_json::to_string(&data)?;
+
+    assert_eq!(&result, r#"{"duration":"1h"}"#);
+
+    Ok(())
+  }
+
+  #[test]
+  fn deserialize() -> Result<()> {
+    let string = r#"{"duration":"1h"}"#;
+    let result: Struct = serde_json::from_str(string)?;
+
+    assert_eq!(*result.duration, *Duration::from(3600));
+
+    Ok(())
+  }
+}

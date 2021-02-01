@@ -22,7 +22,7 @@ pub fn routes() -> Vec<Route> {
     health,
     checks::list,
     checks::get,
-    checks::add,
+    checks::create,
     checks::update,
     checks::patch,
     checks::delete,

@@ -5,6 +5,14 @@ use rocket::{http::RawStr, request::FromFormValue};
 
 pub struct DateTime(NaiveDateTime);
 
+impl Deref for DateTime {
+  type Target = NaiveDateTime;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
+
 impl<'v> FromFormValue<'v> for DateTime {
   type Error = &'v RawStr;
 
@@ -13,13 +21,5 @@ impl<'v> FromFormValue<'v> for DateTime {
     let datetime = NaiveDateTime::parse_from_str(&decoded, "%Y-%m-%dT%H:%M:%S").map_err(|_| value)?;
 
     Ok(DateTime(datetime))
-  }
-}
-
-impl Deref for DateTime {
-  type Target = NaiveDateTime;
-
-  fn deref(&self) -> &Self::Target {
-    &self.0
   }
 }

@@ -45,3 +45,38 @@ impl<'de> de::Deserialize<'de> for Binary {
     deserializer.deserialize_string(BinaryVisitor)
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use anyhow::Result;
+
+  use super::Binary;
+
+  #[derive(Serialize, Deserialize)]
+  struct Struct {
+    binary: Binary,
+  }
+
+  #[test]
+  fn serialize() -> Result<()> {
+    let data = Struct {
+      binary: Binary::from("loremipsum".as_bytes().to_vec()),
+    };
+
+    let result = serde_json::to_string(&data)?;
+
+    assert_eq!(&result, r#"{"binary":"bG9yZW1pcHN1bQ=="}"#);
+
+    Ok(())
+  }
+
+  #[test]
+  fn deserialize() -> Result<()> {
+    let string = r#"{"binary":"bG9yZW1pcHN1bQ=="}"#;
+    let result: Struct = serde_json::from_str(string)?;
+
+    assert_eq!(std::str::from_utf8(&result.binary)?, "loremipsum");
+
+    Ok(())
+  }
+}

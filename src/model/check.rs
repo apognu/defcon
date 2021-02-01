@@ -282,29 +282,18 @@ mod tests {
     let pool = spec::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    let check = Check {
-      uuid: Uuid::new_v4().to_string(),
-      name: "Test check".to_string(),
-      kind: CheckKind::Tcp,
-      enabled: true,
-      interval: Duration::from(5),
-      passing_threshold: 1,
-      failing_threshold: 1,
-      silent: true,
-      ..Default::default()
-    };
+    pool.create_check(None, None, "all()", None).await?;
 
-    let expected = check.insert(&mut *conn).await?;
     let checks = Check::all(&mut *conn).await?;
 
     assert_eq!(checks.len(), 1);
-    assert_eq!(checks[0].name, expected.name);
-    assert_eq!(checks[0].kind, expected.kind);
-    assert_eq!(checks[0].enabled, expected.enabled);
-    assert_eq!(*checks[0].interval, *expected.interval);
-    assert_eq!(checks[0].passing_threshold, expected.passing_threshold);
-    assert_eq!(checks[0].failing_threshold, expected.failing_threshold);
-    assert_eq!(checks[0].silent, expected.silent);
+    assert_eq!(&checks[0].name, "all()");
+    assert_eq!(checks[0].kind, CheckKind::Tcp);
+    assert_eq!(checks[0].enabled, true);
+    assert_eq!(*checks[0].interval, *Duration::from(10));
+    assert_eq!(checks[0].passing_threshold, 2);
+    assert_eq!(checks[0].failing_threshold, 2);
+    assert_eq!(checks[0].silent, false);
 
     pool.cleanup().await;
 
@@ -316,22 +305,8 @@ mod tests {
     let pool = spec::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    let check = Check {
-      uuid: Uuid::new_v4().to_string(),
-      name: "Test check".to_string(),
-      kind: CheckKind::Tcp,
-      enabled: true,
-      interval: Duration::from(5),
-      passing_threshold: 1,
-      failing_threshold: 1,
-      silent: true,
-      ..Default::default()
-    };
-
-    let mut check = check.insert(&mut *conn).await?;
-    check.uuid = Uuid::new_v4().to_string();
-    check.enabled = false;
-    check.insert(&mut *conn).await?;
+    pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "enabled()", Some(true)).await?;
+    pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "enabled()", Some(false)).await?;
 
     let checks = Check::enabled(&mut *conn).await?;
 
@@ -345,31 +320,17 @@ mod tests {
   #[tokio::test]
   async fn by_uuid() -> Result<()> {
     let pool = spec::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    let uuid = Uuid::new_v4().to_string();
-    let expected = Check {
-      uuid: uuid.clone(),
-      name: "Test check".to_string(),
-      kind: CheckKind::Tcp,
-      enabled: true,
-      interval: Duration::from(5),
-      passing_threshold: 1,
-      failing_threshold: 1,
-      silent: true,
-      ..Default::default()
-    };
+    pool.create_check(None, None, "by_uuid()", None).await?;
 
-    let inserted = expected.insert(&mut *conn).await?;
+    let check = sqlx::query_as::<_, (String, String, bool, u64)>(r#"SELECT name, kind, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+      .fetch_one(&*pool)
+      .await?;
 
-    assert_eq!(inserted.uuid, uuid);
-    assert_eq!(&inserted.name, "Test check");
-    assert_eq!(inserted.kind, CheckKind::Tcp);
-    assert_eq!(inserted.enabled, true);
-    assert_eq!(*inserted.interval, *Duration::from(5));
-    assert_eq!(inserted.passing_threshold, 1);
-    assert_eq!(inserted.failing_threshold, 1);
-    assert_eq!(inserted.silent, true);
+    assert_eq!(&check.0, "by_uuid()");
+    assert_eq!(&check.1, "tcp");
+    assert_eq!(check.2, true);
+    assert_eq!(check.3, 10);
 
     pool.cleanup().await;
 
@@ -379,29 +340,50 @@ mod tests {
   #[tokio::test]
   async fn by_id() -> Result<()> {
     let pool = spec::db_client().await?;
+
+    pool.create_check(None, None, "by_id()", None).await?;
+
+    let check = sqlx::query_as::<_, (String, String, bool, u64)>(r#"SELECT name, kind, enabled, `interval` FROM checks WHERE id = 1"#)
+      .fetch_one(&*pool)
+      .await?;
+
+    assert_eq!(&check.0, "by_id()");
+    assert_eq!(&check.1, "tcp");
+    assert_eq!(check.2, true);
+    assert_eq!(check.3, 10);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn create() -> Result<()> {
+    let pool = spec::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    let expected = Check {
-      uuid: Uuid::new_v4().to_string(),
-      name: "Test check".to_string(),
+    let check = Check {
+      id: 1,
+      alerter_id: None,
+      uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
+      name: "create()".to_string(),
       kind: CheckKind::Tcp,
-      enabled: true,
-      interval: Duration::from(5),
-      passing_threshold: 1,
-      failing_threshold: 1,
-      silent: true,
-      ..Default::default()
+      enabled: false,
+      interval: Duration::from(10),
+      passing_threshold: 10,
+      failing_threshold: 10,
+      silent: false,
     };
 
-    let inserted = expected.insert(&mut *conn).await?;
+    check.insert(&mut *conn).await?;
 
-    assert_eq!(&inserted.name, "Test check");
-    assert_eq!(inserted.kind, CheckKind::Tcp);
-    assert_eq!(inserted.enabled, true);
-    assert_eq!(*inserted.interval, *Duration::from(5));
-    assert_eq!(inserted.passing_threshold, 1);
-    assert_eq!(inserted.failing_threshold, 1);
-    assert_eq!(inserted.silent, true);
+    let check = sqlx::query_as::<_, (String, bool, u64)>(r#"SELECT name, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+      .fetch_one(&*pool)
+      .await?;
+
+    assert_eq!(&check.0, "create()");
+    assert_eq!(check.1, false);
+    assert_eq!(check.2, 10);
 
     pool.cleanup().await;
 
@@ -413,38 +395,30 @@ mod tests {
     let pool = spec::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    let check = Check {
-      uuid: Uuid::new_v4().to_string(),
-      name: "Test check".to_string(),
-      kind: CheckKind::Tcp,
-      enabled: true,
-      interval: Duration::from(5),
-      passing_threshold: 1,
-      failing_threshold: 1,
-      silent: true,
-      ..Default::default()
-    };
-
-    let check = check.insert(&mut *conn).await?;
+    pool.create_check(None, None, "update()", None).await?;
 
     let update = Check {
-      name: "Updated test check".to_string(),
+      id: 1,
+      alerter_id: None,
+      uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
+      name: "new_update()".to_string(),
+      kind: CheckKind::Tcp,
       enabled: false,
       interval: Duration::from(10),
       passing_threshold: 10,
       failing_threshold: 10,
       silent: false,
-      ..check
     };
 
-    let updated = update.update(&mut *conn).await?;
+    update.update(&mut *conn).await?;
 
-    assert_eq!(&updated.name, "Updated test check");
-    assert_eq!(updated.enabled, false);
-    assert_eq!(*updated.interval, *Duration::from(10));
-    assert_eq!(updated.passing_threshold, 10);
-    assert_eq!(updated.failing_threshold, 10);
-    assert_eq!(updated.silent, false);
+    let check = sqlx::query_as::<_, (String, bool, u64)>(r#"SELECT name, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+      .fetch_one(&*pool)
+      .await?;
+
+    assert_eq!(&check.0, "new_update()");
+    assert_eq!(check.1, false);
+    assert_eq!(check.2, 10);
 
     pool.cleanup().await;
 
