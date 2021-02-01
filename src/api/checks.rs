@@ -88,6 +88,7 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
   };
 
   let check = Check {
+    name: payload.check.name,
     alerter_id: alerter.map(|alerter| alerter.id),
     enabled: payload.check.enabled,
     interval: payload.check.interval,
@@ -146,17 +147,18 @@ pub async fn delete(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<N
 
 #[cfg(test)]
 mod tests {
+  use anyhow::Result;
   use rocket::http::Status;
   use rocket_contrib::json;
 
   use crate::{api::types as api, spec};
 
   #[tokio::test]
-  async fn list_checks() {
-    let (pool, client) = spec::api_client().await.unwrap();
+  async fn list_checks() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
 
-    let payload = json!({
-      "name": "Test check",
+    let enabled = json!({
+      "name": "list_checks()",
       "enabled": true,
       "interval": "10s",
       "passing_threshold": 1,
@@ -167,10 +169,8 @@ mod tests {
       }
     });
 
-    client.post("/api/checks").body(payload.to_string().as_bytes()).dispatch().await;
-
-    let payload = json!({
-      "name": "Test check",
+    let disabled = json!({
+      "name": "list_checks()",
       "enabled": false,
       "interval": "10s",
       "passing_threshold": 1,
@@ -181,15 +181,260 @@ mod tests {
       }
     });
 
-    client.post("/api/checks").body(payload.to_string().as_bytes()).dispatch().await;
+    client.post("/api/checks").body(enabled.to_string().as_bytes()).dispatch().await;
+    client.post("/api/checks").body(disabled.to_string().as_bytes()).dispatch().await;
 
-    let response = client.get("/api/checks").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let checks = sqlx::query_as::<_, (String,)>("SELECT name FROM checks WHERE enabled = 1").fetch_all(&*pool).await?;
 
-    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap()).unwrap();
     assert_eq!(checks.len(), 1);
-    assert_eq!(&checks.get(0).unwrap().check.name, "Test check");
+    assert_eq!(&checks[0].0, "list_checks()");
 
     pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn list_checks_all() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    let enabled = json!({
+      "name": "list_checks_all()",
+      "enabled": true,
+      "interval": "10s",
+      "passing_threshold": 1,
+      "failing_threshold": 1,
+      "spec": {
+        "kind": "app_store",
+        "bundle_id": "helloworld"
+      }
+    });
+
+    let disabled = json!({
+      "name": "list_checks_all()",
+      "enabled": false,
+      "interval": "10s",
+      "passing_threshold": 1,
+      "failing_threshold": 1,
+      "spec": {
+        "kind": "app_store",
+        "bundle_id": "helloworld"
+      }
+    });
+
+    client.post("/api/checks").body(enabled.to_string().as_bytes()).dispatch().await;
+    client.post("/api/checks").body(disabled.to_string().as_bytes()).dispatch().await;
+
+    let checks = sqlx::query_as::<_, (String,)>("SELECT name FROM checks").fetch_all(&*pool).await?;
+
+    assert_eq!(checks.len(), 2);
+    assert_eq!(&checks[0].0, "list_checks_all()");
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn get_check() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    sqlx::query(
+      r#"INSERT INTO checks (id, uuid, name, kind, enabled, `interval`, passing_threshold, failing_threshold) VALUES ( 1, "dd9a531a-1b0b-4a12-bc09-e5637f916261", "get_check()", "tcp", 0, 10, 1, 1 )"#,
+    )
+    .execute(&*pool)
+    .await?;
+
+    sqlx::query(r#"INSERT INTO tcp_specs (check_id, host, port, timeout) VALUES ( 1, "0.0.0.0", 0, 0 )"#)
+      .execute(&*pool)
+      .await?;
+
+    let response = client.get("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let check: api::Check = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(&check.check.name, "get_check()");
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn get_check_not_found() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    let response = client.get("/api/checks/nonexisting").dispatch().await;
+    assert_eq!(response.status(), Status::NotFound);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn create() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    let check = json!({
+      "name": "create()",
+      "enabled": false,
+      "interval": "10s",
+      "passing_threshold": 1,
+      "failing_threshold": 1,
+      "spec": {
+        "kind": "app_store",
+        "bundle_id": "helloworld"
+      }
+    });
+
+    let response = client.post("/api/checks").body(check.to_string().as_bytes()).dispatch().await;
+    assert_eq!(response.status(), Status::Created);
+
+    let checks = sqlx::query_as::<_, (String,)>("SELECT name FROM checks").fetch_all(&*pool).await?;
+
+    assert_eq!(checks.len(), 1);
+    assert_eq!(&checks[0].0, "create()");
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn create_bad_request() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    let check = json!({
+      "name": "create_bad_request()",
+      "enabled": false,
+      "interval": "10s",
+      "passing_threshold": 1,
+      "failing_threshold": 1
+    });
+
+    let response = client.post("/api/checks").body(check.to_string().as_bytes()).dispatch().await;
+    assert_eq!(response.status(), Status::BadRequest);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn update() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    sqlx::query(
+      r#"INSERT INTO checks (id, uuid, name, kind, enabled, `interval`, passing_threshold, failing_threshold) VALUES ( 1, "dd9a531a-1b0b-4a12-bc09-e5637f916261", "update()", "tcp", 0, 10, 1, 1 )"#,
+    )
+    .execute(&*pool)
+    .await?;
+
+    sqlx::query(r#"INSERT INTO tcp_specs (check_id, host, port, timeout) VALUES ( 1, "0.0.0.0", 80, 10 )"#)
+      .execute(&*pool)
+      .await?;
+
+    let check = json!({
+      "name": "new_update()",
+      "enabled": false,
+      "interval": "15s",
+      "passing_threshold": 1,
+      "failing_threshold": 1,
+      "spec": {
+        "kind": "tcp",
+        "host": "1.2.3.4",
+        "port": 81,
+        "timeout": "1h"
+      }
+    });
+
+    let response = client.put("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(check.to_string().as_bytes()).dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let check = sqlx::query_as::<_, (String, bool, u64)>(r#"SELECT name, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+      .fetch_one(&*pool)
+      .await?;
+
+    let spec = sqlx::query_as::<_, (String, u16, u64)>(r#"SELECT host, port, timeout FROM tcp_specs WHERE check_id = 1"#)
+      .fetch_one(&*pool)
+      .await?;
+
+    assert_eq!(&check.0, "new_update()");
+    assert_eq!(check.1, false);
+    assert_eq!(check.2, 15);
+    assert_eq!(spec.0, "1.2.3.4");
+    assert_eq!(spec.1, 81);
+    assert_eq!(spec.2, 3600);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn patch() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    sqlx::query(
+      r#"INSERT INTO checks (id, uuid, name, kind, enabled, `interval`, passing_threshold, failing_threshold) VALUES ( 1, "dd9a531a-1b0b-4a12-bc09-e5637f916261", "patch()", "tcp", 0, 10, 1, 1 )"#,
+    )
+    .execute(&*pool)
+    .await?;
+
+    sqlx::query(r#"INSERT INTO tcp_specs (check_id, host, port, timeout) VALUES ( 1, "0.0.0.0", 80, 10 )"#)
+      .execute(&*pool)
+      .await?;
+
+    let check = json!({
+      "name": "new_update()",
+      "interval": "10m"
+    });
+
+    let response = client.patch("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(check.to_string().as_bytes()).dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let check = sqlx::query_as::<_, (String, bool, u64)>(r#"SELECT name, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+      .fetch_one(&*pool)
+      .await?;
+
+    let spec = sqlx::query_as::<_, (String, u16, u64)>(r#"SELECT host, port, timeout FROM tcp_specs WHERE check_id = 1"#)
+      .fetch_one(&*pool)
+      .await?;
+
+    assert_eq!(&check.0, "new_update()");
+    assert_eq!(check.1, false);
+    assert_eq!(check.2, 600);
+    assert_eq!(spec.0, "0.0.0.0");
+    assert_eq!(spec.1, 80);
+    assert_eq!(spec.2, 10);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn delete() -> Result<()> {
+    let (pool, client) = spec::api_client().await?;
+
+    sqlx::query(
+      r#"INSERT INTO checks (id, uuid, name, kind, enabled, `interval`, passing_threshold, failing_threshold) VALUES ( 1, "dd9a531a-1b0b-4a12-bc09-e5637f916261", "patch()", "tcp", 1, 10, 1, 1 )"#,
+    )
+    .execute(&*pool)
+    .await?;
+
+    let response = client.delete("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
+    assert_eq!(response.status(), Status::NoContent);
+
+    let check = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+      .fetch_one(&*pool)
+      .await?;
+
+    assert_eq!(check.0, false);
+
+    pool.cleanup().await;
+
+    Ok(())
   }
 }

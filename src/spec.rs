@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::{api, model::migrations};
 
+#[derive(Clone)]
 pub struct TestConnection(pub Pool<MySql>, pub String);
 
 impl Deref for TestConnection {
@@ -48,4 +49,19 @@ pub async fn api_client() -> Result<(TestConnection, Client)> {
   let server = api::server(Config::default(), pool.clone());
 
   Ok((TestConnection(pool, database), Client::untracked(server).await?))
+}
+
+pub async fn db_client() -> Result<TestConnection> {
+  let database = format!("defcon_test_{}", Uuid::new_v4().to_simple());
+  let mut dsn = Url::parse(&env::var("DSN")?)?;
+
+  let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
+  sqlx::query(&format!("CREATE DATABASE {}", &database)).execute(&pool).await?;
+
+  dsn.set_path(&format!("/{}", database));
+  let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
+
+  migrations::migrate(&dsn.to_string())?;
+
+  Ok(TestConnection(pool, database))
 }

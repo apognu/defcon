@@ -264,3 +264,262 @@ impl Check {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use std::time::Duration as StdDuration;
+
+  use anyhow::Result;
+  use uuid::Uuid;
+
+  use crate::spec;
+
+  use super::{Check, CheckKind, Event};
+  use crate::model::Duration;
+
+  #[tokio::test]
+  async fn list() -> Result<()> {
+    let pool = spec::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    let check = Check {
+      uuid: Uuid::new_v4().to_string(),
+      name: "Test check".to_string(),
+      kind: CheckKind::Tcp,
+      enabled: true,
+      interval: Duration::from(5),
+      passing_threshold: 1,
+      failing_threshold: 1,
+      silent: true,
+      ..Default::default()
+    };
+
+    let expected = check.insert(&mut *conn).await?;
+    let checks = Check::all(&mut *conn).await?;
+
+    assert_eq!(checks.len(), 1);
+    assert_eq!(checks[0].name, expected.name);
+    assert_eq!(checks[0].kind, expected.kind);
+    assert_eq!(checks[0].enabled, expected.enabled);
+    assert_eq!(*checks[0].interval, *expected.interval);
+    assert_eq!(checks[0].passing_threshold, expected.passing_threshold);
+    assert_eq!(checks[0].failing_threshold, expected.failing_threshold);
+    assert_eq!(checks[0].silent, expected.silent);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn enabled() -> Result<()> {
+    let pool = spec::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    let check = Check {
+      uuid: Uuid::new_v4().to_string(),
+      name: "Test check".to_string(),
+      kind: CheckKind::Tcp,
+      enabled: true,
+      interval: Duration::from(5),
+      passing_threshold: 1,
+      failing_threshold: 1,
+      silent: true,
+      ..Default::default()
+    };
+
+    let mut check = check.insert(&mut *conn).await?;
+    check.uuid = Uuid::new_v4().to_string();
+    check.enabled = false;
+    check.insert(&mut *conn).await?;
+
+    let checks = Check::enabled(&mut *conn).await?;
+
+    assert_eq!(checks.len(), 1);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn by_uuid() -> Result<()> {
+    let pool = spec::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    let uuid = Uuid::new_v4().to_string();
+    let expected = Check {
+      uuid: uuid.clone(),
+      name: "Test check".to_string(),
+      kind: CheckKind::Tcp,
+      enabled: true,
+      interval: Duration::from(5),
+      passing_threshold: 1,
+      failing_threshold: 1,
+      silent: true,
+      ..Default::default()
+    };
+
+    let inserted = expected.insert(&mut *conn).await?;
+
+    assert_eq!(inserted.uuid, uuid);
+    assert_eq!(&inserted.name, "Test check");
+    assert_eq!(inserted.kind, CheckKind::Tcp);
+    assert_eq!(inserted.enabled, true);
+    assert_eq!(*inserted.interval, *Duration::from(5));
+    assert_eq!(inserted.passing_threshold, 1);
+    assert_eq!(inserted.failing_threshold, 1);
+    assert_eq!(inserted.silent, true);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn by_id() -> Result<()> {
+    let pool = spec::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    let expected = Check {
+      uuid: Uuid::new_v4().to_string(),
+      name: "Test check".to_string(),
+      kind: CheckKind::Tcp,
+      enabled: true,
+      interval: Duration::from(5),
+      passing_threshold: 1,
+      failing_threshold: 1,
+      silent: true,
+      ..Default::default()
+    };
+
+    let inserted = expected.insert(&mut *conn).await?;
+
+    assert_eq!(&inserted.name, "Test check");
+    assert_eq!(inserted.kind, CheckKind::Tcp);
+    assert_eq!(inserted.enabled, true);
+    assert_eq!(*inserted.interval, *Duration::from(5));
+    assert_eq!(inserted.passing_threshold, 1);
+    assert_eq!(inserted.failing_threshold, 1);
+    assert_eq!(inserted.silent, true);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn update() -> Result<()> {
+    let pool = spec::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    let check = Check {
+      uuid: Uuid::new_v4().to_string(),
+      name: "Test check".to_string(),
+      kind: CheckKind::Tcp,
+      enabled: true,
+      interval: Duration::from(5),
+      passing_threshold: 1,
+      failing_threshold: 1,
+      silent: true,
+      ..Default::default()
+    };
+
+    let check = check.insert(&mut *conn).await?;
+
+    let update = Check {
+      name: "Updated test check".to_string(),
+      enabled: false,
+      interval: Duration::from(10),
+      passing_threshold: 10,
+      failing_threshold: 10,
+      silent: false,
+      ..check
+    };
+
+    let updated = update.update(&mut *conn).await?;
+
+    assert_eq!(&updated.name, "Updated test check");
+    assert_eq!(updated.enabled, false);
+    assert_eq!(*updated.interval, *Duration::from(10));
+    assert_eq!(updated.passing_threshold, 10);
+    assert_eq!(updated.failing_threshold, 10);
+    assert_eq!(updated.silent, false);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn delete() -> Result<()> {
+    let pool = spec::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    let check = Check {
+      uuid: Uuid::new_v4().to_string(),
+      name: "Test check".to_string(),
+      kind: CheckKind::Tcp,
+      enabled: true,
+      interval: Duration::from(5),
+      passing_threshold: 1,
+      failing_threshold: 1,
+      silent: true,
+      ..Default::default()
+    };
+
+    let check = check.insert(&mut *conn).await?;
+    Check::delete(&mut *conn, &check.uuid).await?;
+
+    let deleted = Check::by_uuid(&mut *conn, &check.uuid).await?;
+
+    assert_eq!(deleted.enabled, false);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn last_event() -> Result<()> {
+    let pool = spec::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    let check = Check {
+      uuid: Uuid::new_v4().to_string(),
+      name: "Test check".to_string(),
+      kind: CheckKind::Tcp,
+      enabled: true,
+      interval: Duration::from(5),
+      passing_threshold: 1,
+      failing_threshold: 1,
+      silent: true,
+      ..Default::default()
+    };
+
+    let check = check.insert(&mut *conn).await?;
+
+    let mut event = Event {
+      check_id: check.id,
+      status: 0,
+      message: "First event".to_string(),
+      ..Default::default()
+    };
+
+    event.insert(&mut *conn, None).await?;
+
+    tokio::time::delay_for(StdDuration::from_secs(2)).await;
+
+    event.message = "Last event".to_string();
+    event.insert(&mut *conn, None).await?;
+
+    let last = check.last_event(&mut *conn).await?;
+
+    assert_eq!(last.is_some(), true);
+    assert_eq!(&last.unwrap().message, "Last event");
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+}

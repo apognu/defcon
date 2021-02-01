@@ -39,17 +39,17 @@ impl Event {
     Ok(events)
   }
 
-  pub async fn insert(conn: &mut MySqlConnection, event: &Event, outage: Option<&Outage>) -> Result<()> {
+  pub async fn insert(&self, conn: &mut MySqlConnection, outage: Option<&Outage>) -> Result<()> {
     sqlx::query(
       "
         INSERT INTO events (check_id, outage_id, status, message, created_at)
         VALUES ( ?, ?, ?, ?, NOW() )
       ",
     )
-    .bind(event.check_id)
+    .bind(self.check_id)
     .bind(outage.map(|outage| outage.id))
-    .bind(event.status)
-    .bind(&event.message)
+    .bind(self.status)
+    .bind(&self.message)
     .execute(conn)
     .await?;
 

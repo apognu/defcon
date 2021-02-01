@@ -67,8 +67,6 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, inhibitor: Inhibitor) 
 
 async fn run(pool: Pool<MySql>, config: Arc<Config>, check: Check, mut inhibitor: Inhibitor) -> Result<()> {
   let inner = async move || -> Result<()> {
-    use crate::handlers::*;
-
     let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
     let handler = check.handler();
 
@@ -85,8 +83,8 @@ async fn run(pool: Pool<MySql>, config: Arc<Config>, check: Check, mut inhibitor
 
       Ok(event) => {
         let outage = Outage::insert(&mut conn, &check, &event).await.ok().flatten();
-        Event::insert(&mut conn, &event, outage.as_ref()).await?;
 
+        event.insert(&mut conn, outage.as_ref()).await?;
         inhibitor.release(&check.uuid);
 
         if event.status == 0 {
