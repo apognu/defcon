@@ -27,6 +27,13 @@ jobs:
         arch:
           - { name: 'x86_64', os: 'ubuntu-latest', target: 'x86_64-unknown-linux-gnu', cross: false }
     runs-on: ${{ matrix.arch.os }}
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        ports:
+          - 3306:3306
     steps:
       - name: Install dependencies
         run: sudo apt install -y libcap-dev
@@ -41,6 +48,8 @@ jobs:
           override: true
       - name: Test
         uses: actions-rs/cargo@v1
+        env:
+          DSN: mysql://root:${{ secrets.MYSQL_ROOT_PASSWORD }}@127.0.0.1/information_schema?ssl-mode=DISABLED
         with:
           command: test
           use-cross: ${{ matrix.arch.cross }}

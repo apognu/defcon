@@ -143,3 +143,53 @@ pub async fn delete(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<N
 
   Ok(NoContent)
 }
+
+#[cfg(test)]
+mod tests {
+  use rocket::http::Status;
+  use rocket_contrib::json;
+
+  use crate::{api::types as api, spec};
+
+  #[tokio::test]
+  async fn list_checks() {
+    let (pool, client) = spec::api_client().await.unwrap();
+
+    let payload = json!({
+      "name": "Test check",
+      "enabled": true,
+      "interval": "10s",
+      "passing_threshold": 1,
+      "failing_threshold": 1,
+      "spec": {
+        "kind": "app_store",
+        "bundle_id": "helloworld"
+      }
+    });
+
+    client.post("/api/checks").body(payload.to_string().as_bytes()).dispatch().await;
+
+    let payload = json!({
+      "name": "Test check",
+      "enabled": false,
+      "interval": "10s",
+      "passing_threshold": 1,
+      "failing_threshold": 1,
+      "spec": {
+        "kind": "app_store",
+        "bundle_id": "helloworld"
+      }
+    });
+
+    client.post("/api/checks").body(payload.to_string().as_bytes()).dispatch().await;
+
+    let response = client.get("/api/checks").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap()).unwrap();
+    assert_eq!(checks.len(), 1);
+    assert_eq!(&checks.get(0).unwrap().check.name, "Test check");
+
+    pool.cleanup().await;
+  }
+}

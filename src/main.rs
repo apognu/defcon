@@ -19,6 +19,9 @@ mod handlers;
 mod inhibitor;
 mod model;
 
+#[cfg(test)]
+mod spec;
+
 use std::{env, sync::Arc, time::Instant};
 
 use anyhow::{Context, Error, Result};
@@ -59,7 +62,7 @@ async fn start() -> Result<()> {
   let dsn = env::var("DSN")?;
   let pool = MySqlPoolOptions::new().max_connections(20).connect(&dsn).await?;
 
-  migrations::migrate()?;
+  migrations::migrate(&dsn)?;
 
   if !config.handler && !config.cleaner && !config.api {
     return Err(anyhow!("all processes disabled, aborting"));
@@ -106,14 +109,7 @@ async fn run_api(pool: Pool<MySql>, config: Arc<Config>) -> Result<()> {
   let mut provider = RocketConfig::release_default();
   provider.port = config.api_port;
 
-  rocket::custom(provider)
-    .manage(pool)
-    .attach(ApiLogger::new())
-    .mount("/", api::routes())
-    .register(catchers![api::not_found, api::unprocessable])
-    .launch()
-    .await
-    .context("could not launch API handler")?;
+  api::server(provider, pool).attach(ApiLogger::new()).launch().await.context("could not launch API handler")?;
 
   Ok(())
 }

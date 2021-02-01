@@ -64,8 +64,8 @@ mod tests {
   use super::AppStoreHandler;
   use crate::model::{specs::AppStore, status::*, Check};
 
-  #[test]
-  fn handler_app_store_ok() {
+  #[tokio::test]
+  async fn handler_app_store_ok() {
     let handler = AppStoreHandler { check: &Check::default() };
     let spec = AppStore {
       id: 0,
@@ -73,17 +73,15 @@ mod tests {
       bundle_id: "com.apple.Maps".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_app_store_missing() {
+  #[tokio::test]
+  async fn handler_app_store_missing() {
     let handler = AppStoreHandler { check: &Check::default() };
     let spec = AppStore {
       id: 0,
@@ -91,12 +89,10 @@ mod tests {
       bundle_id: "2e0a5188-7220-41bf-b684-82d6a54b868a".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, CRITICAL);
   }
 }

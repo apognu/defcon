@@ -91,8 +91,8 @@ mod tests {
     Check,
   };
 
-  #[test]
-  fn handler_dns_ns_ok() {
+  #[tokio::test]
+  async fn handler_dns_ns_ok() {
     let handler = DnsHandler { check: &Check::default() };
     let spec = Dns {
       id: 0,
@@ -102,17 +102,15 @@ mod tests {
       value: "a.iana-servers.net".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_dns_mx_ok() {
+  #[tokio::test]
+  async fn handler_dns_mx_ok() {
     let handler = DnsHandler { check: &Check::default() };
     let spec = Dns {
       id: 0,
@@ -122,17 +120,15 @@ mod tests {
       value: "aspmx.l.google.com".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_dns_a_ok() {
+  #[tokio::test]
+  async fn handler_dns_a_ok() {
     let handler = DnsHandler { check: &Check::default() };
     let spec = Dns {
       id: 0,
@@ -142,17 +138,15 @@ mod tests {
       value: "93.184.216.34".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_dns_aaaa_ok() {
+  #[tokio::test]
+  async fn handler_dns_aaaa_ok() {
     let handler = DnsHandler { check: &Check::default() };
     let spec = Dns {
       id: 0,
@@ -162,17 +156,15 @@ mod tests {
       value: "2606:2800:220:1:248:1893:25c8:1946".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_dns_cname_ok() {
+  #[tokio::test]
+  async fn handler_dns_cname_ok() {
     let handler = DnsHandler { check: &Check::default() };
     let spec = Dns {
       id: 0,
@@ -182,17 +174,15 @@ mod tests {
       value: "github.com".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_dns_caa_ok() {
+  #[tokio::test]
+  async fn handler_dns_caa_ok() {
     let handler = DnsHandler { check: &Check::default() };
     let spec = Dns {
       id: 0,
@@ -202,17 +192,15 @@ mod tests {
       value: "pki.goog".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_dns_ns_critical() {
+  #[tokio::test]
+  async fn handler_dns_ns_critical() {
     let handler = DnsHandler { check: &Check::default() };
     let spec = Dns {
       id: 0,
@@ -222,17 +210,15 @@ mod tests {
       value: "1.2.3.4".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, CRITICAL);
   }
 
-  #[test]
-  fn handler_dns_ns_invalid() {
+  #[tokio::test]
+  async fn handler_dns_ns_invalid() {
     let handler = DnsHandler { check: &Check::default() };
     let spec = Dns {
       id: 0,
@@ -242,8 +228,7 @@ mod tests {
       value: "example.com".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_err!(&result);
   }
 }

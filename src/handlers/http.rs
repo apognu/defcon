@@ -106,8 +106,8 @@ mod tests {
     Check, Duration,
   };
 
-  #[test]
-  fn handler_http_headers() {
+  #[tokio::test]
+  async fn handler_http_headers() {
     let mut headers = HashMap::default();
     headers.insert("lorem".to_string(), "ipsum".to_string());
 
@@ -123,18 +123,16 @@ mod tests {
       digest: None,
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
     assert_eq!(result.message, String::new());
   }
 
-  #[test]
-  fn handler_http_ok() {
+  #[tokio::test]
+  async fn handler_http_ok() {
     let handler = HttpHandler { check: &Check::default() };
     let spec = Http {
       id: 0,
@@ -147,18 +145,16 @@ mod tests {
       digest: Some("d06b93c883f8126a04589937a884032df031b05518eed9d433efb6447834df2596aebd500d69b8283e5702d988ed49655ae654c1683c7a4ae58bfa6b92f2b73a".to_string()),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
     assert_eq!(result.message, String::new());
   }
 
-  #[test]
-  fn handler_http_invalid_status() {
+  #[tokio::test]
+  async fn handler_http_invalid_status() {
     let handler = HttpHandler { check: &Check::default() };
     let spec = Http {
       id: 0,
@@ -171,18 +167,16 @@ mod tests {
       digest: None,
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, CRITICAL);
     assert_eq!(result.message, "status code was 200".to_string());
   }
 
-  #[test]
-  fn handler_http_invalid_content() {
+  #[tokio::test]
+  async fn handler_http_invalid_content() {
     let handler = HttpHandler { check: &Check::default() };
     let spec = Http {
       id: 0,
@@ -195,18 +189,16 @@ mod tests {
       digest: None,
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, CRITICAL);
     assert_eq!(result.message, "content mismatch".to_string());
   }
 
-  #[test]
-  fn handler_http_invalid_digest() {
+  #[tokio::test]
+  async fn handler_http_invalid_digest() {
     let handler = HttpHandler { check: &Check::default() };
     let spec = Http {
       id: 0,
@@ -219,18 +211,16 @@ mod tests {
       digest: Some("INVALIDDIGEST".to_string()),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, CRITICAL);
     assert_eq!(result.message, "digest mismatch".to_string());
   }
 
-  #[test]
-  fn handler_http_timeout() {
+  #[tokio::test]
+  async fn handler_http_timeout() {
     let handler = HttpHandler { check: &Check::default() };
     let spec = Http {
       id: 0,
@@ -243,12 +233,10 @@ mod tests {
       digest: None,
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, CRITICAL);
     assert_eq!(result.message, "error sending request for url (http://192.0.2.1/): operation timed out".to_string());
   }

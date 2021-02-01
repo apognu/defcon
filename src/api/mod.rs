@@ -6,11 +6,16 @@ pub mod middlewares;
 mod outages;
 pub mod types;
 
-use rocket::{response::status::Custom, Route};
+use rocket::{response::status::Custom, Config, Rocket, Route};
+use sqlx::{MySql, Pool};
 
 use self::error::ApiError;
 
 type ApiResponse<T> = Result<T, Custom<Option<ApiError>>>;
+
+pub fn server(provider: Config, pool: Pool<MySql>) -> Rocket {
+  rocket::custom(provider).manage(pool).mount("/", routes()).register(catchers![not_found, unprocessable])
+}
 
 pub fn routes() -> Vec<Route> {
   routes![
@@ -44,4 +49,21 @@ pub fn not_found() -> ApiError {
 #[catch(422)]
 pub fn unprocessable() -> ApiError {
   ApiError::new(422, "the request format could not be understood")
+}
+
+#[cfg(test)]
+mod tests {
+  use rocket::http::Status;
+
+  use crate::spec;
+
+  #[tokio::test]
+  async fn health() {
+    let (pool, client) = spec::api_client().await.unwrap();
+
+    let response = client.get("/api/-/health").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    pool.cleanup().await;
+  }
 }

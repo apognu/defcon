@@ -53,8 +53,8 @@ mod tests {
   use super::PlayStoreHandler;
   use crate::model::{specs::PlayStore, status::*, Check};
 
-  #[test]
-  fn handler_play_store_ok() {
+  #[tokio::test]
+  async fn handler_play_store_ok() {
     let handler = PlayStoreHandler { check: &Check::default() };
     let spec = PlayStore {
       id: 0,
@@ -62,17 +62,15 @@ mod tests {
       app_id: "com.google.android.apps.maps".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_play_store_critical() {
+  #[tokio::test]
+  async fn handler_play_store_critical() {
     let handler = PlayStoreHandler { check: &Check::default() };
     let spec = PlayStore {
       id: 0,
@@ -80,12 +78,10 @@ mod tests {
       app_id: "29c4e9c3-c6f8-47d7-a64c-004e463d3aa8".to_string(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, CRITICAL);
   }
 }

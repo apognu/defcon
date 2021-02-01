@@ -35,3 +35,4 @@ whois2 = "0.0.1"
 
 [dev-dependencies]
 tokio-test = "0.2"
+url = "^2.2"

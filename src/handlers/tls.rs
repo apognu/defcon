@@ -54,8 +54,8 @@ mod tests {
   use super::TlsHandler;
   use crate::model::{specs::Tls, status::*, Check, Duration};
 
-  #[test]
-  fn handler_tls_ok() {
+  #[tokio::test]
+  async fn handler_tls_ok() {
     let handler = TlsHandler { check: &Check::default() };
     let spec = Tls {
       id: 0,
@@ -64,17 +64,15 @@ mod tests {
       window: Duration::try_from("0 days").unwrap(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_tls_critical() {
+  #[tokio::test]
+  async fn handler_tls_critical() {
     let handler = TlsHandler { check: &Check::default() };
     let spec = Tls {
       id: 0,
@@ -83,18 +81,16 @@ mod tests {
       window: Duration::try_from("91 days").unwrap(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, CRITICAL);
     assert_eq!(result.message.starts_with("TLS certificate for letsencrypt.org"), true);
   }
 
-  #[test]
-  fn handler_tls_expired() {
+  #[tokio::test]
+  async fn handler_tls_expired() {
     let handler = TlsHandler { check: &Check::default() };
     let spec = Tls {
       id: 0,
@@ -103,18 +99,16 @@ mod tests {
       window: Duration::from(1),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, CRITICAL);
     assert_eq!(result.message.starts_with("TLS certificate for expired.badssl.com expires in"), true);
   }
 
-  #[test]
-  fn handler_tls_invalid() {
+  #[tokio::test]
+  async fn handler_tls_invalid() {
     let handler = TlsHandler { check: &Check::default() };
     let spec = Tls {
       id: 0,
@@ -123,7 +117,7 @@ mod tests {
       window: Duration::from(1),
     };
 
-    let result = block_on(handler.run(spec));
+    let result = handler.run(spec).await;
 
     assert_err!(&result);
   }

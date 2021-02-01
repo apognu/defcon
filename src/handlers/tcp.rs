@@ -54,8 +54,8 @@ mod tests {
   use super::TcpHandler;
   use crate::model::{specs::Tcp, status::*, Check, Duration};
 
-  #[test]
-  fn handler_tcp_ok() {
+  #[tokio::test]
+  async fn handler_tcp_ok() {
     let handler = TcpHandler { check: &Check::default() };
     let spec = Tcp {
       id: 0,
@@ -65,7 +65,7 @@ mod tests {
       timeout: None,
     };
 
-    let result = block_on(handler.run(spec));
+    let result = handler.run(spec).await;
 
     assert_ok!(&result);
 
@@ -74,8 +74,8 @@ mod tests {
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_tcp_critical() {
+  #[tokio::test]
+  async fn handler_tcp_critical() {
     let handler = TcpHandler { check: &Check::default() };
     let spec = Tcp {
       id: 0,
@@ -85,7 +85,7 @@ mod tests {
       timeout: Some(Duration::from(1)),
     };
 
-    let result = block_on(handler.run(spec));
+    let result = handler.run(spec).await;
 
     assert_ok!(&result);
 
@@ -95,8 +95,8 @@ mod tests {
     assert_eq!(result.message, "deadline has elapsed".to_string());
   }
 
-  #[test]
-  fn handler_tcp_invalid() {
+  #[tokio::test]
+  async fn handler_tcp_invalid() {
     let handler = TcpHandler { check: &Check::default() };
     let spec = Tcp {
       id: 0,
@@ -106,7 +106,7 @@ mod tests {
       timeout: None,
     };
 
-    let result = block_on(handler.run(spec));
+    let result = handler.run(spec).await;
 
     assert_err!(&result);
   }

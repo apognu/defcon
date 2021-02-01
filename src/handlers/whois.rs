@@ -64,8 +64,8 @@ mod tests {
   use super::WhoisHandler;
   use crate::model::{specs::Whois, status::*, Check, Duration};
 
-  #[test]
-  fn handler_whois_ok() {
+  #[tokio::test]
+  async fn handler_whois_ok() {
     let handler = WhoisHandler { check: &Check::default() };
     let spec = Whois {
       id: 0,
@@ -75,17 +75,15 @@ mod tests {
       window: Duration::try_from("90 days").unwrap(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
-  #[test]
-  fn handler_whois_warning() {
+  #[tokio::test]
+  async fn handler_whois_warning() {
     let handler = WhoisHandler { check: &Check::default() };
     let spec = Whois {
       id: 0,
@@ -95,17 +93,15 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, WARNING);
   }
 
-  #[test]
-  fn handler_whois_attribute_warning() {
+  #[tokio::test]
+  async fn handler_whois_attribute_warning() {
     let handler = WhoisHandler { check: &Check::default() };
     let spec = Whois {
       id: 0,
@@ -115,17 +111,15 @@ mod tests {
       window: Duration::try_from("100 years").unwrap(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
-
     assert_eq!(result.status, WARNING);
   }
 
-  #[test]
-  fn handler_whois_invalid() {
+  #[tokio::test]
+  async fn handler_whois_invalid() {
     let handler = WhoisHandler { check: &Check::default() };
     let spec = Whois {
       id: 0,
@@ -135,13 +129,12 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_err!(&result);
   }
 
-  #[test]
-  fn handler_whois_error() {
+  #[tokio::test]
+  async fn handler_whois_error() {
     let handler = WhoisHandler { check: &Check::default() };
     let spec = Whois {
       id: 0,
@@ -151,8 +144,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = block_on(handler.run(spec));
-
+    let result = handler.run(spec).await;
     assert_err!(&result);
   }
 }
