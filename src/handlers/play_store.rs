@@ -16,15 +16,15 @@ pub struct PlayStoreHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for PlayStoreHandler<'h> {
+  type Spec = PlayStore;
+
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = PlayStore::for_check(conn, self.check).await.context("no spec found")?;
 
-    self.run(spec, site).await
+    self.run(&spec, site).await
   }
-}
 
-impl<'h> PlayStoreHandler<'h> {
-  async fn run(&self, spec: PlayStore, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &PlayStore, site: &str) -> Result<Event> {
     let url = format!("https://play.google.com/store/apps/details?id={}", spec.app_id);
 
     let response = reqwest::get(&url).await.context("did not receive a valid response")?;
@@ -51,7 +51,7 @@ impl<'h> PlayStoreHandler<'h> {
 mod tests {
   use tokio_test::*;
 
-  use super::PlayStoreHandler;
+  use super::{Handler, PlayStoreHandler};
   use crate::model::{specs::PlayStore, status::*, Check};
 
   #[tokio::test]
@@ -63,7 +63,7 @@ mod tests {
       app_id: "com.google.android.apps.maps".to_string(),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -79,7 +79,7 @@ mod tests {
       app_id: "29c4e9c3-c6f8-47d7-a64c-004e463d3aa8".to_string(),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();

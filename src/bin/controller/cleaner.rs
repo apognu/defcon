@@ -5,7 +5,7 @@ use chrono::{Duration, Utc};
 use kvlogger::*;
 use sqlx::{MySql, Pool};
 
-use crate::{
+use defcon::{
   config::Config,
   model::{Event, SiteOutage},
 };

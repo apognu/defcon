@@ -12,7 +12,6 @@ CREATE TABLE checks (
   `name` VARCHAR(255) NOT NULL,
   `enabled` TINYINT(1) NOT NULL DEFAULT 1,
   `kind` VARCHAR(255) NOT NULL,
-  `sites` TEXT NOT NULL,
   `interval` BIGINT UNSIGNED NOT NULL,
   `site_threshold` TINYINT UNSIGNED NOT NULL,
   `passing_threshold` TINYINT UNSIGNED NOT NULL,
@@ -20,6 +19,14 @@ CREATE TABLE checks (
   `silent` TINYINT(1) NOT NULL DEFAULT 0,
 
   CONSTRAINT fk_check_alerter FOREIGN KEY (alerter_id) REFERENCES alerters (id)
+);
+
+CREATE TABLE check_sites (
+  `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  `check_id` BIGINT UNSIGNED NOT NULL,
+  `slug` VARCHAR(255) NOT NULL,
+
+  CONSTRAINT fk_check_site_check FOREIGN KEY (check_id) REFERENCES checks (id)
 );
 
 CREATE TABLE ping_specs (

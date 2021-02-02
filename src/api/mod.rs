@@ -3,6 +3,7 @@ mod checks;
 pub mod error;
 mod events;
 pub mod middlewares;
+mod runner;
 mod site_outages;
 pub mod types;
 
@@ -20,6 +21,8 @@ pub fn server(provider: Config, pool: Pool<MySql>) -> Rocket {
 pub fn routes() -> Vec<Route> {
   routes![
     health,
+    runner::list_stale,
+    runner::report,
     checks::list,
     checks::get,
     checks::create,

@@ -65,6 +65,7 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
 
   let check = check.insert(&mut *txn).await.apierr()?;
   payload.spec.insert(&mut *txn, &check).await.apierr()?;
+  check.update_sites(&mut *txn, &payload.sites).await.apierr()?;
 
   txn.commit().await.context("could not commit transaction").apierr()?;
 
@@ -92,7 +93,6 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
     alerter_id: alerter.map(|alerter| alerter.id),
     enabled: payload.check.enabled,
     interval: payload.check.interval,
-    sites: payload.check.sites,
     site_threshold: payload.check.site_threshold,
     passing_threshold: payload.check.passing_threshold,
     failing_threshold: payload.check.failing_threshold,
@@ -101,6 +101,7 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
   };
 
   payload.spec.update(&mut *txn, &check).await.apierr()?;
+  check.update_sites(&mut *txn, &payload.sites).await.apierr()?;
   check.update(&mut *txn).await.apierr()?;
 
   txn.commit().await.context("could not commit transaction").apierr()?;
@@ -126,6 +127,10 @@ pub async fn patch(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<J
     let alerter = Alerter::by_uuid(&mut txn, &value).await.apierr()?;
 
     check.alerter_id = Some(alerter.id);
+  }
+
+  if let Some(value) = payload.sites {
+    check.update_sites(&mut *txn, &value).await.apierr()?;
   }
 
   if let Some(value) = payload.spec {
@@ -230,7 +235,7 @@ mod tests {
       "name": "create()",
       "enabled": false,
       "interval": "10s",
-      "sites": "@controller",
+      "sites": ["@controller"],
       "site_threshold": 2,
       "passing_threshold": 1,
       "failing_threshold": 1,
@@ -261,7 +266,7 @@ mod tests {
       "name": "create_invalid_kind()",
       "enabled": false,
       "interval": "10s",
-      "sites": "@controller",
+      "sites": ["@controller"],
       "site_threshold": 2,
       "passing_threshold": 1,
       "failing_threshold": 1,
@@ -287,7 +292,7 @@ mod tests {
       "name": "create_invalid_spec()",
       "enabled": false,
       "interval": "10s",
-      "sites": "@controller",
+      "sites": ["@controller"],
       "site_threshold": 2,
       "passing_threshold": 1,
       "failing_threshold": 1,
@@ -335,7 +340,7 @@ mod tests {
       "name": "new_update()",
       "enabled": false,
       "interval": "15s",
-      "sites": "@controller",
+      "sites": ["@controller"],
       "site_threshold": 2,
       "passing_threshold": 1,
       "failing_threshold": 1,

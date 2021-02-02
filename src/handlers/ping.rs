@@ -18,15 +18,21 @@ pub struct PingHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for PingHandler<'h> {
+  type Spec = Ping;
+
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
+    let spec = Ping::for_check(conn, self.check).await.context("no spec found")?;
+
+    self.run(&spec, site).await
+  }
+
+  async fn run(&self, spec: &Ping, site: &str) -> Result<Event> {
     #[cfg(target_os = "linux")]
     if let Ok(caps) = Capabilities::from_current_proc() {
       if !caps.check(Capability::CAP_NET_RAW, Flag::Effective) {
         return Err(anyhow!("ping: missing CAP_NET_RAW capabilities"));
       }
     }
-
-    let spec = Ping::for_check(conn, self.check).await.context("no spec found")?;
 
     let mut ping = Ekko::with_target(&spec.host).context("ping: could not send echo request")?;
 

@@ -7,8 +7,12 @@ edition = "2018"
 default-run = "defcon"
 
 [[bin]]
+name = "defcon"
+path = "src/bin/controller/main.rs"
+
+[[bin]]
 name = "defcon-runner"
-path = "src/runner/main.rs"
+path = "src/bin/runner/main.rs"
 
 [dependencies]
 anyhow = "^1.0"

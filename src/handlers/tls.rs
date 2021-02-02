@@ -17,15 +17,15 @@ pub struct TlsHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for TlsHandler<'h> {
+  type Spec = Tls;
+
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = Tls::for_check(conn, self.check).await.context("no spec found")?;
 
-    self.run(spec, site).await
+    self.run(&spec, site).await
   }
-}
 
-impl<'h> TlsHandler<'h> {
-  async fn run(&self, spec: Tls, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &Tls, site: &str) -> Result<Event> {
     let expiration = SslExpiration::from_domain_name(&spec.domain).map_err(|err| anyhow!("{}", err)).context("could not fetch certificate")?;
 
     let (status, message) = if expiration.secs() > 0 && expiration.secs() as u64 > spec.window.as_secs() {
@@ -52,7 +52,7 @@ mod tests {
 
   use tokio_test::*;
 
-  use super::TlsHandler;
+  use super::{Handler, TlsHandler};
   use crate::model::{specs::Tls, status::*, Check, Duration};
 
   #[tokio::test]
@@ -65,7 +65,7 @@ mod tests {
       window: Duration::try_from("0 days").unwrap(),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -82,7 +82,7 @@ mod tests {
       window: Duration::try_from("91 days").unwrap(),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -100,7 +100,7 @@ mod tests {
       window: Duration::from(1),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -118,7 +118,7 @@ mod tests {
       window: Duration::from(1),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
 
     assert_err!(&result);
   }

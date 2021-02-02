@@ -8,6 +8,7 @@ mod tls;
 mod udp;
 mod whois;
 
+use kvlogger::*;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -17,10 +18,42 @@ use sqlx::MySqlConnection;
 pub use crate::{
   config::Config,
   handlers::{app_store::AppStoreHandler, dns::DnsHandler, http::HttpHandler, ping::PingHandler, play_store::PlayStoreHandler, tcp::TcpHandler, tls::TlsHandler, udp::UdpHandler, whois::WhoisHandler},
-  model::Event,
+  inhibitor::Inhibitor,
+  model::{Check, Event, SiteOutage},
 };
 
 #[async_trait]
 pub trait Handler: Send {
+  type Spec: crate::model::specs::SpecMeta;
+
   async fn check(&self, conn: &mut MySqlConnection, config: Arc<Config>, site: &str) -> Result<Event>;
+  async fn run(&self, spec: &Self::Spec, site: &str) -> Result<Event>;
+}
+
+pub async fn handle_event(conn: &mut MySqlConnection, site: &str, event: &Event, check: &Check, inhibitor: Option<Inhibitor>) -> Result<()> {
+  let outage = SiteOutage::insert(&mut *conn, &check, &event).await.ok().flatten();
+
+  event.insert(&mut *conn, outage.as_ref(), site).await?;
+
+  if let Some(mut inhibitor) = inhibitor {
+    inhibitor.release(site, &check.uuid);
+  }
+
+  if event.status == 0 {
+    kvlog!(Debug, "passed", {
+      "kind" => check.kind,
+      "check" => check.uuid,
+      "name" => check.name,
+      "message" => event.message
+    });
+  } else {
+    kvlog!(Debug, "failed", {
+      "kind" => check.kind,
+      "check" => check.uuid,
+      "name" => check.name,
+      "message" => event.message
+    });
+  }
+
+  Ok(())
 }

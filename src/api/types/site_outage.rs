@@ -28,6 +28,7 @@ impl ApiMapper for db::SiteOutage {
     let check = db::Check::by_id(&mut *conn, self.check_id).await?;
     let spec = check.spec(&mut *conn).await?;
     let alerter = check.alerter(&mut *conn).await;
+    let sites = check.sites(&mut *conn).await?;
 
     let outage = api::SiteOutage {
       outage: self,
@@ -35,6 +36,7 @@ impl ApiMapper for db::SiteOutage {
         check,
         spec,
         alerter: alerter.map(|alerter| alerter.uuid),
+        sites: sites.into(),
       },
     };
 
@@ -54,6 +56,7 @@ impl ApiMapper for Vec<db::SiteOutage> {
             Ok(check) => match check.spec(&mut *conn).await {
               Ok(spec) => {
                 let alerter = check.alerter(&mut *conn).await;
+                let sites = check.sites(&mut *conn).await.unwrap_or_default();
 
                 let outage = api::SiteOutage {
                   outage,
@@ -61,6 +64,7 @@ impl ApiMapper for Vec<db::SiteOutage> {
                     check,
                     spec,
                     alerter: alerter.map(|alerter| alerter.uuid),
+                    sites: sites.into(),
                   },
                 };
 

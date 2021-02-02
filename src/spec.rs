@@ -51,8 +51,8 @@ impl TestConnection {
 
     sqlx::query(
       r#"
-        INSERT INTO checks (id, uuid, enabled, name, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold)
-        VALUES ( ?, ?, ?, ?, "tcp", "@controller", 10, 2, 2, 2 )
+        INSERT INTO checks (id, uuid, enabled, name, kind, `interval`, site_threshold, passing_threshold, failing_threshold)
+        VALUES ( ?, ?, ?, ?, "tcp", 10, 2, 2, 2 )
       "#,
     )
     .bind(id)
@@ -61,6 +61,8 @@ impl TestConnection {
     .bind(name)
     .execute(&**self)
     .await?;
+
+    sqlx::query(r#"INSERT INTO check_sites (check_id, slug) VALUES ( ?, "@controller" )"#).bind(id).execute(&**self).await?;
 
     sqlx::query(r#"INSERT INTO tcp_specs (check_id, host, port, timeout) VALUES ( ?, "0.0.0.0", 80, 10 )"#)
       .bind(id)

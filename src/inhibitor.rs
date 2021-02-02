@@ -14,6 +14,12 @@ pub enum Delay {
 #[derive(Debug, Clone)]
 pub struct Inhibitor(pub Arc<Mutex<HashMap<String, Delay>>>);
 
+impl Default for Inhibitor {
+  fn default() -> Inhibitor {
+    Inhibitor::new()
+  }
+}
+
 impl Deref for Inhibitor {
   type Target = Arc<Mutex<HashMap<String, Delay>>>;
 
@@ -33,29 +39,29 @@ impl Inhibitor {
     Inhibitor(Arc::new(Mutex::new(HashMap::new())))
   }
 
-  pub fn inhibit(&mut self, check: &str) {
+  pub fn inhibit(&mut self, site: &str, check: &str) {
     if let Ok(mut inhibitor) = self.lock() {
-      inhibitor.insert(check.to_owned(), Delay::Infinite);
+      inhibitor.insert(format!("{}-{}", site, check), Delay::Infinite);
     }
   }
 
-  pub fn inhibit_for(&mut self, check: &str, duration: Duration) {
+  pub fn inhibit_for(&mut self, site: &str, check: &str, duration: Duration) {
     if let Ok(mut inhibitor) = self.lock() {
       if let Some(instant) = Instant::now().checked_add(duration) {
-        inhibitor.insert(check.to_owned(), Delay::Until(instant));
+        inhibitor.insert(format!("{}-{}", site, check), Delay::Until(instant));
       }
     }
   }
 
-  pub fn release(&mut self, check: &str) {
+  pub fn release(&mut self, site: &str, check: &str) {
     if let Ok(mut inhibitor) = self.lock() {
-      inhibitor.remove(check);
+      inhibitor.remove(&format!("{}-{}", site, check));
     }
   }
 
-  pub fn inhibited(&self, check: &str) -> bool {
+  pub fn inhibited(&self, site: &str, check: &str) -> bool {
     match self.lock() {
-      Ok(inhibitor) => match inhibitor.get(check) {
+      Ok(inhibitor) => match inhibitor.get(&format!("{}-{}", site, check)) {
         Some(Delay::Infinite) => true,
         Some(Delay::Until(delay)) if &Instant::now() < delay => true,
         _ => false,

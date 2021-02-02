@@ -6,6 +6,7 @@ use rocket::{
   response::Response,
 };
 
+#[derive(Default)]
 pub struct ApiLogger;
 
 impl ApiLogger {

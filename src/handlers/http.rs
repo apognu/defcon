@@ -21,15 +21,15 @@ pub struct HttpHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for HttpHandler<'h> {
+  type Spec = Http;
+
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = Http::for_check(conn, self.check).await.context("no spec found for check {}")?;
 
-    self.run(spec, site).await
+    self.run(&spec, site).await
   }
-}
 
-impl<'h> HttpHandler<'h> {
-  async fn run(&self, spec: Http, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &Http, site: &str) -> Result<Event> {
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
     let headers: HeaderMap = spec
       .headers
@@ -51,16 +51,16 @@ impl<'h> HttpHandler<'h> {
 
         let code_ok = code == spec.code.unwrap_or(code);
         let content_ok = match spec.content {
-          Some(content) => body.contains(&content),
+          Some(ref content) => body.contains(content),
           None => true,
         };
         let digest_ok = match spec.digest {
-          Some(digest) => {
+          Some(ref digest) => {
             let mut hasher = Sha512::new();
             hasher.update(body);
             let result = hasher.finalize();
 
-            digest == format!("{:x}", result)
+            digest == &format!("{:x}", result)
           }
 
           None => true,
@@ -101,7 +101,7 @@ mod tests {
 
   use tokio_test::*;
 
-  use super::HttpHandler;
+  use super::{Handler, HttpHandler};
   use crate::model::{
     specs::{Http, HttpHeaders},
     status::*,
@@ -125,7 +125,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -147,7 +147,7 @@ mod tests {
       digest: Some("d06b93c883f8126a04589937a884032df031b05518eed9d433efb6447834df2596aebd500d69b8283e5702d988ed49655ae654c1683c7a4ae58bfa6b92f2b73a".to_string()),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -169,7 +169,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -191,7 +191,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -213,7 +213,7 @@ mod tests {
       digest: Some("INVALIDDIGEST".to_string()),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -235,7 +235,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();

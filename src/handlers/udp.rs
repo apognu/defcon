@@ -17,8 +17,15 @@ pub struct UdpHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for UdpHandler<'h> {
+  type Spec = Udp;
+
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = Udp::for_check(conn, self.check).await?;
+
+    self.run(&spec, site).await
+  }
+
+  async fn run(&self, spec: &Udp, site: &str) -> Result<Event> {
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
 
     let addr = format!("{}:{}", spec.host, spec.port);

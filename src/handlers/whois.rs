@@ -18,16 +18,16 @@ pub struct WhoisHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for WhoisHandler<'h> {
+  type Spec = Whois;
+
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = Whois::for_check(conn, self.check).await?;
 
-    self.run(spec, site).await
+    self.run(&spec, site).await
   }
-}
 
-impl<'h> WhoisHandler<'h> {
-  async fn run(&self, spec: Whois, site: &str) -> Result<Event> {
-    let attribute = spec.attribute.unwrap_or_else(|| "registry expiry date".to_string());
+  async fn run(&self, spec: &Whois, site: &str) -> Result<Event> {
+    let attribute = spec.attribute.clone().unwrap_or_else(|| "registry expiry date".to_string());
 
     let mut whois = WhoisClient::new();
     let info = whois.get_whois_kv(&spec.domain).map_err(|err| anyhow!(err)).context("could not get information")?;
@@ -62,7 +62,7 @@ mod tests {
 
   use tokio_test::*;
 
-  use super::WhoisHandler;
+  use super::{Handler, WhoisHandler};
   use crate::model::{specs::Whois, status::*, Check, Duration};
 
   #[tokio::test]
@@ -76,7 +76,7 @@ mod tests {
       window: Duration::try_from("90 days").unwrap(),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -94,7 +94,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -112,7 +112,7 @@ mod tests {
       window: Duration::try_from("100 years").unwrap(),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -130,7 +130,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_err!(&result);
   }
 
@@ -145,7 +145,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(spec, "@controller").await;
+    let result = handler.run(&spec, "@controller").await;
     assert_err!(&result);
   }
 }

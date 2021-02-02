@@ -3,24 +3,10 @@
 #![allow(clippy::unit_arg)]
 
 #[macro_use]
-extern crate serde;
-#[macro_use]
-extern crate rocket;
-#[macro_use]
 extern crate anyhow;
 
-mod alerters;
-mod api;
 mod cleaner;
-mod config;
-mod defcon;
-mod ext;
-mod handlers;
-mod inhibitor;
-mod model;
-
-#[cfg(test)]
-mod spec;
+mod handler;
 
 use std::{env, sync::Arc, time::Instant};
 
@@ -33,7 +19,12 @@ use sqlx::{
   Pool,
 };
 
-use crate::{api::middlewares::ApiLogger, config::Config, inhibitor::Inhibitor, model::migrations};
+use defcon::{
+  api::{self, middlewares::ApiLogger},
+  config::Config,
+  inhibitor::Inhibitor,
+  model::migrations,
+};
 
 pub fn log_error(err: &Error) {
   let desc = err.to_string();
@@ -128,7 +119,7 @@ async fn run_defcon(pool: &Pool<MySql>, config: Arc<Config>) {
       let inhibitor = inhibitor.clone();
 
       async move {
-        if let Err(err) = defcon::tick(pool, config, inhibitor).await {
+        if let Err(err) = handler::tick(pool, config, inhibitor).await {
           log_error(&err);
         }
       }

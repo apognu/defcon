@@ -1,5 +1,7 @@
+use std::sync::Arc;
+
 use anyhow::Result;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use sqlx::{FromRow, MySqlConnection};
 
 use crate::{
@@ -9,14 +11,14 @@ use crate::{
   },
   ext,
   handlers::*,
-  model::{specs, Alerter, CheckKind, Duration, Event, SiteOutage},
+  model::{specs, Alerter, CheckKind, Duration, Event, Site, SiteOutage},
 };
 
 #[derive(Debug, Default, FromRow, Serialize, Deserialize)]
 pub struct Check {
   #[serde(skip_serializing, skip_deserializing)]
   pub id: u64,
-  #[serde(skip_deserializing)]
+  #[serde(default)]
   pub uuid: String,
   #[serde(skip_serializing, skip_deserializing)]
   pub alerter_id: Option<u64>,
@@ -25,7 +27,6 @@ pub struct Check {
   pub enabled: bool,
   #[serde(skip_serializing, skip_deserializing)]
   pub kind: CheckKind,
-  pub sites: String,
   pub interval: Duration,
   pub site_threshold: u8,
   pub passing_threshold: u8,
@@ -38,7 +39,7 @@ impl Check {
   pub async fn all(conn: &mut MySqlConnection) -> Result<Vec<Check>> {
     let checks = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
       ",
     )
@@ -52,7 +53,7 @@ impl Check {
   pub async fn enabled(conn: &mut MySqlConnection) -> Result<Vec<Check>> {
     let checks = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE enabled = 1
       ",
@@ -67,7 +68,7 @@ impl Check {
   pub async fn by_id(conn: &mut MySqlConnection, id: u64) -> Result<Check> {
     let check = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE id = ?
       ",
@@ -80,10 +81,32 @@ impl Check {
     Ok(check)
   }
 
+  pub async fn by_ids(conn: &mut MySqlConnection, ids: &[u64]) -> Result<Vec<Check>> {
+    if ids.is_empty() {
+      return Ok(vec![]);
+    }
+
+    let ids = ids.iter().map(ToString::to_string).collect::<Vec<String>>().join(",");
+
+    let checks = sqlx::query_as::<_, Check>(&format!(
+      "
+        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        FROM checks
+        WHERE id IN ( {} )
+      ",
+      ids
+    ))
+    .fetch_all(&mut *conn)
+    .await
+    .map_err(server_error)?;
+
+    Ok(checks)
+  }
+
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Check> {
     let check = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE uuid = ?
       ",
@@ -100,26 +123,27 @@ impl Check {
   }
 
   pub async fn insert(self, conn: &mut MySqlConnection) -> Result<Check> {
-    sqlx::query(
-      "
-        INSERT INTO checks ( uuid, alerter_id, name, enabled, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold, silent )
-        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+    {
+      sqlx::query(
+        "
+        INSERT INTO checks ( uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent )
+        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
       ",
-    )
-    .bind(&self.uuid)
-    .bind(self.alerter_id)
-    .bind(self.name)
-    .bind(self.enabled)
-    .bind(self.kind)
-    .bind(&self.sites)
-    .bind(self.interval)
-    .bind(self.site_threshold)
-    .bind(self.passing_threshold)
-    .bind(self.failing_threshold)
-    .bind(self.silent)
-    .execute(&mut *conn)
-    .await
-    .map_err(server_error)?;
+      )
+      .bind(&self.uuid)
+      .bind(self.alerter_id)
+      .bind(self.name)
+      .bind(self.enabled)
+      .bind(self.kind)
+      .bind(self.interval)
+      .bind(self.site_threshold)
+      .bind(self.passing_threshold)
+      .bind(self.failing_threshold)
+      .bind(self.silent)
+      .execute(&mut *conn)
+      .await
+      .map_err(server_error)?;
+    }
 
     let check = Check::by_uuid(&mut *conn, &self.uuid).await?;
 
@@ -130,7 +154,7 @@ impl Check {
     sqlx::query(
       "
         UPDATE checks
-        SET alerter_id = ?, name = ?, enabled = ?, kind = ?, sites = ?, `interval` = ?, site_threshold = ?, passing_threshold = ?, failing_threshold = ?, silent = ?
+        SET alerter_id = ?, name = ?, enabled = ?, kind = ?, `interval` = ?, site_threshold = ?, passing_threshold = ?, failing_threshold = ?, silent = ?
         WHERE id = ?
       ",
     )
@@ -138,7 +162,6 @@ impl Check {
     .bind(self.name)
     .bind(self.enabled)
     .bind(self.kind)
-    .bind(&self.sites)
     .bind(self.interval)
     .bind(self.site_threshold)
     .bind(self.passing_threshold)
@@ -195,6 +218,33 @@ impl Check {
     }
   }
 
+  pub async fn stale(conn: &mut MySqlConnection, site: &str) -> Result<Vec<Check>> {
+    let checks = sqlx::query_as::<_, (u64, u64, Option<DateTime<Utc>>)>(
+      "
+        SELECT
+          MAX(checks.id) AS id,
+          MAX(checks.interval) AS `interval`,
+          MAX(events.created_at) AS event_date
+        FROM checks
+        INNER JOIN check_sites
+        ON check_sites.check_id = checks.id
+        LEFT JOIN events
+        ON events.check_id = checks.id AND events.site = check_sites.slug
+        WHERE check_sites.slug = ?
+        GROUP BY checks.id, check_sites.slug
+        HAVING event_date IS NULL OR event_date < TIMESTAMPADD(SECOND, -`interval`, NOW());
+      ",
+    )
+    .bind(site)
+    .fetch_all(&mut *conn)
+    .await?;
+
+    let ids: Vec<u64> = checks.iter().map(|check| check.0).collect();
+    let checks = Check::by_ids(conn, &ids).await?;
+
+    Ok(checks)
+  }
+
   pub async fn spec(&self, conn: &mut MySqlConnection) -> Result<api::Spec> {
     use api::Spec;
     use CheckKind::*;
@@ -212,35 +262,19 @@ impl Check {
     }
   }
 
-  pub fn handler(&self) -> Box<dyn Handler + Sync + '_> {
+  pub async fn run(&self, conn: &mut MySqlConnection, config: Arc<Config>, site: &str) -> Result<Event> {
     use CheckKind::*;
 
     match self.kind {
-      Ping => Box::new(PingHandler { check: &self }),
-      Dns => Box::new(DnsHandler { check: &self }),
-      Http => Box::new(HttpHandler { check: &self }),
-      Tcp => Box::new(TcpHandler { check: &self }),
-      Udp => Box::new(UdpHandler { check: &self }),
-      Tls => Box::new(TlsHandler { check: &self }),
-      PlayStore => Box::new(PlayStoreHandler { check: &self }),
-      AppStore => Box::new(AppStoreHandler { check: &self }),
-      Whois => Box::new(WhoisHandler { check: &self }),
-    }
-  }
-
-  pub async fn stale(&self, conn: &mut MySqlConnection, site: &str) -> bool {
-    let event = self.last_event(&mut *conn, site).await.unwrap_or(None);
-
-    match event {
-      None => true,
-
-      Some(event) => {
-        if let Some(date) = event.created_at {
-          Utc::now().signed_duration_since(date) >= chrono::Duration::from_std(*self.interval).unwrap()
-        } else {
-          false
-        }
-      }
+      Ping => PingHandler { check: &self }.check(conn, config, site).await,
+      Dns => DnsHandler { check: &self }.check(conn, config, site).await,
+      Http => HttpHandler { check: &self }.check(conn, config, site).await,
+      Tcp => TcpHandler { check: &self }.check(conn, config, site).await,
+      Udp => UdpHandler { check: &self }.check(conn, config, site).await,
+      Tls => TlsHandler { check: &self }.check(conn, config, site).await,
+      PlayStore => PlayStoreHandler { check: &self }.check(conn, config, site).await,
+      AppStore => AppStoreHandler { check: &self }.check(conn, config, site).await,
+      Whois => WhoisHandler { check: &self }.check(conn, config, site).await,
     }
   }
 
@@ -267,6 +301,21 @@ impl Check {
         crate::log_error(&err);
       }
     }
+  }
+
+  pub async fn sites(&self, conn: &mut MySqlConnection) -> Result<Vec<Site>> {
+    let sites = sqlx::query_as::<_, Site>("SELECT check_id, slug FROM check_sites WHERE check_id = ?")
+      .bind(self.id)
+      .fetch_all(&mut *conn)
+      .await?;
+
+    Ok(sites)
+  }
+
+  pub async fn update_sites(&self, conn: &mut MySqlConnection, sites: &[String]) -> Result<()> {
+    Site::insert(conn, self, sites).await?;
+
+    Ok(())
   }
 }
 
@@ -373,7 +422,6 @@ mod tests {
       uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
       name: "create()".to_string(),
       kind: CheckKind::Tcp,
-      sites: "@controller".to_string(),
       enabled: false,
       interval: Duration::from(10),
       site_threshold: 2,
@@ -410,7 +458,6 @@ mod tests {
       uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
       name: "new_update()".to_string(),
       kind: CheckKind::Tcp,
-      sites: "@controller".to_string(),
       enabled: false,
       interval: Duration::from(10),
       site_threshold: 2,
