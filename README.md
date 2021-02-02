@@ -11,6 +11,8 @@ Defcon requires the following infrastructure to be run:
  * A server to run it on (only tested on Linux as of now)
  * A MySQL database
 
+Until clearly stated, the database schema is subject to breaking changes, and migrations will not be used.
+
 ### Configuration
 
 Some of Defcon's default behavior can be customized through environment variables. You can find all supported configuration variables in the table below:

@@ -8,12 +8,13 @@
   "silent": false,
   "spec": {
     "kind": "http",
-    "code": null,
-    "content": "© ACME Inc. 2021",
-    "digest": "04436440f3615902838b18...b16c4d848d7408",
+    "url": "https://example.com/health",
     "headers": {
       "accept": "application/json"
     },
-    "url": "https://example.com/health"
+    "timeout": "10s",
+    "code": null,
+    "content": "© ACME Inc. 2021",
+    "digest": "04436440f3615902838b18...b16c4d848d7408"
   }
 }

@@ -94,7 +94,7 @@ impl Outage {
     Ok(outage)
   }
 
-  async fn for_check(conn: &mut MySqlConnection, check_id: u64) -> Result<OutageRef> {
+  async fn for_check(conn: &mut MySqlConnection, check: &Check) -> Result<OutageRef> {
     let outage = sqlx::query_as::<_, Outage>(
       "
         SELECT id, uuid, check_id, passing_strikes, failing_strikes, started_on, ended_on, comment
@@ -102,7 +102,7 @@ impl Outage {
         WHERE check_id = ? AND ended_on IS NULL
       ",
     )
-    .bind(check_id)
+    .bind(check.id)
     .fetch_one(&mut *conn)
     .await;
 
@@ -117,7 +117,7 @@ impl Outage {
   }
 
   pub async fn insert(conn: &mut MySqlConnection, check: &Check, event: &Event) -> Result<Option<Outage>> {
-    let outage = Outage::for_check(conn, event.check_id).await;
+    let outage = Outage::for_check(conn, check).await;
 
     let outage = match outage {
       Ok(OutageRef::Existing(outage)) => {
@@ -328,12 +328,14 @@ mod tests {
 
     pool.create_check(None, None, "by_uuid()", None).await?;
 
-    let outage = Outage::for_check(&mut *conn, 1).await?;
+    let check = Check { id: 1, ..Default::default() };
+
+    let outage = Outage::for_check(&mut *conn, &check).await?;
     assert!(matches!(outage, OutageRef::New));
 
     pool.create_unresolved_outage(None, None).await?;
 
-    let outage = Outage::for_check(&mut *conn, 1).await?;
+    let outage = Outage::for_check(&mut *conn, &check).await?;
     assert!(matches!(outage, OutageRef::Existing(Outage { id: 1, ref uuid, .. }) if uuid == "dd9a531a-1b0b-4a12-bc09-e5637f916261" ));
 
     pool.cleanup().await;
