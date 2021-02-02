@@ -6,7 +6,7 @@ use sqlx::MySqlConnection;
 
 use crate::{
   alerters::Webhook,
-  model::{status::*, Alerter, Check, Event, Outage},
+  model::{status::*, Alerter, Check, Event, SiteOutage},
 };
 
 const COLOR_UNKNOWN: &str = "#95a5a6";
@@ -18,19 +18,23 @@ pub struct SlackAlerter(pub Alerter);
 
 #[async_trait]
 impl Webhook for SlackAlerter {
-  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
+  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &SiteOutage) -> Result<()> {
     let slack = Slack::new(self.0.webhook.as_str()).map_err(|err| anyhow!(err.to_string()).context("could not create Slack alerter"))?;
-    let event = check.last_event(conn).await.context("could not find outage event")?.context("could not find outage event")?;
+
+    // TODO: add something like **any site**
+    let event = check.last_event(conn, "@controller").await.context("could not find outage event")?;
+
     let spec = check.spec(conn).await.context("could not retrieve check spec")?;
     let down = outage.ended_on.is_none();
 
-    let (level, color) = match check.last_event(conn).await {
-      Ok(Some(Event { status: OK, .. })) => ("(ok)", COLOR_OK),
-      Ok(Some(Event { status: CRITICAL, .. })) => ("(critical)", COLOR_CRITICAL),
-      Ok(Some(Event { status: WARNING, .. })) => ("(warning)", COLOR_WARNING),
+    let (level, color) = match event {
+      Some(Event { status: OK, .. }) => ("(ok)", COLOR_OK),
+      Some(Event { status: CRITICAL, .. }) => ("(critical)", COLOR_CRITICAL),
+      Some(Event { status: WARNING, .. }) => ("(warning)", COLOR_WARNING),
       _ => ("", COLOR_UNKNOWN),
     };
 
+    let event = event.unwrap();
     let meta = spec.meta();
     let fields = meta.fields().into_iter().map(|(k, v)| Field::new(k, v, Some(true)));
 

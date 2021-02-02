@@ -17,7 +17,7 @@ pub struct UdpHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for UdpHandler<'h> {
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = Udp::for_check(conn, self.check).await?;
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
 
@@ -41,6 +41,7 @@ impl<'h> Handler for UdpHandler<'h> {
 
     let event = Event {
       check_id: self.check.id,
+      site: site.to_string(),
       status,
       message,
       ..Default::default()

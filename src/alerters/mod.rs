@@ -6,11 +6,11 @@ use kvlogger::*;
 use sqlx::MySqlConnection;
 
 pub use self::{slack::SlackAlerter, webhook::WebhookAlerter};
-use crate::model::{Check, Outage};
+use crate::model::{Check, SiteOutage};
 
 #[async_trait]
 pub trait Webhook {
-  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()>;
+  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &SiteOutage) -> Result<()>;
 }
 
 #[derive(Debug, Deserialize)]
@@ -18,9 +18,15 @@ pub struct NoopAlerter;
 
 #[async_trait]
 impl Webhook for NoopAlerter {
-  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
+  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &SiteOutage) -> Result<()> {
     let down = outage.ended_on.is_none();
-    let event = check.last_event(conn).await.context("could not find outage event")?.context("could not find outage event")?;
+
+    // TODO: actual site and add something like **any site**
+    let event = check
+      .last_event(conn, "@controller")
+      .await
+      .context("could not find outage event")?
+      .context("could not find outage event")?;
 
     let message = if down { "outage started" } else { "outage resolved" };
 

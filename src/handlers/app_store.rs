@@ -22,15 +22,15 @@ struct AppStoreResponse {
 
 #[async_trait]
 impl<'h> Handler for AppStoreHandler<'h> {
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = AppStore::for_check(conn, self.check).await.context("no spec found for check {}")?;
 
-    self.run(spec).await
+    self.run(spec, site).await
   }
 }
 
 impl<'h> AppStoreHandler<'h> {
-  async fn run(&self, spec: AppStore) -> Result<Event> {
+  async fn run(&self, spec: AppStore, site: &str) -> Result<Event> {
     let url = format!("https://itunes.apple.com/lookup?bundleId={}", spec.bundle_id);
     let response = reqwest::get(&url).await.context("did not receive a valid response")?;
 
@@ -48,6 +48,7 @@ impl<'h> AppStoreHandler<'h> {
 
     let event = Event {
       check_id: self.check.id,
+      site: site.to_string(),
       status,
       message,
       ..Default::default()
@@ -73,7 +74,7 @@ mod tests {
       bundle_id: "com.apple.Maps".to_string(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -89,7 +90,7 @@ mod tests {
       bundle_id: "2e0a5188-7220-41bf-b684-82d6a54b868a".to_string(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();

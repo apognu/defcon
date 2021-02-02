@@ -28,15 +28,15 @@ pub struct DnsHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for DnsHandler<'h> {
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = Dns::for_check(conn, self.check).await.context("no spec found for check")?;
 
-    self.run(spec).await
+    self.run(spec, site).await
   }
 }
 
 impl<'h> DnsHandler<'h> {
-  async fn run(&self, spec: Dns) -> Result<Event> {
+  async fn run(&self, spec: Dns, site: &str) -> Result<Event> {
     let conn = UdpClientConnection::new("8.8.8.8:53".parse()?)?;
     let client = SyncClient::new(conn);
 
@@ -71,6 +71,7 @@ impl<'h> DnsHandler<'h> {
 
     let event = Event {
       check_id: self.check.id,
+      site: site.to_string(),
       status,
       message,
       ..Default::default()
@@ -102,7 +103,7 @@ mod tests {
       value: "a.iana-servers.net".to_string(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -120,7 +121,7 @@ mod tests {
       value: "aspmx.l.google.com".to_string(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -138,7 +139,7 @@ mod tests {
       value: "93.184.216.34".to_string(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -156,7 +157,7 @@ mod tests {
       value: "2606:2800:220:1:248:1893:25c8:1946".to_string(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -174,7 +175,7 @@ mod tests {
       value: "github.com".to_string(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -192,7 +193,7 @@ mod tests {
       value: "pki.goog".to_string(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -210,7 +211,7 @@ mod tests {
       value: "1.2.3.4".to_string(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -228,7 +229,7 @@ mod tests {
       value: "example.com".to_string(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_err!(&result);
   }
 }

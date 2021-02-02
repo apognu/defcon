@@ -4,6 +4,12 @@ version = "0.1.0"
 authors = ["Antoine POPINEAU <antoine@popineau.eu>"]
 edition = "2018"
 
+default-run = "defcon"
+
+[[bin]]
+name = "defcon-runner"
+path = "src/runner/main.rs"
+
 [dependencies]
 anyhow = "^1.0"
 async-trait = "0.1"

@@ -9,10 +9,8 @@ use crate::{
   },
   ext,
   handlers::*,
-  model::{specs, Alerter, CheckKind, Duration, Event},
+  model::{specs, Alerter, CheckKind, Duration, Event, SiteOutage},
 };
-
-use super::Outage;
 
 #[derive(Debug, Default, FromRow, Serialize, Deserialize)]
 pub struct Check {
@@ -27,7 +25,9 @@ pub struct Check {
   pub enabled: bool,
   #[serde(skip_serializing, skip_deserializing)]
   pub kind: CheckKind,
+  pub sites: String,
   pub interval: Duration,
+  pub site_threshold: u8,
   pub passing_threshold: u8,
   pub failing_threshold: u8,
   #[serde(default = "ext::to_false")]
@@ -38,7 +38,7 @@ impl Check {
   pub async fn all(conn: &mut MySqlConnection) -> Result<Vec<Check>> {
     let checks = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, alerter_id, name, enabled, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
       ",
     )
@@ -52,7 +52,7 @@ impl Check {
   pub async fn enabled(conn: &mut MySqlConnection) -> Result<Vec<Check>> {
     let checks = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, alerter_id, name, enabled, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE enabled = 1
       ",
@@ -67,7 +67,7 @@ impl Check {
   pub async fn by_id(conn: &mut MySqlConnection, id: u64) -> Result<Check> {
     let check = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, alerter_id, name, enabled, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE id = ?
       ",
@@ -83,7 +83,7 @@ impl Check {
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Check> {
     let check = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, alerter_id, name, enabled, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE uuid = ?
       ",
@@ -102,8 +102,8 @@ impl Check {
   pub async fn insert(self, conn: &mut MySqlConnection) -> Result<Check> {
     sqlx::query(
       "
-        INSERT INTO checks ( uuid, alerter_id, name, enabled, kind, `interval`, passing_threshold, failing_threshold, silent )
-        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ? )
+        INSERT INTO checks ( uuid, alerter_id, name, enabled, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold, silent )
+        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
       ",
     )
     .bind(&self.uuid)
@@ -111,7 +111,9 @@ impl Check {
     .bind(self.name)
     .bind(self.enabled)
     .bind(self.kind)
+    .bind(&self.sites)
     .bind(self.interval)
+    .bind(self.site_threshold)
     .bind(self.passing_threshold)
     .bind(self.failing_threshold)
     .bind(self.silent)
@@ -128,7 +130,7 @@ impl Check {
     sqlx::query(
       "
         UPDATE checks
-        SET alerter_id = ?, name = ?, enabled = ?, kind = ?, `interval` = ?, passing_threshold = ?, failing_threshold = ?, silent = ?
+        SET alerter_id = ?, name = ?, enabled = ?, kind = ?, sites = ?, `interval` = ?, site_threshold = ?, passing_threshold = ?, failing_threshold = ?, silent = ?
         WHERE id = ?
       ",
     )
@@ -136,7 +138,9 @@ impl Check {
     .bind(self.name)
     .bind(self.enabled)
     .bind(self.kind)
+    .bind(&self.sites)
     .bind(self.interval)
+    .bind(self.site_threshold)
     .bind(self.passing_threshold)
     .bind(self.failing_threshold)
     .bind(self.silent)
@@ -166,17 +170,18 @@ impl Check {
     Ok(())
   }
 
-  pub async fn last_event(&self, conn: &mut MySqlConnection) -> Result<Option<Event>> {
+  pub async fn last_event(&self, conn: &mut MySqlConnection, site: &str) -> Result<Option<Event>> {
     let event = sqlx::query_as::<_, Event>(
       "
-        SELECT id, check_id, outage_id, status, message, created_at
+        SELECT id, check_id, outage_id, site, status, message, created_at
         FROM events
-        WHERE check_id = ?
+        WHERE check_id = ? AND site = ?
         ORDER BY created_at DESC
         LIMIT 1
       ",
     )
     .bind(self.id)
+    .bind(site)
     .fetch_one(&mut *conn)
     .await;
 
@@ -223,8 +228,8 @@ impl Check {
     }
   }
 
-  pub async fn stale(&self, conn: &mut MySqlConnection) -> bool {
-    let event = self.last_event(&mut *conn).await.unwrap_or(None);
+  pub async fn stale(&self, conn: &mut MySqlConnection, site: &str) -> bool {
+    let event = self.last_event(&mut *conn, site).await.unwrap_or(None);
 
     match event {
       None => true,
@@ -249,7 +254,7 @@ impl Check {
   pub async fn alert(&self, conn: &mut MySqlConnection, outage: &str) {
     if !self.silent {
       let inner = async move || -> Result<()> {
-        let outage = Outage::by_uuid(&mut *conn, &outage).await?;
+        let outage = SiteOutage::by_uuid(&mut *conn, &outage).await?;
 
         if let Some(alerter) = self.alerter(&mut *conn).await {
           alerter.webhook().alert(&mut *conn, &self, &outage).await?;
@@ -358,7 +363,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn create() -> Result<()> {
+  async fn insert() -> Result<()> {
     let pool = spec::db_client().await?;
     let mut conn = pool.acquire().await?;
 
@@ -368,8 +373,10 @@ mod tests {
       uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
       name: "create()".to_string(),
       kind: CheckKind::Tcp,
+      sites: "@controller".to_string(),
       enabled: false,
       interval: Duration::from(10),
+      site_threshold: 2,
       passing_threshold: 10,
       failing_threshold: 10,
       silent: false,
@@ -403,8 +410,10 @@ mod tests {
       uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
       name: "new_update()".to_string(),
       kind: CheckKind::Tcp,
+      sites: "@controller".to_string(),
       enabled: false,
       interval: Duration::from(10),
+      site_threshold: 2,
       passing_threshold: 10,
       failing_threshold: 10,
       silent: false,
@@ -430,24 +439,17 @@ mod tests {
     let pool = spec::db_client().await?;
     let mut conn = pool.acquire().await?;
 
+    pool.create_check(None, None, "delete()", None).await?;
+
     let check = Check {
-      uuid: Uuid::new_v4().to_string(),
-      name: "Test check".to_string(),
-      kind: CheckKind::Tcp,
-      enabled: true,
-      interval: Duration::from(5),
-      passing_threshold: 1,
-      failing_threshold: 1,
-      silent: true,
+      uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
       ..Default::default()
     };
 
-    let check = check.insert(&mut *conn).await?;
     Check::delete(&mut *conn, &check.uuid).await?;
 
-    let deleted = Check::by_uuid(&mut *conn, &check.uuid).await?;
-
-    assert_eq!(deleted.enabled, false);
+    let deleted = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE id = 1"#).fetch_one(&*pool).await?;
+    assert_eq!(deleted.0, false);
 
     pool.cleanup().await;
 
@@ -480,14 +482,14 @@ mod tests {
       ..Default::default()
     };
 
-    event.insert(&mut *conn, None).await?;
+    event.insert(&mut *conn, None, "@controller").await?;
 
     tokio::time::delay_for(StdDuration::from_secs(2)).await;
 
     event.message = "Last event".to_string();
-    event.insert(&mut *conn, None).await?;
+    event.insert(&mut *conn, None, "@controller").await?;
 
-    let last = check.last_event(&mut *conn).await?;
+    let last = check.last_event(&mut *conn, "@controller").await?;
 
     assert_eq!(last.is_some(), true);
     assert_eq!(&last.unwrap().message, "Last event");

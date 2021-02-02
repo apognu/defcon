@@ -17,15 +17,15 @@ pub struct TlsHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for TlsHandler<'h> {
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = Tls::for_check(conn, self.check).await.context("no spec found")?;
 
-    self.run(spec).await
+    self.run(spec, site).await
   }
 }
 
 impl<'h> TlsHandler<'h> {
-  async fn run(&self, spec: Tls) -> Result<Event> {
+  async fn run(&self, spec: Tls, site: &str) -> Result<Event> {
     let expiration = SslExpiration::from_domain_name(&spec.domain).map_err(|err| anyhow!("{}", err)).context("could not fetch certificate")?;
 
     let (status, message) = if expiration.secs() > 0 && expiration.secs() as u64 > spec.window.as_secs() {
@@ -36,6 +36,7 @@ impl<'h> TlsHandler<'h> {
 
     let event = Event {
       check_id: self.check.id,
+      site: site.to_string(),
       status,
       message,
       ..Default::default()
@@ -64,7 +65,7 @@ mod tests {
       window: Duration::try_from("0 days").unwrap(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -81,7 +82,7 @@ mod tests {
       window: Duration::try_from("91 days").unwrap(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -99,7 +100,7 @@ mod tests {
       window: Duration::from(1),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -117,7 +118,7 @@ mod tests {
       window: Duration::from(1),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
 
     assert_err!(&result);
   }

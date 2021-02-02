@@ -51,8 +51,8 @@ impl TestConnection {
 
     sqlx::query(
       r#"
-        INSERT INTO checks (id, uuid, enabled, name, kind, `interval`, passing_threshold, failing_threshold)
-        VALUES ( ?, ?, ?, ?, "tcp", 10, 2, 2 )
+        INSERT INTO checks (id, uuid, enabled, name, kind, sites, `interval`, site_threshold, passing_threshold, failing_threshold)
+        VALUES ( ?, ?, ?, ?, "tcp", "@controller", 10, 2, 2, 2 )
       "#,
     )
     .bind(id)
@@ -96,8 +96,8 @@ impl TestConnection {
 
     sqlx::query(
       r#"
-        INSERT INTO outages (id, check_id, uuid, passing_strikes, failing_strikes, started_on, ended_on)
-        VALUES ( ?, 1, ?, 0, 2, "2021-01-02T00:00:00", NULL )
+        INSERT INTO site_outages (id, check_id, uuid, site, passing_strikes, failing_strikes, started_on, ended_on)
+        VALUES ( ?, 1, ?, "@controller", 0, 2, "2021-01-02T00:00:00", NULL )
       "#,
     )
     .bind(id)
@@ -107,8 +107,8 @@ impl TestConnection {
 
     sqlx::query(
       r#"
-        INSERT INTO events (id, check_id, outage_id, status, message, created_at)
-        VALUES ( ?, 1, ?, 1, "failure", NOW() )
+        INSERT INTO events (id, check_id, outage_id, site, status, message, created_at)
+        VALUES ( ?, 1, ?, "@controller", 1, "failure", NOW() )
       "#,
     )
     .bind(id)
@@ -132,8 +132,8 @@ impl TestConnection {
 
     sqlx::query(
       r#"
-        INSERT INTO outages (id, check_id, uuid, passing_strikes, failing_strikes, started_on, ended_on)
-        VALUES ( ?, 1, ?, 0, 2, "2021-01-15T00:00:00", "2021-01-16T23:59:59" )
+        INSERT INTO site_outages (id, check_id, uuid, site, passing_strikes, failing_strikes, started_on, ended_on)
+        VALUES ( ?, 1, ?, "@controller", 0, 2, "2021-01-15T00:00:00", "2021-01-16T23:59:59" )
       "#,
     )
     .bind(id)
@@ -143,8 +143,8 @@ impl TestConnection {
 
     sqlx::query(
       r#"
-        INSERT INTO events (id, check_id, outage_id, status, message, created_at)
-        VALUES ( ?, 1, ?, 1, "failure", NOW() )
+        INSERT INTO events (id, check_id, outage_id, site, status, message, created_at)
+        VALUES ( ?, 1, ?, "@controller", 1, "failure", NOW() )
       "#,
     )
     .bind(id)

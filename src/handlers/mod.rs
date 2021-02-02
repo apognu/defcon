@@ -22,5 +22,5 @@ pub use crate::{
 
 #[async_trait]
 pub trait Handler: Send {
-  async fn check(&self, conn: &mut MySqlConnection, config: Arc<Config>) -> Result<Event>;
+  async fn check(&self, conn: &mut MySqlConnection, config: Arc<Config>, site: &str) -> Result<Event>;
 }

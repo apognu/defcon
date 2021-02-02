@@ -2,7 +2,7 @@ use anyhow::Result;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use sqlx::{Done, FromRow, MySqlConnection};
 
-use crate::model::Outage;
+use crate::model::SiteOutage;
 
 pub mod status {
   pub const OK: u8 = 0;
@@ -18,16 +18,17 @@ pub struct Event {
   pub check_id: u64,
   #[serde(skip_serializing)]
   pub outage_id: Option<u64>,
+  pub site: String,
   pub status: u8,
   pub message: String,
   pub created_at: Option<DateTime<Utc>>,
 }
 
 impl Event {
-  pub async fn for_outage(conn: &mut MySqlConnection, outage: &Outage) -> Result<Vec<Event>> {
+  pub async fn for_outage(conn: &mut MySqlConnection, outage: &SiteOutage) -> Result<Vec<Event>> {
     let events = sqlx::query_as::<_, Event>(
       "
-        SELECT id, check_id, outage_id, status, message, created_at
+        SELECT id, check_id, outage_id, site, status, message, created_at
         FROM events
         WHERE outage_id = ?
       ",
@@ -39,15 +40,16 @@ impl Event {
     Ok(events)
   }
 
-  pub async fn insert(&self, conn: &mut MySqlConnection, outage: Option<&Outage>) -> Result<()> {
+  pub async fn insert(&self, conn: &mut MySqlConnection, outage: Option<&SiteOutage>, site: &str) -> Result<()> {
     sqlx::query(
       "
-        INSERT INTO events (check_id, outage_id, status, message, created_at)
-        VALUES ( ?, ?, ?, ?, NOW() )
+        INSERT INTO events (check_id, outage_id, site, status, message, created_at)
+        VALUES ( ?, ?, ?, ?, ?, NOW() )
       ",
     )
     .bind(self.check_id)
     .bind(outage.map(|outage| outage.id))
+    .bind(site)
     .bind(self.status)
     .bind(&self.message)
     .execute(conn)
@@ -60,7 +62,7 @@ impl Event {
     let result = sqlx::query(
       "
         DELETE events FROM events
-        LEFT JOIN outages
+        LEFT JOIN site_outages AS outages
         ON outages.id = events.outage_id
         WHERE ended_on IS NOT NULL AND ended_on < ?
       ",
@@ -80,7 +82,7 @@ mod tests {
   use uuid::Uuid;
 
   use super::Event;
-  use crate::{model::Outage, spec};
+  use crate::{model::SiteOutage, spec};
 
   #[tokio::test]
   async fn for_outage() -> Result<()> {
@@ -90,7 +92,7 @@ mod tests {
     pool.create_check(None, None, "for_outage()", None).await?;
     pool.create_unresolved_outage(None, None).await?;
 
-    let outage = Outage { id: 1, ..Default::default() };
+    let outage = SiteOutage { id: 1, ..Default::default() };
     let events = Event::for_outage(&mut *conn, &outage).await?;
 
     assert_eq!(events.len(), 1);
@@ -109,7 +111,7 @@ mod tests {
     pool.create_check(None, None, "insert()", None).await?;
     pool.create_unresolved_outage(None, None).await?;
 
-    let outage = Outage { id: 1, ..Default::default() };
+    let outage = SiteOutage { id: 1, ..Default::default() };
     let event = Event {
       check_id: 1,
       status: 1,
@@ -117,7 +119,7 @@ mod tests {
       ..Default::default()
     };
 
-    event.insert(&mut *conn, Some(&outage)).await?;
+    event.insert(&mut *conn, Some(&outage), "@controller").await?;
 
     let event = sqlx::query_as::<_, (u8, String)>(r#"SELECT status, message FROM events ORDER BY id DESC LIMIT 1"#)
       .fetch_one(&*pool)

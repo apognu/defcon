@@ -11,7 +11,7 @@ use crate::{
 #[get("/api/outages/<uuid>/events")]
 pub async fn list(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let outage = db::Outage::by_uuid(&mut conn, &uuid).await.apierr()?;
+  let outage = db::SiteOutage::by_uuid(&mut conn, &uuid).await.apierr()?;
   let events = db::Event::for_outage(&mut conn, &outage).await.apierr()?;
 
   Ok(Json(events))

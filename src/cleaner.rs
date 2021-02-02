@@ -7,7 +7,7 @@ use sqlx::{MySql, Pool};
 
 use crate::{
   config::Config,
-  model::{Event, Outage},
+  model::{Event, SiteOutage},
 };
 
 pub async fn tick(pool: Pool<MySql>, config: Arc<Config>) {
@@ -17,7 +17,7 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>) {
     let mut txn = pool.begin().await?;
 
     let events = Event::delete_before(&mut txn, &epoch).await?;
-    let outages = Outage::delete_before(&mut txn, &epoch).await?;
+    let outages = SiteOutage::delete_before(&mut txn, &epoch).await?;
 
     txn.commit().await.context("could not commit transaction")?;
 

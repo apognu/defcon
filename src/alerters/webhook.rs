@@ -4,7 +4,7 @@ use sqlx::MySqlConnection;
 use crate::{
   alerters::Webhook,
   api::types as api,
-  model::{status::*, Alerter, Check, Event, Outage},
+  model::{status::*, Alerter, Check, Event, SiteOutage},
 };
 
 #[derive(Debug, Serialize)]
@@ -13,15 +13,16 @@ struct Payload<'p> {
   pub level: Option<&'p str>,
   pub check: &'p Check,
   pub spec: api::Spec,
-  pub outage: &'p Outage,
+  pub outage: &'p SiteOutage,
 }
 
 pub struct WebhookAlerter(pub Alerter);
 
 #[async_trait]
 impl Webhook for WebhookAlerter {
-  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
-    let level = match check.last_event(&mut *conn).await {
+  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &SiteOutage) -> Result<()> {
+    // TODO: actual site and add something like **any site**
+    let level = match check.last_event(&mut *conn, "@controller").await {
       Ok(Some(Event { status: OK, .. })) => Some("ok"),
       Ok(Some(Event { status: CRITICAL, .. })) => Some("critical"),
       Ok(Some(Event { status: WARNING, .. })) => Some("warning"),

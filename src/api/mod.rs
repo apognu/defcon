@@ -3,7 +3,7 @@ mod checks;
 pub mod error;
 mod events;
 pub mod middlewares;
-mod outages;
+mod site_outages;
 pub mod types;
 
 use rocket::{response::status::Custom, Config, Rocket, Route};
@@ -26,10 +26,10 @@ pub fn routes() -> Vec<Route> {
     checks::update,
     checks::patch,
     checks::delete,
-    outages::list,
-    outages::list_between,
-    outages::get,
-    outages::comment,
+    site_outages::list,
+    site_outages::list_between,
+    site_outages::get,
+    // outages::comment,
     events::list,
     alerters::list,
     alerters::get,

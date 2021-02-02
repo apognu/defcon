@@ -12,7 +12,9 @@ CREATE TABLE checks (
   `name` VARCHAR(255) NOT NULL,
   `enabled` TINYINT(1) NOT NULL DEFAULT 1,
   `kind` VARCHAR(255) NOT NULL,
+  `sites` TEXT NOT NULL,
   `interval` BIGINT UNSIGNED NOT NULL,
+  `site_threshold` TINYINT UNSIGNED NOT NULL,
   `passing_threshold` TINYINT UNSIGNED NOT NULL,
   `failing_threshold` TINYINT UNSIGNED NOT NULL,
   `silent` TINYINT(1) NOT NULL DEFAULT 0,
@@ -108,12 +110,23 @@ CREATE TABLE whois_specs (
   CONSTRAINT fk_whois_check FOREIGN KEY (check_id) REFERENCES checks (id)
 );
 
+CREATE TABLE site_outages (
+  `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  `uuid` CHAR(37) NOT NULL UNIQUE,
+  `check_id` BIGINT UNSIGNED NOT NULL,
+  `site` VARCHAR(255) NOT NULL,
+  `passing_strikes` TINYINT UNSIGNED NOT NULL,
+  `failing_strikes` TINYINT UNSIGNED NOT NULL,
+  `started_on` DATETIME NOT NULL,
+  `ended_on` DATETIME NULL DEFAULT NULL,
+
+  CONSTRAINT fk_site_outage_check FOREIGN KEY (check_id) REFERENCES checks (id)
+);
+
 CREATE TABLE outages (
   `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   `uuid` CHAR(37) NOT NULL UNIQUE,
   `check_id` BIGINT UNSIGNED NOT NULL,
-  `passing_strikes` TINYINT UNSIGNED NOT NULL,
-  `failing_strikes` TINYINT UNSIGNED NOT NULL,
   `started_on` DATETIME NOT NULL,
   `ended_on` DATETIME NULL DEFAULT NULL,
   `comment` VARCHAR(255) NULL DEFAULT NULL,
@@ -125,10 +138,11 @@ CREATE TABLE events (
   `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   `check_id` BIGINT UNSIGNED NOT NULL,
   `outage_id` BIGINT UNSIGNED NULL,
+  `site` VARCHAR(255) NOT NULL,
   `status` TINYINT UNSIGNED NOT NULL,
   `message` TEXT NOT NULL,
   `created_at` DATETIME NOT NULL,
 
   CONSTRAINT fk_event_check FOREIGN KEY (check_id) REFERENCES checks (id),
-  CONSTRAINT fk_event_outage FOREIGN KEY (outage_id) REFERENCES outages (id)
+  CONSTRAINT fk_event_outage FOREIGN KEY (outage_id) REFERENCES site_outages (id)
 );

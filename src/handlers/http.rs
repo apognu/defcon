@@ -21,15 +21,15 @@ pub struct HttpHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for HttpHandler<'h> {
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = Http::for_check(conn, self.check).await.context("no spec found for check {}")?;
 
-    self.run(spec).await
+    self.run(spec, site).await
   }
 }
 
 impl<'h> HttpHandler<'h> {
-  async fn run(&self, spec: Http) -> Result<Event> {
+  async fn run(&self, spec: Http, site: &str) -> Result<Event> {
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
     let headers: HeaderMap = spec
       .headers
@@ -75,6 +75,7 @@ impl<'h> HttpHandler<'h> {
 
         Event {
           check_id: self.check.id,
+          site: site.to_string(),
           status,
           message,
           ..Default::default()
@@ -83,6 +84,7 @@ impl<'h> HttpHandler<'h> {
 
       Err(err) => Event {
         check_id: self.check.id,
+        site: site.to_string(),
         status: CRITICAL,
         message: err.to_string(),
         ..Default::default()
@@ -123,7 +125,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -145,7 +147,7 @@ mod tests {
       digest: Some("d06b93c883f8126a04589937a884032df031b05518eed9d433efb6447834df2596aebd500d69b8283e5702d988ed49655ae654c1683c7a4ae58bfa6b92f2b73a".to_string()),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -167,7 +169,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -189,7 +191,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -211,7 +213,7 @@ mod tests {
       digest: Some("INVALIDDIGEST".to_string()),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -233,7 +235,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();

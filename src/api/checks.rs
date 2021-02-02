@@ -92,6 +92,8 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
     alerter_id: alerter.map(|alerter| alerter.id),
     enabled: payload.check.enabled,
     interval: payload.check.interval,
+    sites: payload.check.sites,
+    site_threshold: payload.check.site_threshold,
     passing_threshold: payload.check.passing_threshold,
     failing_threshold: payload.check.failing_threshold,
     silent: payload.check.silent,
@@ -228,6 +230,8 @@ mod tests {
       "name": "create()",
       "enabled": false,
       "interval": "10s",
+      "sites": "@controller",
+      "site_threshold": 2,
       "passing_threshold": 1,
       "failing_threshold": 1,
       "spec": {
@@ -257,6 +261,8 @@ mod tests {
       "name": "create_invalid_kind()",
       "enabled": false,
       "interval": "10s",
+      "sites": "@controller",
+      "site_threshold": 2,
       "passing_threshold": 1,
       "failing_threshold": 1,
       "spec": {
@@ -281,6 +287,8 @@ mod tests {
       "name": "create_invalid_spec()",
       "enabled": false,
       "interval": "10s",
+      "sites": "@controller",
+      "site_threshold": 2,
       "passing_threshold": 1,
       "failing_threshold": 1,
       "spec": {
@@ -327,6 +335,8 @@ mod tests {
       "name": "new_update()",
       "enabled": false,
       "interval": "15s",
+      "sites": "@controller",
+      "site_threshold": 2,
       "passing_threshold": 1,
       "failing_threshold": 1,
       "spec": {

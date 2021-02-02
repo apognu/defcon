@@ -3,12 +3,12 @@ use std::{sync::Arc, time::Duration};
 use anyhow::{Context, Result};
 use kvlogger::*;
 use rand::Rng;
-use sqlx::{MySql, Pool};
+use sqlx::{MySql, MySqlConnection, Pool};
 
 use crate::{
   config::Config,
   inhibitor::Inhibitor,
-  model::{Check, Outage},
+  model::{Check, Event, SiteOutage},
 };
 
 pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, inhibitor: Inhibitor) -> Result<()> {
@@ -38,7 +38,7 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, inhibitor: Inhibitor) 
             let should_run = {
               let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
 
-              check.stale(&mut *conn).await
+              check.stale(&mut *conn, "@controller").await
             };
 
             if should_run {
@@ -70,7 +70,9 @@ async fn run(pool: Pool<MySql>, config: Arc<Config>, check: Check, mut inhibitor
     let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
     let handler = check.handler();
 
-    match handler.check(&mut *conn, config).await {
+    match handler.check(&mut *conn, config, "@controller").await {
+      Ok(event) => handle_event(&mut conn, &event, &check, inhibitor).await?,
+
       Err(err) => {
         inhibitor.inhibit_for(&check.uuid, *check.interval);
 
@@ -80,33 +82,35 @@ async fn run(pool: Pool<MySql>, config: Arc<Config>, check: Check, mut inhibitor
           "name" => check.name
         });
       }
-
-      Ok(event) => {
-        let outage = Outage::insert(&mut conn, &check, &event).await.ok().flatten();
-
-        event.insert(&mut conn, outage.as_ref()).await?;
-        inhibitor.release(&check.uuid);
-
-        if event.status == 0 {
-          kvlog!(Debug, "passed", {
-            "kind" => check.kind,
-            "check" => check.uuid,
-            "name" => check.name,
-            "message" => event.message
-          });
-        } else {
-          kvlog!(Debug, "failed", {
-            "kind" => check.kind,
-            "check" => check.uuid,
-            "name" => check.name,
-            "message" => event.message
-          });
-        }
-      }
     }
 
     Ok(())
   };
 
   inner().await
+}
+
+async fn handle_event(conn: &mut MySqlConnection, event: &Event, check: &Check, mut inhibitor: Inhibitor) -> Result<()> {
+  let outage = SiteOutage::insert(&mut *conn, &check, &event).await.ok().flatten();
+
+  event.insert(&mut *conn, outage.as_ref(), "@controller").await?;
+  inhibitor.release(&check.uuid);
+
+  if event.status == 0 {
+    kvlog!(Debug, "passed", {
+      "kind" => check.kind,
+      "check" => check.uuid,
+      "name" => check.name,
+      "message" => event.message
+    });
+  } else {
+    kvlog!(Debug, "failed", {
+      "kind" => check.kind,
+      "check" => check.uuid,
+      "name" => check.name,
+      "message" => event.message
+    });
+  }
+
+  Ok(())
 }

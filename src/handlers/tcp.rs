@@ -17,15 +17,15 @@ pub struct TcpHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for TcpHandler<'h> {
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = Tcp::for_check(conn, self.check).await.context("no spec found")?;
 
-    self.run(spec).await
+    self.run(spec, site).await
   }
 }
 
 impl<'h> TcpHandler<'h> {
-  async fn run(&self, spec: Tcp) -> Result<Event> {
+  async fn run(&self, spec: Tcp, site: &str) -> Result<Event> {
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
 
     let addr = format!("{}:{}", spec.host, spec.port);
@@ -38,6 +38,7 @@ impl<'h> TcpHandler<'h> {
 
     let event = Event {
       check_id: self.check.id,
+      site: site.to_string(),
       status,
       message,
       ..Default::default()
@@ -65,7 +66,7 @@ mod tests {
       timeout: None,
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
 
     assert_ok!(&result);
 
@@ -85,7 +86,7 @@ mod tests {
       timeout: Some(Duration::from(1)),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
 
     assert_ok!(&result);
 
@@ -106,7 +107,7 @@ mod tests {
       timeout: None,
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
 
     assert_err!(&result);
   }

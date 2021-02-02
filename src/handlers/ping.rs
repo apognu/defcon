@@ -18,7 +18,7 @@ pub struct PingHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for PingHandler<'h> {
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     #[cfg(target_os = "linux")]
     if let Ok(caps) = Capabilities::from_current_proc() {
       if !caps.check(Capability::CAP_NET_RAW, Flag::Effective) {
@@ -40,6 +40,7 @@ impl<'h> Handler for PingHandler<'h> {
 
     let event = Event {
       check_id: self.check.id,
+      site: site.to_string(),
       status,
       message: format!("{}: {}", spec.host, message),
       ..Default::default()

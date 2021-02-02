@@ -18,15 +18,15 @@ pub struct WhoisHandler<'h> {
 
 #[async_trait]
 impl<'h> Handler for WhoisHandler<'h> {
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
     let spec = Whois::for_check(conn, self.check).await?;
 
-    self.run(spec).await
+    self.run(spec, site).await
   }
 }
 
 impl<'h> WhoisHandler<'h> {
-  async fn run(&self, spec: Whois) -> Result<Event> {
+  async fn run(&self, spec: Whois, site: &str) -> Result<Event> {
     let attribute = spec.attribute.unwrap_or_else(|| "registry expiry date".to_string());
 
     let mut whois = WhoisClient::new();
@@ -46,6 +46,7 @@ impl<'h> WhoisHandler<'h> {
 
     let event = Event {
       check_id: self.check.id,
+      site: site.to_string(),
       status,
       message,
       ..Default::default()
@@ -75,7 +76,7 @@ mod tests {
       window: Duration::try_from("90 days").unwrap(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -93,7 +94,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -111,7 +112,7 @@ mod tests {
       window: Duration::try_from("100 years").unwrap(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -129,7 +130,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_err!(&result);
   }
 
@@ -144,7 +145,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(spec).await;
+    let result = handler.run(spec, "@controller").await;
     assert_err!(&result);
   }
 }

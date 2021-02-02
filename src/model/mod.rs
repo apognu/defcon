@@ -7,7 +7,7 @@ mod check;
 mod check_kind;
 mod duration;
 mod event;
-mod outage;
+mod site_outage;
 
 pub mod specs;
 
@@ -19,5 +19,5 @@ pub use self::{
   check_kind::CheckKind,
   duration::Duration,
   event::{status, Event},
-  outage::Outage,
+  site_outage::SiteOutage,
 };

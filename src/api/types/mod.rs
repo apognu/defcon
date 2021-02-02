@@ -5,14 +5,14 @@ mod check_kind;
 mod date;
 mod dns_record;
 mod duration;
-mod outage;
 mod query;
+mod site_outage;
 mod spec;
 
 use anyhow::Result;
 use sqlx::{MySql, Pool};
 
-pub use self::{binary::*, check::*, date::*, duration::*, outage::*, query::*, spec::*};
+pub use self::{binary::*, check::*, date::*, duration::*, query::*, site_outage::*, spec::*};
 
 #[async_trait]
 pub trait ApiMapper {
