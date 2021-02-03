@@ -90,7 +90,7 @@ mod tests {
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "for_outage()", None).await?;
-    pool.create_unresolved_outage(None, None).await?;
+    pool.create_unresolved_site_outage(None, None).await?;
 
     let outage = SiteOutage { id: 1, ..Default::default() };
     let events = Event::for_outage(&mut *conn, &outage).await?;
@@ -109,7 +109,7 @@ mod tests {
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "insert()", None).await?;
-    pool.create_unresolved_outage(None, None).await?;
+    pool.create_unresolved_site_outage(None, None).await?;
 
     let outage = SiteOutage { id: 1, ..Default::default() };
     let event = Event {
@@ -139,8 +139,8 @@ mod tests {
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "delete_before()", None).await?;
-    pool.create_unresolved_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
-    pool.create_resolved_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
     Event::delete_before(&mut *conn, &NaiveDate::from_ymd(2021, 2, 1).and_hms(0, 0, 0)).await?;
 

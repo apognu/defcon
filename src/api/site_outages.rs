@@ -36,17 +36,6 @@ pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json
   Ok(Json(outage))
 }
 
-// #[put("/api/sites/outages/<uuid>/comment", data = "<payload>")]
-// pub async fn comment(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<api::OutageComment>, JsonError<'_>>) -> ApiResponse<()> {
-//   let payload = check_json(payload).apierr()?;
-//   let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-//   let outage = SiteOutage::by_uuid(&mut conn, &uuid).await.apierr()?;
-
-//   outage.comment(&mut conn, &payload.comment).await.apierr()?;
-
-//   Ok(())
-// }
-
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
@@ -60,8 +49,8 @@ mod tests {
     let (pool, client) = spec::api_client().await?;
 
     pool.create_check(None, None, "list()", None).await?;
-    pool.create_unresolved_outage(Some(1), None).await?;
-    pool.create_resolved_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_unresolved_site_outage(Some(1), None).await?;
+    pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
     let response = client.get("/api/sites/outages").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
@@ -78,8 +67,8 @@ mod tests {
     let (pool, client) = spec::api_client().await?;
 
     pool.create_check(None, None, "list_between()", None).await?;
-    pool.create_unresolved_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
-    pool.create_resolved_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
     let response = client.get("/api/sites/outages?start=2020-12-31T00:00:00&end=2021-12-31T00:00:00").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
@@ -97,7 +86,7 @@ mod tests {
     let (pool, client) = spec::api_client().await?;
 
     pool.create_check(None, None, "get()", None).await?;
-    pool.create_unresolved_outage(Some(1), None).await?;
+    pool.create_unresolved_site_outage(Some(1), None).await?;
 
     let response = client.get("/api/sites/outages/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
@@ -115,7 +104,7 @@ mod tests {
     let (pool, client) = spec::api_client().await?;
 
     pool.create_check(None, None, "get_not_found()", None).await?;
-    pool.create_unresolved_outage(Some(1), None).await?;
+    pool.create_unresolved_site_outage(Some(1), None).await?;
 
     let response = client.get("/api/sites/outages/nonexistant").dispatch().await;
     assert_eq!(response.status(), Status::NotFound);
@@ -124,34 +113,4 @@ mod tests {
 
     Ok(())
   }
-
-  // #[tokio::test]
-  // async fn comment() -> Result<()> {
-  //   let (pool, client) = spec::api_client().await?;
-
-  //   pool.create_check(None, None, "comment()", None).await?;
-  //   pool.create_unresolved_outage(Some(1), None).await?;
-
-  //   let payload = json!({
-  //     "comment": "lorem ipsum"
-  //   });
-
-  //   let response = client
-  //     .put("/api/sites/outages/dd9a531a-1b0b-4a12-bc09-e5637f916261/comment")
-  //     .body(payload.to_string().as_bytes())
-  //     .dispatch()
-  //     .await;
-
-  //   assert_eq!(response.status(), Status::Ok);
-
-  //   let outage = sqlx::query_as::<_, (String,)>(r#"SELECT comment FROM outages WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
-  //     .fetch_one(&*pool)
-  //     .await?;
-
-  //   assert_eq!(&outage.0, "lorem ipsum");
-
-  //   pool.cleanup().await;
-
-  //   Ok(())
-  // }
 }

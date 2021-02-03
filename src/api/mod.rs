@@ -3,6 +3,7 @@ mod checks;
 pub mod error;
 mod events;
 pub mod middlewares;
+mod outages;
 mod runner;
 mod site_outages;
 pub mod types;
@@ -32,7 +33,7 @@ pub fn routes() -> Vec<Route> {
     site_outages::list,
     site_outages::list_between,
     site_outages::get,
-    // outages::comment,
+    outages::comment,
     events::list,
     alerters::list,
     alerters::get,

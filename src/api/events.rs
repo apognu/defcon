@@ -29,7 +29,7 @@ mod tests {
     let (pool, client) = spec::api_client().await?;
 
     pool.create_check(None, None, "list()", None).await?;
-    pool.create_unresolved_outage(None, None).await?;
+    pool.create_unresolved_site_outage(None, None).await?;
 
     let response = client.get("/api/outages/dd9a531a-1b0b-4a12-bc09-e5637f916261/events").dispatch().await;
     assert_eq!(response.status(), Status::Ok);

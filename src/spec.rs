@@ -85,7 +85,7 @@ impl TestConnection {
     Ok(())
   }
 
-  pub async fn create_unresolved_outage(&self, id: Option<u64>, uuid: Option<String>) -> Result<()> {
+  pub async fn create_unresolved_site_outage(&self, id: Option<u64>, uuid: Option<String>) -> Result<()> {
     let id = match id {
       Some(id) => id,
       None => 1,
@@ -121,7 +121,7 @@ impl TestConnection {
     Ok(())
   }
 
-  pub async fn create_resolved_outage(&self, id: Option<u64>, uuid: Option<String>) -> Result<()> {
+  pub async fn create_resolved_site_outage(&self, id: Option<u64>, uuid: Option<String>) -> Result<()> {
     let id = match id {
       Some(id) => id,
       None => 1,
@@ -151,6 +151,31 @@ impl TestConnection {
     )
     .bind(id)
     .bind(id)
+    .execute(&**self)
+    .await?;
+
+    Ok(())
+  }
+
+  pub async fn create_resolved_outage(&self, id: Option<u64>, uuid: Option<String>) -> Result<()> {
+    let id = match id {
+      Some(id) => id,
+      None => 1,
+    };
+
+    let uuid = match uuid {
+      Some(uuid) => uuid,
+      None => "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
+    };
+
+    sqlx::query(
+      r#"
+        INSERT INTO outages (id, check_id, uuid, started_on, ended_on, comment)
+        VALUES ( ?, 1, ?, NOW(), NOW(), NULL )
+      "#,
+    )
+    .bind(id)
+    .bind(&uuid)
     .execute(&**self)
     .await?;
 

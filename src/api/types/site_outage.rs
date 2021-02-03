@@ -14,10 +14,10 @@ pub struct SiteOutage {
   pub check: api::Check,
 }
 
-// #[derive(Debug, Deserialize)]
-// pub struct OutageComment {
-//   pub comment: String,
-// }
+#[derive(Debug, Deserialize)]
+pub struct OutageComment {
+  pub comment: String,
+}
 
 #[async_trait]
 impl ApiMapper for db::SiteOutage {

@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
   api::error::{server_error, AppError},
-  model::{Check, Event},
+  model::{Check, Event, Outage},
 };
 
 enum OutageRef {
@@ -94,15 +94,16 @@ impl SiteOutage {
     Ok(outage)
   }
 
-  async fn for_check(conn: &mut MySqlConnection, check: &Check) -> Result<OutageRef> {
+  async fn for_check(conn: &mut MySqlConnection, check: &Check, site: &str) -> Result<OutageRef> {
     let outage = sqlx::query_as::<_, SiteOutage>(
       "
         SELECT id, uuid, check_id, site, passing_strikes, failing_strikes, started_on, ended_on
         FROM site_outages
-        WHERE check_id = ? AND ended_on IS NULL
+        WHERE check_id = ? AND site = ? AND ended_on IS NULL
       ",
     )
     .bind(check.id)
+    .bind(site)
     .fetch_one(&mut *conn)
     .await;
 
@@ -117,7 +118,7 @@ impl SiteOutage {
   }
 
   pub async fn insert(conn: &mut MySqlConnection, check: &Check, event: &Event) -> Result<Option<SiteOutage>> {
-    let outage = SiteOutage::for_check(conn, check).await;
+    let outage = SiteOutage::for_check(conn, check, &event.site).await;
 
     let outage = match outage {
       Ok(OutageRef::Existing(outage)) => {
@@ -141,13 +142,14 @@ impl SiteOutage {
               "passed" => format!("0/{}", check.passing_threshold)
             });
 
-            // TODO: Create confirmed outage
-            check.alert(&mut *conn, &outage.uuid).await;
+            if SiteOutage::count(conn, &check).await? >= check.site_threshold as i64 {
+              Outage::insert(conn, check).await?;
+            }
           }
         }
 
         if outage.passing_strikes < check.passing_threshold && event.status == 0 {
-          let (ended_on, alert) = if outage.passing_strikes + 1 == check.passing_threshold {
+          let (ended_on, resolved) = if outage.passing_strikes + 1 == check.passing_threshold {
             kvlog!(Info, "outage resolved", {
               "kind" => check.kind,
               "check" => check.uuid,
@@ -172,9 +174,8 @@ impl SiteOutage {
           .execute(&mut *conn)
           .await?;
 
-          if alert {
-            // TODO: Create confirmed outage
-            check.alert(&mut *conn, &outage.uuid).await;
+          if resolved && SiteOutage::count(conn, &check).await? < check.site_threshold as i64 {
+            Outage::resolve(conn, check).await?;
           }
         }
 
@@ -207,8 +208,9 @@ impl SiteOutage {
               "passed" => format!("0/{}", check.passing_threshold)
             });
 
-            // TODO: Create confirmed outage
-            check.alert(&mut *conn, &outage.uuid).await;
+            if SiteOutage::count(conn, &check).await? >= check.site_threshold as i64 {
+              Outage::insert(conn, check).await?;
+            }
           }
 
           Some(outage)
@@ -227,26 +229,6 @@ impl SiteOutage {
     Ok(outage)
   }
 
-  // pub async fn comment(&self, conn: &mut MySqlConnection, comment: &str) -> Result<()> {
-  //   sqlx::query(
-  //     "
-  //       UPDATE outages
-  //       SET comment = ?
-  //       WHERE uuid = ?
-  //     ",
-  //   )
-  //   .bind(comment)
-  //   .bind(&self.uuid)
-  //   .execute(conn)
-  //   .await
-  //   .map_err(|err| match err {
-  //     sqlx::Error::RowNotFound => AppError::ResourceNotFound(anyhow!(err).context("unknown check UUID")),
-  //     err => server_error(err),
-  //   })?;
-
-  //   Ok(())
-  // }
-
   pub async fn delete_before(conn: &mut MySqlConnection, epoch: &NaiveDateTime) -> Result<u64> {
     let result = sqlx::query(
       "
@@ -259,6 +241,28 @@ impl SiteOutage {
     .await?;
 
     Ok(result.rows_affected())
+  }
+
+  pub async fn count(conn: &mut MySqlConnection, check: &Check) -> Result<i64> {
+    let count = sqlx::query_as::<_, (i64,)>(
+      "
+        SELECT COUNT(site_outages.id)
+        FROM site_outages
+        INNER JOIN checks
+        ON checks.id = site_outages.check_id
+        WHERE
+          checks.id = ? AND
+          site_outages.failing_strikes >= checks.failing_threshold AND
+          site_outages.passing_strikes < checks.passing_threshold
+      ",
+    )
+    .bind(check.id)
+    .fetch_one(&mut *conn)
+    .await?;
+
+    println!("Count for {} is {}", check.id, count.0);
+
+    Ok(count.0)
   }
 }
 
@@ -281,8 +285,8 @@ mod tests {
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "between()", None).await?;
-    pool.create_unresolved_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
-    pool.create_resolved_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
     let start = NaiveDate::from_ymd(2021, 1, 1).and_hms(0, 0, 0);
     let end = NaiveDate::from_ymd(2021, 2, 1).and_hms(0, 0, 0);
@@ -313,7 +317,7 @@ mod tests {
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "by_uuid()", None).await?;
-    pool.create_unresolved_outage(None, None).await?;
+    pool.create_unresolved_site_outage(None, None).await?;
 
     let outage = SiteOutage::by_uuid(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
 
@@ -334,12 +338,12 @@ mod tests {
 
     let check = Check { id: 1, ..Default::default() };
 
-    let outage = SiteOutage::for_check(&mut *conn, &check).await?;
+    let outage = SiteOutage::for_check(&mut *conn, &check, "@controller").await?;
     assert!(matches!(outage, OutageRef::New));
 
-    pool.create_unresolved_outage(None, None).await?;
+    pool.create_unresolved_site_outage(None, None).await?;
 
-    let outage = SiteOutage::for_check(&mut *conn, &check).await?;
+    let outage = SiteOutage::for_check(&mut *conn, &check, "@controller").await?;
     assert!(matches!(outage, OutageRef::Existing(SiteOutage { id: 1, ref uuid, .. }) if uuid == "dd9a531a-1b0b-4a12-bc09-e5637f916261" ));
 
     pool.cleanup().await;
@@ -412,8 +416,8 @@ mod tests {
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "between()", None).await?;
-    pool.create_unresolved_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
-    pool.create_resolved_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
     let outages = SiteOutage::current(&mut *conn).await?;
 
@@ -431,8 +435,8 @@ mod tests {
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "delete_before()", None).await?;
-    pool.create_unresolved_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
-    pool.create_resolved_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
+    pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
     let epoch = NaiveDate::from_ymd(2021, 2, 1).and_hms(0, 0, 0);
     Event::delete_before(&mut *conn, &epoch).await?;

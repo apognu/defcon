@@ -135,8 +135,8 @@ CREATE TABLE outages (
   `uuid` CHAR(37) NOT NULL UNIQUE,
   `check_id` BIGINT UNSIGNED NOT NULL,
   `started_on` DATETIME NOT NULL,
-  `ended_on` DATETIME NULL DEFAULT NULL,
-  `comment` VARCHAR(255) NULL DEFAULT NULL,
+  `ended_on` DATETIME,
+  `comment` VARCHAR(255),
 
   CONSTRAINT fk_outage_check FOREIGN KEY (check_id) REFERENCES checks (id)
 );

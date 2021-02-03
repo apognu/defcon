@@ -20,33 +20,33 @@ async fn main() -> Result<()> {
 
   loop {
     let client = reqwest::Client::new();
-    let checks: Vec<api::Check> = client.get(&format!("{}/stale?site={}", BASE, SITE)).send().await?.json().await?;
 
-    for stale in checks {
-      if inhibitor.inhibited(SITE, &stale.check.uuid) {
-        continue;
-      }
+    if let Ok(response) = client.get(&format!("{}/stale?site={}", BASE, SITE)).send().await {
+      if let Ok(checks) = response.json::<Vec<api::RunnerCheck>>().await {
+        for stale in checks {
+          if inhibitor.inhibited(SITE, &stale.uuid) {
+            continue;
+          }
 
-      tokio::spawn({
-        let inhibitor = inhibitor.clone();
+          tokio::spawn({
+            let inhibitor = inhibitor.clone();
 
-        async move {
-          let _ = run_check(inhibitor, stale).await;
+            async move {
+              let _ = run_check(inhibitor, stale).await;
+            }
+          });
         }
-      });
+      }
     }
 
     tokio::time::delay_for(Duration::from_secs(1)).await;
   }
 }
 
-async fn run_check(mut inhibitor: Inhibitor, check: api::Check) -> Result<()> {
-  inhibitor.inhibit(SITE, &check.check.uuid);
+async fn run_check(mut inhibitor: Inhibitor, check: api::RunnerCheck) -> Result<()> {
+  inhibitor.inhibit(SITE, &check.uuid);
 
-  let dummy = Check {
-    id: check.check.id,
-    ..Default::default()
-  };
+  let dummy = Check { id: check.id, ..Default::default() };
 
   let result = match check.spec {
     Spec::Ping(ref spec) => PingHandler { check: &dummy }.run(spec, SITE).await,
@@ -65,21 +65,21 @@ async fn run_check(mut inhibitor: Inhibitor, check: api::Check) -> Result<()> {
       if event.status == 0 {
         kvlog!(Debug, "passed", {
           "kind" => check.spec.kind(),
-          "check" => check.check.uuid,
-          "name" => check.check.name,
+          "check" => check.uuid,
+          "name" => check.name,
           "message" => event.message
         });
       } else {
         kvlog!(Debug, "failed", {
           "kind" => check.spec.kind(),
           "check" => check.spec.kind(),
-          "name" => check.check.name,
+          "name" => check.name,
           "message" => event.message
         });
       }
 
       let report = api::ReportEvent {
-        check: check.check.uuid.clone(),
+        check: check.uuid.clone(),
         status: event.status,
         message: event.message,
       };
@@ -87,10 +87,10 @@ async fn run_check(mut inhibitor: Inhibitor, check: api::Check) -> Result<()> {
       let client = reqwest::Client::new();
       let _ = client.post(&format!("{}/report?site={}", BASE, SITE)).json(&report).send().await;
 
-      inhibitor.release(SITE, &check.check.uuid);
+      inhibitor.release(SITE, &check.uuid);
     }
 
-    Err(_) => inhibitor.inhibit_for(SITE, &check.check.uuid, *check.check.interval),
+    Err(_) => inhibitor.inhibit_for(SITE, &check.uuid, *check.interval),
   }
 
   Ok(())

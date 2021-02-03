@@ -9,6 +9,27 @@ use crate::{
 };
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct RunnerCheck {
+  pub id: u64,
+  pub uuid: String,
+  pub name: String,
+  pub interval: db::Duration,
+  pub spec: api::Spec,
+}
+
+impl From<Check> for RunnerCheck {
+  fn from(check: Check) -> RunnerCheck {
+    RunnerCheck {
+      id: check.check.id,
+      uuid: check.check.uuid,
+      name: check.check.name,
+      interval: check.check.interval,
+      spec: check.spec,
+    }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Check {
   #[serde(flatten)]
   pub check: db::Check,

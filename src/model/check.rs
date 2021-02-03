@@ -18,7 +18,7 @@ use crate::{
 pub struct Check {
   #[serde(skip_serializing, skip_deserializing)]
   pub id: u64,
-  #[serde(default)]
+  #[serde(skip_deserializing)]
   pub uuid: String,
   #[serde(skip_serializing, skip_deserializing)]
   pub alerter_id: Option<u64>,

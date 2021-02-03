@@ -14,9 +14,9 @@ use crate::{
 };
 
 #[get("/api/checks/stale?<site>")]
-pub async fn list_stale(pool: State<'_, Pool<MySql>>, site: String) -> ApiResponse<Json<Vec<api::Check>>> {
+pub async fn list_stale(pool: State<'_, Pool<MySql>>, site: String) -> ApiResponse<Json<Vec<api::RunnerCheck>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let checks = Check::stale(&mut conn, &site).await.apierr()?.map(&*pool).await.apierr()?;
+  let checks: Vec<api::RunnerCheck> = Check::stale(&mut conn, &site).await.apierr()?.map(&*pool).await.apierr()?.into_iter().map(Into::into).collect();
 
   Ok(Json(checks))
 }
@@ -30,6 +30,7 @@ pub async fn report(pool: State<'_, Pool<MySql>>, site: String, payload: Json<ap
 
   let event = Event {
     check_id: check.id,
+    site: site.clone(),
     status: report.status,
     message: report.message,
     ..Default::default()
