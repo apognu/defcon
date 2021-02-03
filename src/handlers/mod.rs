@@ -19,7 +19,7 @@ pub use crate::{
   config::Config,
   handlers::{app_store::AppStoreHandler, dns::DnsHandler, http::HttpHandler, ping::PingHandler, play_store::PlayStoreHandler, tcp::TcpHandler, tls::TlsHandler, udp::UdpHandler, whois::WhoisHandler},
   inhibitor::Inhibitor,
-  model::{Check, Event, SiteOutage},
+  model::{Check, Event, Outage, SiteOutage},
 };
 
 #[async_trait]
@@ -39,8 +39,25 @@ pub async fn handle_event(conn: &mut MySqlConnection, site: &str, event: &Event,
     inhibitor.release(site, &check.uuid);
   }
 
+  if let Some(outage) = outage {
+    match outage.ended_on {
+      None => {
+        if SiteOutage::count(conn, &check).await? >= check.site_threshold as i64 {
+          Outage::confirm(conn, &check).await?;
+        }
+      }
+
+      Some(_) => {
+        if SiteOutage::count(conn, &check).await? < check.site_threshold as i64 {
+          Outage::resolve(conn, check).await?;
+        }
+      }
+    }
+  }
+
   if event.status == 0 {
     kvlog!(Debug, "passed", {
+      "site" => site,
       "kind" => check.kind,
       "check" => check.uuid,
       "name" => check.name,
@@ -48,6 +65,7 @@ pub async fn handle_event(conn: &mut MySqlConnection, site: &str, event: &Event,
     });
   } else {
     kvlog!(Debug, "failed", {
+      "site" => site,
       "kind" => check.kind,
       "check" => check.uuid,
       "name" => check.name,

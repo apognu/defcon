@@ -46,6 +46,7 @@ pub struct CheckPatch {
   pub name: Option<String>,
   pub enabled: Option<bool>,
   pub interval: Option<db::Duration>,
+  pub site_threshold: Option<u8>,
   pub passing_threshold: Option<u8>,
   pub failing_threshold: Option<u8>,
   pub silent: Option<bool>,

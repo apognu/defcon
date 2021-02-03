@@ -28,11 +28,11 @@ mod tests {
   use rocket::http::Status;
   use rocket_contrib::json;
 
-  use crate::spec;
+  use crate::tests;
 
   #[tokio::test]
   async fn comment() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(None, None, "comment()", None).await?;
     pool.create_resolved_outage(None, None).await?;

@@ -59,11 +59,11 @@ pub fn unprocessable() -> ApiError {
 mod tests {
   use rocket::http::Status;
 
-  use crate::spec;
+  use crate::tests;
 
   #[tokio::test]
   async fn health() {
-    let (pool, client) = spec::api_client().await.unwrap();
+    let (pool, client) = tests::api_client().await.unwrap();
 
     let response = client.get("/api/-/health").dispatch().await;
     assert_eq!(response.status(), Status::Ok);

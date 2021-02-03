@@ -43,6 +43,10 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
   let payload = check_json(payload).apierr()?.0;
   let uuid = Uuid::new_v4().to_string();
 
+  if payload.check.site_threshold as usize > payload.sites.len() {
+    Err(AppError::BadRequest(anyhow!("`site_threshold` cannot exceed the number of `sites`"))).apierr()?;
+  }
+
   let mut txn = pool.begin().await.context("could not start transaction").apierr()?;
 
   let alerter = match payload.alerter {
@@ -75,6 +79,10 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
 #[put("/api/checks/<uuid>", data = "<payload>")]
 pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).apierr()?.0;
+
+  if payload.check.site_threshold as usize > payload.sites.len() {
+    Err(AppError::BadRequest(anyhow!("`site_threshold` cannot exceed the number of `sites`"))).apierr()?;
+  }
 
   let mut txn = pool.begin().await.context("could not start transaction").apierr()?;
   let check = Check::by_uuid(&mut txn, &uuid).await.apierr()?;
@@ -119,6 +127,7 @@ pub async fn patch(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<J
   payload.name.run(|value| check.name = value);
   payload.enabled.run(|value| check.enabled = value);
   payload.interval.run(|value| check.interval = value);
+  payload.site_threshold.run(|value| check.site_threshold = value);
   payload.passing_threshold.run(|value| check.passing_threshold = value);
   payload.failing_threshold.run(|value| check.failing_threshold = value);
   payload.silent.run(|value| check.silent = value);
@@ -138,6 +147,13 @@ pub async fn patch(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<J
   }
 
   check.update(&mut *txn).await.apierr()?;
+
+  let check = Check::by_uuid(&mut txn, &uuid).await.apierr()?;
+  let sites = check.sites(&mut *txn).await.apierr()?;
+
+  if check.site_threshold as usize > sites.len() {
+    Err(AppError::BadRequest(anyhow!("`site_threshold` cannot exceed the number of `sites`"))).apierr()?;
+  }
 
   txn.commit().await.context("could not commit transaction").apierr()?;
 
@@ -159,11 +175,11 @@ mod tests {
   use rocket_contrib::json;
   use uuid::Uuid;
 
-  use crate::{api::types as api, spec};
+  use crate::{api::types as api, tests};
 
   #[tokio::test]
   async fn list() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true)).await?;
     pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "list_checks_2()", Some(false)).await?;
@@ -182,7 +198,7 @@ mod tests {
 
   #[tokio::test]
   async fn list_all() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true)).await?;
     pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "list_checks_2()", Some(false)).await?;
@@ -200,7 +216,7 @@ mod tests {
 
   #[tokio::test]
   async fn get() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(None, None, "get_check()", None).await?;
 
@@ -217,7 +233,7 @@ mod tests {
 
   #[tokio::test]
   async fn get_not_found() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     let response = client.get("/api/checks/nonexistant").dispatch().await;
     assert_eq!(response.status(), Status::NotFound);
@@ -229,14 +245,14 @@ mod tests {
 
   #[tokio::test]
   async fn create() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     let check = json!({
       "name": "create()",
       "enabled": false,
       "interval": "10s",
       "sites": ["@controller"],
-      "site_threshold": 2,
+      "site_threshold": 1,
       "passing_threshold": 1,
       "failing_threshold": 1,
       "spec": {
@@ -260,14 +276,14 @@ mod tests {
 
   #[tokio::test]
   async fn create_invalid_kind() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     let check = json!({
       "name": "create_invalid_kind()",
       "enabled": false,
       "interval": "10s",
       "sites": ["@controller"],
-      "site_threshold": 2,
+      "site_threshold": 1,
       "passing_threshold": 1,
       "failing_threshold": 1,
       "spec": {
@@ -286,14 +302,14 @@ mod tests {
 
   #[tokio::test]
   async fn create_invalid_spec() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     let check = json!({
       "name": "create_invalid_spec()",
       "enabled": false,
       "interval": "10s",
       "sites": ["@controller"],
-      "site_threshold": 2,
+      "site_threshold": 1,
       "passing_threshold": 1,
       "failing_threshold": 1,
       "spec": {
@@ -311,8 +327,34 @@ mod tests {
   }
 
   #[tokio::test]
+  async fn create_not_enough_sites() -> Result<()> {
+    let (pool, client) = tests::api_client().await?;
+
+    let check = json!({
+      "name": "create_not_enough_sites()",
+      "enabled": false,
+      "interval": "10s",
+      "sites": ["@controller"],
+      "site_threshold": 2,
+      "passing_threshold": 1,
+      "failing_threshold": 1,
+      "spec": {
+        "kind": "app_store",
+        "bundle_id": "helloworld"
+      }
+    });
+
+    let response = client.post("/api/checks").body(check.to_string().as_bytes()).dispatch().await;
+    assert_eq!(response.status(), Status::BadRequest);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
   async fn create_bad_request() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     let check = json!({
       "name": "create_bad_request()",
@@ -332,7 +374,7 @@ mod tests {
 
   #[tokio::test]
   async fn update() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(None, None, "update()", None).await?;
 
@@ -341,7 +383,7 @@ mod tests {
       "enabled": false,
       "interval": "15s",
       "sites": ["@controller"],
-      "site_threshold": 2,
+      "site_threshold": 1,
       "passing_threshold": 1,
       "failing_threshold": 1,
       "spec": {
@@ -377,7 +419,7 @@ mod tests {
 
   #[tokio::test]
   async fn update_different_kind() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(None, None, "update_different_kind()", None).await?;
 
@@ -402,8 +444,34 @@ mod tests {
   }
 
   #[tokio::test]
+  async fn update_not_enough_sites() -> Result<()> {
+    let (pool, client) = tests::api_client().await?;
+
+    let check = json!({
+      "name": "update_not_enough_sites()",
+      "enabled": false,
+      "interval": "10s",
+      "sites": ["@controller"],
+      "site_threshold": 2,
+      "passing_threshold": 1,
+      "failing_threshold": 1,
+      "spec": {
+        "kind": "app_store",
+        "bundle_id": "helloworld"
+      }
+    });
+
+    let response = client.put("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(check.to_string().as_bytes()).dispatch().await;
+    assert_eq!(response.status(), Status::BadRequest);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
   async fn patch() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(None, None, "patch()", None).await?;
 
@@ -437,10 +505,29 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn delete() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+  async fn patch_not_enough_sites() -> Result<()> {
+    let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "patch()", None).await?;
+    pool.create_check(None, None, "patch_not_enough_sites()", None).await?;
+
+    let check = json!({
+      "sites": ["@controller"],
+      "site_threshold": 2
+    });
+
+    let response = client.patch("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(check.to_string().as_bytes()).dispatch().await;
+    assert_eq!(response.status(), Status::BadRequest);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn delete() -> Result<()> {
+    let (pool, client) = tests::api_client().await?;
+
+    pool.create_check(None, None, "delete()", None).await?;
 
     let response = client.delete("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
     assert_eq!(response.status(), Status::NoContent);

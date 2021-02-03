@@ -82,11 +82,11 @@ mod tests {
   use uuid::Uuid;
 
   use super::Event;
-  use crate::{model::SiteOutage, spec};
+  use crate::{model::SiteOutage, tests};
 
   #[tokio::test]
   async fn for_outage() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "for_outage()", None).await?;
@@ -105,7 +105,7 @@ mod tests {
 
   #[tokio::test]
   async fn insert() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "insert()", None).await?;
@@ -135,7 +135,7 @@ mod tests {
 
   #[tokio::test]
   async fn delete_before() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "delete_before()", None).await?;

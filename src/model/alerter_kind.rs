@@ -43,6 +43,7 @@ impl TryFrom<String> for AlerterKind {
     match kind.as_str() {
       "webhook" => Ok(AlerterKind::Webhook),
       "slack" => Ok(AlerterKind::Slack),
+      "noop" => Ok(AlerterKind::Noop),
       _ => Err(anyhow!("unknown alerter kind")),
     }
   }

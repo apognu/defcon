@@ -71,12 +71,12 @@ mod tests {
 
   use crate::{
     model::{Alerter, AlerterKind},
-    spec,
+    tests,
   };
 
   #[tokio::test]
   async fn list() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_alerter().await?;
 
@@ -95,7 +95,7 @@ mod tests {
 
   #[tokio::test]
   async fn get() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_alerter().await?;
 
@@ -113,7 +113,7 @@ mod tests {
 
   #[tokio::test]
   async fn get_not_found() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_alerter().await?;
 
@@ -127,7 +127,7 @@ mod tests {
 
   #[tokio::test]
   async fn create() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     let payload = json!({
       "kind": "webhook",
@@ -148,7 +148,7 @@ mod tests {
 
   #[tokio::test]
   async fn update() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_alerter().await?;
 
@@ -171,7 +171,7 @@ mod tests {
 
   #[tokio::test]
   async fn update_bad_request() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_alerter().await?;
 

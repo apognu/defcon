@@ -22,11 +22,11 @@ mod tests {
   use anyhow::Result;
   use rocket::http::Status;
 
-  use crate::{model::Event, spec};
+  use crate::{model::Event, tests};
 
   #[tokio::test]
   async fn list() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(None, None, "list()", None).await?;
     pool.create_unresolved_site_outage(None, None).await?;
@@ -46,7 +46,7 @@ mod tests {
 
   #[tokio::test]
   async fn list_not_found() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     let response = client.get("/api/outages/nonexistant/events").dispatch().await;
     assert_eq!(response.status(), Status::NotFound);

@@ -18,7 +18,7 @@ pub mod inhibitor;
 pub mod model;
 
 #[cfg(test)]
-mod spec;
+mod tests;
 
 use anyhow::Error;
 

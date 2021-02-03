@@ -42,11 +42,11 @@ mod tests {
   use rocket::http::Status;
   use uuid::Uuid;
 
-  use crate::{model::SiteOutage, spec};
+  use crate::{model::SiteOutage, tests};
 
   #[tokio::test]
   async fn list() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(None, None, "list()", None).await?;
     pool.create_unresolved_site_outage(Some(1), None).await?;
@@ -64,7 +64,7 @@ mod tests {
 
   #[tokio::test]
   async fn list_between() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(None, None, "list_between()", None).await?;
     pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
@@ -83,7 +83,7 @@ mod tests {
 
   #[tokio::test]
   async fn get() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(None, None, "get()", None).await?;
     pool.create_unresolved_site_outage(Some(1), None).await?;
@@ -101,7 +101,7 @@ mod tests {
 
   #[tokio::test]
   async fn get_not_found() -> Result<()> {
-    let (pool, client) = spec::api_client().await?;
+    let (pool, client) = tests::api_client().await?;
 
     pool.create_check(None, None, "get_not_found()", None).await?;
     pool.create_unresolved_site_outage(Some(1), None).await?;

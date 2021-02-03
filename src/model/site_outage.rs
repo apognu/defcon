@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
   api::error::{server_error, AppError},
-  model::{Check, Event, Outage},
+  model::{Check, Event},
 };
 
 enum OutageRef {
@@ -141,15 +141,11 @@ impl SiteOutage {
               "failed" => format!("{}/{}", outage.failing_strikes + 1, check.failing_threshold),
               "passed" => format!("0/{}", check.passing_threshold)
             });
-
-            if SiteOutage::count(conn, &check).await? >= check.site_threshold as i64 {
-              Outage::insert(conn, check).await?;
-            }
           }
         }
 
         if outage.passing_strikes < check.passing_threshold && event.status == 0 {
-          let (ended_on, resolved) = if outage.passing_strikes + 1 == check.passing_threshold {
+          let ended_on = if outage.passing_strikes + 1 == check.passing_threshold {
             kvlog!(Info, "outage resolved", {
               "kind" => check.kind,
               "check" => check.uuid,
@@ -157,9 +153,9 @@ impl SiteOutage {
               "passed" => format!("{}/{}", outage.passing_strikes + 1, check.passing_threshold)
             });
 
-            (Some(Utc::now()), true)
+            Some(Utc::now())
           } else {
-            (None, false)
+            None
           };
 
           sqlx::query(
@@ -173,11 +169,9 @@ impl SiteOutage {
           .bind(outage.id)
           .execute(&mut *conn)
           .await?;
-
-          if resolved && SiteOutage::count(conn, &check).await? < check.site_threshold as i64 {
-            Outage::resolve(conn, check).await?;
-          }
         }
+
+        let outage = SiteOutage::by_uuid(&mut *conn, &outage.uuid).await?;
 
         Some(outage)
       }
@@ -207,10 +201,6 @@ impl SiteOutage {
               "failed" => format!("1/{}", check.failing_threshold),
               "passed" => format!("0/{}", check.passing_threshold)
             });
-
-            if SiteOutage::count(conn, &check).await? >= check.site_threshold as i64 {
-              Outage::insert(conn, check).await?;
-            }
           }
 
           Some(outage)
@@ -260,8 +250,6 @@ impl SiteOutage {
     .fetch_one(&mut *conn)
     .await?;
 
-    println!("Count for {} is {}", check.id, count.0);
-
     Ok(count.0)
   }
 }
@@ -274,14 +262,14 @@ mod tests {
 
   use crate::{
     model::{Check, Event, SiteOutage},
-    spec,
+    tests,
   };
 
   use super::OutageRef;
 
   #[tokio::test]
   async fn between() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "between()", None).await?;
@@ -313,7 +301,7 @@ mod tests {
 
   #[tokio::test]
   async fn by_uuid() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "by_uuid()", None).await?;
@@ -331,7 +319,7 @@ mod tests {
 
   #[tokio::test]
   async fn for_check() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "by_uuid()", None).await?;
@@ -353,7 +341,7 @@ mod tests {
 
   #[tokio::test]
   async fn insert() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "insert()", None).await?;
@@ -412,7 +400,7 @@ mod tests {
 
   #[tokio::test]
   async fn current() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "between()", None).await?;
@@ -431,7 +419,7 @@ mod tests {
 
   #[tokio::test]
   async fn delete_before() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "delete_before()", None).await?;

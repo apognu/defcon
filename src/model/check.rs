@@ -11,7 +11,7 @@ use crate::{
   },
   ext,
   handlers::*,
-  model::{specs, Alerter, CheckKind, Duration, Event, Site, SiteOutage},
+  model::{specs, Alerter, CheckKind, Duration, Event, Outage, Site},
 };
 
 #[derive(Debug, Default, FromRow, Serialize, Deserialize)]
@@ -193,7 +193,31 @@ impl Check {
     Ok(())
   }
 
-  pub async fn last_event(&self, conn: &mut MySqlConnection, site: &str) -> Result<Option<Event>> {
+  pub async fn last_event(&self, conn: &mut MySqlConnection) -> Result<Option<Event>> {
+    let event = sqlx::query_as::<_, Event>(
+      "
+        SELECT id, check_id, outage_id, site, status, message, created_at
+        FROM events
+        WHERE check_id = ?
+        ORDER BY id DESC
+        LIMIT 1
+      ",
+    )
+    .bind(self.id)
+    .fetch_one(&mut *conn)
+    .await;
+
+    match event {
+      Ok(event) => Ok(Some(event)),
+
+      Err(err) => match err {
+        sqlx::Error::RowNotFound => Ok(None),
+        err => Err(err.into()),
+      },
+    }
+  }
+
+  pub async fn last_event_for_site(&self, conn: &mut MySqlConnection, site: &str) -> Result<Option<Event>> {
     let event = sqlx::query_as::<_, Event>(
       "
         SELECT id, check_id, outage_id, site, status, message, created_at
@@ -288,7 +312,7 @@ impl Check {
   pub async fn alert(&self, conn: &mut MySqlConnection, outage: &str) {
     if !self.silent {
       let inner = async move || -> Result<()> {
-        let outage = SiteOutage::by_uuid(&mut *conn, &outage).await?;
+        let outage = Outage::by_uuid(&mut *conn, &outage).await?;
 
         if let Some(alerter) = self.alerter(&mut *conn).await {
           alerter.webhook().alert(&mut *conn, &self, &outage).await?;
@@ -326,14 +350,14 @@ mod tests {
   use anyhow::Result;
   use uuid::Uuid;
 
-  use crate::spec;
+  use crate::tests;
 
   use super::{Check, CheckKind, Event};
   use crate::model::Duration;
 
   #[tokio::test]
   async fn list() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "all()", None).await?;
@@ -356,7 +380,7 @@ mod tests {
 
   #[tokio::test]
   async fn enabled() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "enabled()", Some(true)).await?;
@@ -373,7 +397,7 @@ mod tests {
 
   #[tokio::test]
   async fn by_uuid() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
 
     pool.create_check(None, None, "by_uuid()", None).await?;
 
@@ -393,7 +417,7 @@ mod tests {
 
   #[tokio::test]
   async fn by_id() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
 
     pool.create_check(None, None, "by_id()", None).await?;
 
@@ -413,7 +437,7 @@ mod tests {
 
   #[tokio::test]
   async fn insert() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     let check = Check {
@@ -447,7 +471,7 @@ mod tests {
 
   #[tokio::test]
   async fn update() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "update()", None).await?;
@@ -483,7 +507,7 @@ mod tests {
 
   #[tokio::test]
   async fn delete() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "delete()", None).await?;
@@ -505,7 +529,7 @@ mod tests {
 
   #[tokio::test]
   async fn last_event() -> Result<()> {
-    let pool = spec::db_client().await?;
+    let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     let check = Check {
@@ -536,7 +560,7 @@ mod tests {
     event.message = "Last event".to_string();
     event.insert(&mut *conn, None, "@controller").await?;
 
-    let last = check.last_event(&mut *conn, "@controller").await?;
+    let last = check.last_event_for_site(&mut *conn, "@controller").await?;
 
     assert_eq!(last.is_some(), true);
     assert_eq!(&last.unwrap().message, "Last event");

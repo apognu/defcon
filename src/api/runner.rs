@@ -22,11 +22,10 @@ pub async fn list_stale(pool: State<'_, Pool<MySql>>, site: String) -> ApiRespon
 }
 
 #[post("/api/checks/report?<site>", data = "<payload>")]
-pub async fn report(pool: State<'_, Pool<MySql>>, site: String, payload: Json<api::ReportEvent>) {
+pub async fn report(pool: State<'_, Pool<MySql>>, site: String, payload: Json<api::ReportEvent>) -> ApiResponse<()> {
   let report = payload.0;
-  let mut conn = pool.acquire().await.unwrap();
-
-  let check = Check::by_uuid(&mut *conn, &report.check).await.unwrap();
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
+  let check = Check::by_uuid(&mut *conn, &report.check).await.apierr()?;
 
   let event = Event {
     check_id: check.id,
@@ -36,5 +35,7 @@ pub async fn report(pool: State<'_, Pool<MySql>>, site: String, payload: Json<ap
     ..Default::default()
   };
 
-  handlers::handle_event(&mut *conn, &site, &event, &check, None).await.unwrap();
+  handlers::handle_event(&mut *conn, &site, &event, &check, None).await.apierr()?;
+
+  Ok(())
 }

@@ -6,7 +6,7 @@ use sqlx::MySqlConnection;
 
 use crate::{
   alerters::Webhook,
-  model::{status::*, Alerter, Check, Event, SiteOutage},
+  model::{status::*, Alerter, Check, Event, Outage},
 };
 
 const COLOR_UNKNOWN: &str = "#95a5a6";
@@ -18,12 +18,9 @@ pub struct SlackAlerter(pub Alerter);
 
 #[async_trait]
 impl Webhook for SlackAlerter {
-  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &SiteOutage) -> Result<()> {
+  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
     let slack = Slack::new(self.0.webhook.as_str()).map_err(|err| anyhow!(err.to_string()).context("could not create Slack alerter"))?;
-
-    // TODO: add something like **any site**
-    let event = check.last_event(conn, "@controller").await.context("could not find outage event")?;
-
+    let event = check.last_event(conn).await.context("could not find outage event")?;
     let spec = check.spec(conn).await.context("could not retrieve check spec")?;
     let down = outage.ended_on.is_none();
 
