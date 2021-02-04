@@ -8,12 +8,13 @@ mod runner;
 mod site_outages;
 pub mod types;
 
-use rocket::{response::status::Custom, Config, Rocket, Route};
+use rocket::{Config, Rocket, Route};
+use rocket_contrib::{json, json::JsonValue};
 use sqlx::{MySql, Pool};
 
-use self::error::ApiError;
+use crate::api::error::ErrorResponse;
 
-type ApiResponse<T> = Result<T, Custom<Option<ApiError>>>;
+type ApiResponse<T> = Result<T, ErrorResponse>;
 
 pub fn server(provider: Config, pool: Pool<MySql>) -> Rocket {
   rocket::custom(provider).manage(pool).mount("/", routes()).register(catchers![not_found, unprocessable])
@@ -46,13 +47,19 @@ pub fn routes() -> Vec<Route> {
 fn health() {}
 
 #[catch(404)]
-pub fn not_found() -> ApiError {
-  ApiError::new(404, "resource not found")
+pub fn not_found() -> JsonValue {
+  json!({
+    "status": "not_found",
+    "message": "requested resource was not found"
+  })
 }
 
 #[catch(422)]
-pub fn unprocessable() -> ApiError {
-  ApiError::new(422, "the request format could not be understood")
+pub fn unprocessable() -> JsonValue {
+  json!({
+    "status": "unprocessable",
+    "message": "the data you provided could not be understood"
+  })
 }
 
 #[cfg(test)]

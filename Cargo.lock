@@ -1366,9 +1366,9 @@ dependencies = [
 
 [[package]]
 name = "kvlogger"
-version = "0.4.1"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c1872b614a4004e54b651980e1641a275ab78fee9b5b2ca2ddde284ccf0b207a"
+checksum = "093ab3f3923ff92ae168b639e5e7f25954183b9bb9a2bbb8fe95b56c7b47192c"
 dependencies = [
  "chrono",
  "colored",

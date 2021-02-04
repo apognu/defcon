@@ -1,115 +1,99 @@
-use std::fmt::Display;
-
-use anyhow::Error;
+use anyhow::{Context, Error};
 use rocket::{
   http::Status,
   request::Request,
-  response::{self, status::Custom, Responder},
+  response::{self, status::Custom, Responder, Response},
 };
-use rocket_contrib::json::{Json, JsonError};
+use rocket_contrib::{json, json::JsonError};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
-  #[error("bad request: {0}")]
-  BadRequest(anyhow::Error),
-  #[error("resource not found: {0}")]
-  ResourceNotFound(anyhow::Error),
-  #[error("server error")]
-  ServerError(anyhow::Error),
+  #[error("bad request")]
+  BadRequest,
+  #[error("missing resource")]
+  ResourceNotFound,
+  #[error("server error, please check your logs for more information")]
+  ServerError,
+  #[error("database error, please check your logs for more information")]
+  DatabaseError,
 }
 
-impl AppError {
-  fn code(&self) -> u64 {
-    match self {
-      AppError::BadRequest(_) => 400,
-      AppError::ResourceNotFound(_) => 404,
-      AppError::ServerError(_) => 500,
+pub struct ErrorResponse(pub Custom<anyhow::Error>);
+
+impl ErrorResponse {
+  fn status(&self) -> &'static str {
+    match self.code().code {
+      400 => "bad_request",
+      404 => "not_found",
+      500 => "server_error",
+      _ => "unknown_error",
     }
+  }
+
+  fn code(&self) -> Status {
+    self.0 .0
+  }
+
+  fn error(self) -> Error {
+    self.0 .1
   }
 }
 
-#[derive(Debug, Serialize)]
-pub struct ApiError {
-  code: u64,
-  message: String,
-}
-
-pub fn check_json<T>(payload: Result<T, JsonError>) -> Result<T, AppError> {
+pub fn check_json<T>(payload: Result<T, JsonError>) -> Result<T, Error> {
   match payload {
     Ok(payload) => Ok(payload),
+
     Err(err) => match err {
-      JsonError::Io(err) => Err(AppError::BadRequest(anyhow!(err))),
-      JsonError::Parse(_, err) => Err(AppError::BadRequest(anyhow!(err))),
+      JsonError::Io(err) => Err(err).context(AppError::BadRequest),
+      JsonError::Parse(_, err) => Err(err).context(AppError::BadRequest),
     },
   }
 }
 
-pub fn server_error<E>(err: E) -> AppError
-where
-  E: Into<Error> + Display,
-{
-  let err = err.into();
-
-  crate::log_error(&err);
-
-  AppError::ServerError(err)
-}
-
-impl ApiError {
-  pub fn new<S>(code: u64, message: S) -> ApiError
-  where
-    S: Into<String>,
-  {
-    ApiError { code, message: message.into() }
-  }
-}
-
-impl From<AppError> for ApiError {
-  fn from(error: AppError) -> ApiError {
-    let code = error.code();
-
-    ApiError { code, message: error.to_string() }
-  }
-}
-
-impl From<&AppError> for ApiError {
-  fn from(error: &AppError) -> ApiError {
-    let code = error.code();
-
-    ApiError { code, message: error.to_string() }
-  }
-}
-
-impl<'r> Responder<'r, 'static> for ApiError {
+impl<'r> Responder<'r, 'static> for ErrorResponse {
   fn respond_to(self, request: &'r Request<'_>) -> response::Result<'static> {
-    Json(self).respond_to(request)
+    let code = self.code();
+    let status = self.status();
+    let error = self.error();
+    let details = error.chain().skip(1).map(ToString::to_string).collect::<Vec<_>>().join(": ");
+
+    let payload = json!({
+      "status": status,
+      "message": error.to_string(),
+      "details": details
+    });
+
+    Response::build_from(payload.respond_to(request)?).status(code).ok()
   }
 }
 
-pub trait Errorable<'a, T> {
-  fn apierr(self) -> Result<T, Custom<Option<ApiError>>>;
+pub trait Shortable<'a, T> {
+  type Output;
+
+  fn short(self) -> Self::Output;
 }
 
-impl<'a, T> Errorable<'a, T> for Result<T, Error>
-where
-  T: std::fmt::Debug,
-{
-  fn apierr(self) -> Result<T, Custom<Option<ApiError>>> {
-    self.map_err(|err| match err.downcast_ref() {
-      Some(inner @ AppError::BadRequest(_)) => Custom(Status::BadRequest, Some(inner.into())),
-      Some(inner @ AppError::ResourceNotFound(_)) => Custom(Status::NotFound, Some(inner.into())),
-      Some(inner @ AppError::ServerError(_)) => Custom(Status::InternalServerError, Some(inner.into())),
-      None => Custom(Status::InternalServerError, Some(ApiError::new(500, err.to_string()))),
+impl<'a, T> Shortable<'a, T> for Result<T, Error> {
+  type Output = Result<T, ErrorResponse>;
+
+  fn short(self) -> Self::Output {
+    self.map_err(|err| match err.downcast_ref::<AppError>() {
+      Some(AppError::BadRequest) => ErrorResponse(Custom(Status::BadRequest, err)),
+      Some(AppError::ResourceNotFound) => ErrorResponse(Custom(Status::NotFound, err)),
+      Some(AppError::ServerError) => ErrorResponse(Custom(Status::InternalServerError, err)),
+      Some(AppError::DatabaseError) => ErrorResponse(Custom(Status::InternalServerError, err)),
+      None => ErrorResponse(Custom(Status::InternalServerError, err)),
     })
   }
 }
 
-impl<'a, T> Errorable<'a, T> for Result<T, AppError> {
-  fn apierr(self) -> Result<T, Custom<Option<ApiError>>> {
+impl<'a, T> Shortable<'a, T> for Result<T, sqlx::Error> {
+  type Output = Result<T, Error>;
+
+  fn short(self) -> Self::Output {
     self.map_err(|err| match err {
-      inner @ AppError::BadRequest(_) => Custom(Status::BadRequest, Some(inner.into())),
-      inner @ AppError::ResourceNotFound(_) => Custom(Status::NotFound, Some(inner.into())),
-      inner @ AppError::ServerError(_) => Custom(Status::InternalServerError, Some(inner.into())),
+      sqlx::Error::RowNotFound => anyhow!(err).context(AppError::ResourceNotFound),
+      err => anyhow!(err).context(AppError::DatabaseError),
     })
   }
 }

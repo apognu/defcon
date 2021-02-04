@@ -1,9 +1,9 @@
 use anyhow::Result;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use sqlx::{Done, FromRow, MySqlConnection};
 use uuid::Uuid;
 
-use crate::model::Check;
+use crate::{api::error::Shortable, model::Check};
 
 #[derive(Debug, FromRow, Default, Serialize)]
 pub struct Outage {
@@ -28,7 +28,8 @@ impl Outage {
     )
     .bind(uuid)
     .fetch_one(&mut *conn)
-    .await?;
+    .await
+    .short()?;
 
     Ok(outage)
   }
@@ -43,7 +44,8 @@ impl Outage {
     )
     .bind(check.id)
     .fetch_one(&mut *conn)
-    .await?;
+    .await
+    .short()?;
 
     Ok(outage)
   }
@@ -86,7 +88,8 @@ impl Outage {
       )
       .bind(outage.id)
       .execute(&mut *conn)
-      .await?;
+      .await
+      .short()?;
 
       if result.rows_affected() > 0 {
         check.alert(&mut *conn, &outage.uuid).await;
@@ -107,8 +110,24 @@ impl Outage {
     .bind(comment)
     .bind(&self.uuid)
     .execute(conn)
-    .await?;
+    .await
+    .short()?;
 
     Ok(())
+  }
+
+  pub async fn delete_before(conn: &mut MySqlConnection, epoch: &NaiveDateTime) -> Result<u64> {
+    let result = sqlx::query(
+      "
+        DELETE FROM outages
+        WHERE ended_on IS NOT NULL AND ended_on < ?
+      ",
+    )
+    .bind(epoch)
+    .execute(conn)
+    .await
+    .short()?;
+
+    Ok(result.rows_affected())
   }
 }

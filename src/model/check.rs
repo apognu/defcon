@@ -5,10 +5,7 @@ use chrono::{DateTime, Utc};
 use sqlx::{FromRow, MySqlConnection};
 
 use crate::{
-  api::{
-    error::{server_error, AppError},
-    types as api,
-  },
+  api::{error::Shortable, types as api},
   ext,
   handlers::*,
   model::{specs, Alerter, CheckKind, Duration, Event, Outage, Site},
@@ -45,7 +42,7 @@ impl Check {
     )
     .fetch_all(&mut *conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     Ok(checks)
   }
@@ -60,7 +57,7 @@ impl Check {
     )
     .fetch_all(&mut *conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     Ok(checks)
   }
@@ -76,7 +73,7 @@ impl Check {
     .bind(id)
     .fetch_one(&mut *conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     Ok(check)
   }
@@ -98,7 +95,7 @@ impl Check {
     ))
     .fetch_all(&mut *conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     Ok(checks)
   }
@@ -114,10 +111,7 @@ impl Check {
     .bind(uuid)
     .fetch_one(conn)
     .await
-    .map_err(|err| match err {
-      sqlx::Error::RowNotFound => AppError::ResourceNotFound(anyhow!(err).context("unknown check")),
-      err => server_error(err),
-    })?;
+    .short()?;
 
     Ok(check)
   }
@@ -142,7 +136,7 @@ impl Check {
       .bind(self.silent)
       .execute(&mut *conn)
       .await
-      .map_err(server_error)?;
+      .short()?;
     }
 
     let check = Check::by_uuid(&mut *conn, &self.uuid).await?;
@@ -170,7 +164,7 @@ impl Check {
     .bind(self.id)
     .execute(&mut *conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     let check = Check::by_uuid(&mut *conn, &self.uuid).await?;
 
@@ -188,7 +182,7 @@ impl Check {
     .bind(uuid)
     .execute(conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     Ok(())
   }
@@ -205,16 +199,11 @@ impl Check {
     )
     .bind(self.id)
     .fetch_one(&mut *conn)
-    .await;
+    .await
+    .map(Some)
+    .short()?;
 
-    match event {
-      Ok(event) => Ok(Some(event)),
-
-      Err(err) => match err {
-        sqlx::Error::RowNotFound => Ok(None),
-        err => Err(err.into()),
-      },
-    }
+    Ok(event)
   }
 
   pub async fn last_event_for_site(&self, conn: &mut MySqlConnection, site: &str) -> Result<Option<Event>> {
@@ -230,16 +219,11 @@ impl Check {
     .bind(self.id)
     .bind(site)
     .fetch_one(&mut *conn)
-    .await;
+    .await
+    .map(Some)
+    .short()?;
 
-    match event {
-      Ok(event) => Ok(Some(event)),
-
-      Err(err) => match err {
-        sqlx::Error::RowNotFound => Ok(None),
-        err => Err(err.into()),
-      },
-    }
+    Ok(event)
   }
 
   pub async fn stale(conn: &mut MySqlConnection, site: &str) -> Result<Vec<Check>> {
@@ -261,7 +245,8 @@ impl Check {
     )
     .bind(site)
     .fetch_all(&mut *conn)
-    .await?;
+    .await
+    .short()?;
 
     let ids: Vec<u64> = checks.iter().map(|check| check.0).collect();
     let checks = Check::by_ids(conn, &ids).await?;

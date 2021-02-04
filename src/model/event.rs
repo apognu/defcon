@@ -2,7 +2,7 @@ use anyhow::Result;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use sqlx::{Done, FromRow, MySqlConnection};
 
-use crate::model::SiteOutage;
+use crate::{api::error::Shortable, model::SiteOutage};
 
 pub mod status {
   pub const OK: u8 = 0;
@@ -35,7 +35,8 @@ impl Event {
     )
     .bind(outage.id)
     .fetch_all(&mut *conn)
-    .await?;
+    .await
+    .short()?;
 
     Ok(events)
   }
@@ -53,7 +54,8 @@ impl Event {
     .bind(self.status)
     .bind(&self.message)
     .execute(conn)
-    .await?;
+    .await
+    .short()?;
 
     Ok(())
   }
@@ -69,7 +71,8 @@ impl Event {
     )
     .bind(epoch)
     .execute(conn)
-    .await?;
+    .await
+    .short()?;
 
     Ok(result.rows_affected())
   }

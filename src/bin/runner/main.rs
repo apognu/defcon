@@ -63,14 +63,16 @@ async fn run_check(mut inhibitor: Inhibitor, check: api::RunnerCheck) -> Result<
   match result {
     Ok(event) => {
       if event.status == 0 {
-        kvlog!(Debug, "passed", {
+        kvlog!(Debug, "check passed", {
+          "site" => SITE,
           "kind" => check.spec.kind(),
           "check" => check.uuid,
           "name" => check.name,
           "message" => event.message
         });
       } else {
-        kvlog!(Debug, "failed", {
+        kvlog!(Debug, "check failed", {
+          "site" => SITE,
           "kind" => check.spec.kind(),
           "check" => check.spec.kind(),
           "name" => check.name,

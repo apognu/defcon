@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
   api::{
-    error::{check_json, Errorable},
+    error::{check_json, Shortable},
     ApiResponse,
   },
   model as db,
@@ -14,23 +14,23 @@ use crate::{
 
 #[get("/api/alerters")]
 pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<db::Alerter>>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let alerters = db::Alerter::all(&mut conn).await.apierr()?;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let alerters = db::Alerter::all(&mut conn).await.context("could not retrieve alerters").short()?;
 
   Ok(Json(alerters))
 }
 
 #[get("/api/alerters/<uuid>")]
 pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json<db::Alerter>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.apierr()?;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.context("could not find alerter").short()?;
 
   Ok(Json(alerter))
 }
 
 #[post("/api/alerters", data = "<payload>")]
 pub async fn add(pool: State<'_, Pool<MySql>>, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<Created<String>> {
-  let payload = check_json(payload).apierr()?.0;
+  let payload = check_json(payload).short()?.0;
   let uuid = Uuid::new_v4().to_string();
 
   let alerter = db::Alerter {
@@ -40,17 +40,17 @@ pub async fn add(pool: State<'_, Pool<MySql>>, payload: Result<Json<db::Alerter>
     ..Default::default()
   };
 
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let alerter = alerter.insert(&mut conn).await.apierr()?;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let alerter = alerter.insert(&mut conn).await.context("could not create alerter").short()?;
 
   Ok(Created::new(uri!(get: alerter.uuid).to_string()))
 }
 
 #[put("/api/alerters/<uuid>", data = "<payload>")]
 pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<()> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.apierr()?;
-  let payload = check_json(payload).apierr()?.0;
+  let payload = check_json(payload).short()?.0;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.context("could not find alerter").short()?;
 
   let alerter = db::Alerter {
     kind: payload.kind,
@@ -58,7 +58,7 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
     ..alerter
   };
 
-  alerter.update(&mut conn).await.apierr()?;
+  alerter.update(&mut conn).await.context("could not update alerter").short()?;
 
   Ok(())
 }

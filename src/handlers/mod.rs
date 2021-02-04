@@ -56,7 +56,7 @@ pub async fn handle_event(conn: &mut MySqlConnection, site: &str, event: &Event,
   }
 
   if event.status == 0 {
-    kvlog!(Debug, "passed", {
+    kvlog!(Debug, "check passed", {
       "site" => site,
       "kind" => check.kind,
       "check" => check.uuid,
@@ -64,7 +64,7 @@ pub async fn handle_event(conn: &mut MySqlConnection, site: &str, event: &Event,
       "message" => event.message
     });
   } else {
-    kvlog!(Debug, "failed", {
+    kvlog!(Debug, "check failed", {
       "site" => site,
       "kind" => check.kind,
       "check" => check.uuid,

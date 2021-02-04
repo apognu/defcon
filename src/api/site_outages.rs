@@ -5,7 +5,7 @@ use sqlx::{MySql, Pool};
 
 use crate::{
   api::{
-    error::Errorable,
+    error::Shortable,
     types::{self as api, ApiMapper},
     ApiResponse,
   },
@@ -14,24 +14,31 @@ use crate::{
 
 #[get("/api/sites/outages", rank = 10)]
 pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let outages = SiteOutage::current(&mut conn).await.apierr()?.map(&*pool).await.apierr()?;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let outages = SiteOutage::current(&mut conn).await.context("could not retrieve outages").short()?.map(&*pool).await.short()?;
 
   Ok(Json(outages))
 }
 
 #[get("/api/sites/outages?<start>&<end>", rank = 5)]
 pub async fn list_between(pool: State<'_, Pool<MySql>>, start: api::DateTime, end: api::DateTime) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let outages = SiteOutage::between(&mut conn, *start, *end).await.apierr()?.map(&*pool).await.apierr()?;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+
+  let outages = SiteOutage::between(&mut conn, *start, *end)
+    .await
+    .context("could not find alerters")
+    .short()?
+    .map(&*pool)
+    .await
+    .short()?;
 
   Ok(Json(outages))
 }
 
 #[get("/api/sites/outages/<uuid>")]
 pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::SiteOutage>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let outage = SiteOutage::by_uuid(&mut conn, &uuid).await.apierr()?.map(&*pool).await.apierr()?;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let outage = SiteOutage::by_uuid(&mut conn, &uuid).await.context("could not find outage").short()?.map(&*pool).await.short()?;
 
   Ok(Json(outage))
 }

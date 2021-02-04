@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use crate::{
   api::{
-    error::{check_json, AppError, Errorable},
+    error::{check_json, AppError, Shortable},
     types::{self as api, ApiMapper},
     ApiResponse,
   },
@@ -19,12 +19,12 @@ use crate::{
 
 #[get("/api/checks?<all>")]
 pub async fn list(pool: State<'_, Pool<MySql>>, all: Option<bool>) -> ApiResponse<Json<Vec<api::Check>>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let checks = if all.is_some() {
-    Check::all(&mut conn).await.apierr()?.map(&*pool).await.apierr()?
+    Check::all(&mut conn).await.short()?.map(&*pool).await.context("could not retrieve checks").short()?
   } else {
-    Check::enabled(&mut conn).await.apierr()?.map(&*pool).await.apierr()?
+    Check::enabled(&mut conn).await.short()?.map(&*pool).await.context("could not retrieve enabled checks").short()?
   };
 
   Ok(Json(checks))
@@ -32,25 +32,25 @@ pub async fn list(pool: State<'_, Pool<MySql>>, all: Option<bool>) -> ApiRespons
 
 #[get("/api/checks/<uuid>")]
 pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Check>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let check = Check::by_uuid(&mut conn, &uuid).await.apierr()?.map(&*pool).await.apierr()?;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let check = Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?.map(&*pool).await.short()?;
 
   Ok(Json(check))
 }
 
 #[post("/api/checks", data = "<payload>")]
 pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<Created<String>> {
-  let payload = check_json(payload).apierr()?.0;
+  let payload = check_json(payload).short()?.0;
   let uuid = Uuid::new_v4().to_string();
 
   if payload.check.site_threshold as usize > payload.sites.len() {
-    Err(AppError::BadRequest(anyhow!("`site_threshold` cannot exceed the number of `sites`"))).apierr()?;
+    Err(anyhow!("`site_threshold` cannot exceed the number of `sites`")).context(AppError::BadRequest).short()?;
   }
 
-  let mut txn = pool.begin().await.context("could not start transaction").apierr()?;
+  let mut txn = pool.begin().await.context("could not start transaction").short()?;
 
   let alerter = match payload.alerter {
-    Some(uuid) => Some(Alerter::by_uuid(&mut txn, &uuid).await.apierr()?),
+    Some(uuid) => Some(Alerter::by_uuid(&mut txn, &uuid).await.context("could not retrieve alerter").short()?),
     None => None,
   };
 
@@ -67,32 +67,32 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
     ..Default::default()
   };
 
-  let check = check.insert(&mut *txn).await.apierr()?;
-  payload.spec.insert(&mut *txn, &check).await.apierr()?;
-  check.update_sites(&mut *txn, &payload.sites).await.apierr()?;
+  let check = check.insert(&mut *txn).await.context("could not create check").short()?;
+  payload.spec.insert(&mut *txn, &check).await.context("could not create spec").short()?;
+  check.update_sites(&mut *txn, &payload.sites).await.context("could not update check sites").short()?;
 
-  txn.commit().await.context("could not commit transaction").apierr()?;
+  txn.commit().await.context("could not commit transaction").short()?;
 
   Ok(Created::new(uri!(get: check.uuid).to_string()))
 }
 
 #[put("/api/checks/<uuid>", data = "<payload>")]
 pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<()> {
-  let payload = check_json(payload).apierr()?.0;
+  let payload = check_json(payload).short()?.0;
 
   if payload.check.site_threshold as usize > payload.sites.len() {
-    Err(AppError::BadRequest(anyhow!("`site_threshold` cannot exceed the number of `sites`"))).apierr()?;
+    Err(anyhow!("`site_threshold` cannot exceed the number of `sites`").context(AppError::BadRequest)).short()?;
   }
 
-  let mut txn = pool.begin().await.context("could not start transaction").apierr()?;
-  let check = Check::by_uuid(&mut txn, &uuid).await.apierr()?;
+  let mut txn = pool.begin().await.context("could not start transaction").short()?;
+  let check = Check::by_uuid(&mut txn, &uuid).await.context("could not retrieve check").short()?;
 
   if payload.spec.kind() != check.kind {
-    Err(AppError::BadRequest(anyhow!("cannot change the resource `kind`"))).apierr()?;
+    Err(anyhow!("cannot change the resource `kind`").context(AppError::BadRequest)).short()?;
   }
 
   let alerter = match payload.alerter {
-    Some(uuid) => Some(Alerter::by_uuid(&mut txn, &uuid).await.apierr()?),
+    Some(uuid) => Some(Alerter::by_uuid(&mut txn, &uuid).await.context("could not retrieve alerter").short()?),
     None => None,
   };
 
@@ -108,21 +108,21 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
     ..check
   };
 
-  payload.spec.update(&mut *txn, &check).await.apierr()?;
-  check.update_sites(&mut *txn, &payload.sites).await.apierr()?;
-  check.update(&mut *txn).await.apierr()?;
+  payload.spec.update(&mut *txn, &check).await.context("could not update spec").short()?;
+  check.update_sites(&mut *txn, &payload.sites).await.context("could not update check sites").short()?;
+  check.update(&mut *txn).await.context("could not update check").short()?;
 
-  txn.commit().await.context("could not commit transaction").apierr()?;
+  txn.commit().await.context("could not commit transaction").short()?;
 
   Ok(())
 }
 
 #[patch("/api/checks/<uuid>", data = "<payload>")]
 pub async fn patch(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<api::CheckPatch>, JsonError<'_>>) -> ApiResponse<()> {
-  let payload = check_json(payload).apierr()?.0;
+  let payload = check_json(payload).short()?.0;
 
-  let mut txn = pool.begin().await.context("could not start transaction").apierr()?;
-  let mut check = Check::by_uuid(&mut txn, &uuid).await.apierr()?;
+  let mut txn = pool.begin().await.context("could not start transaction").short()?;
+  let mut check = Check::by_uuid(&mut txn, &uuid).await.context("could not retrieve check").short()?;
 
   payload.name.run(|value| check.name = value);
   payload.enabled.run(|value| check.enabled = value);
@@ -133,37 +133,37 @@ pub async fn patch(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<J
   payload.silent.run(|value| check.silent = value);
 
   if let Some(value) = payload.alerter {
-    let alerter = Alerter::by_uuid(&mut txn, &value).await.apierr()?;
+    let alerter = Alerter::by_uuid(&mut txn, &value).await.context("could not retrieve alerter").short()?;
 
     check.alerter_id = Some(alerter.id);
   }
 
   if let Some(value) = payload.sites {
-    check.update_sites(&mut *txn, &value).await.apierr()?;
+    check.update_sites(&mut *txn, &value).await.short()?;
   }
 
   if let Some(value) = payload.spec {
-    value.update(&mut *txn, &check).await.apierr()?;
+    value.update(&mut *txn, &check).await.short()?;
   }
 
-  check.update(&mut *txn).await.apierr()?;
+  check.update(&mut *txn).await.short()?;
 
-  let check = Check::by_uuid(&mut txn, &uuid).await.apierr()?;
-  let sites = check.sites(&mut *txn).await.apierr()?;
+  let check = Check::by_uuid(&mut txn, &uuid).await.short()?;
+  let sites = check.sites(&mut *txn).await.short()?;
 
   if check.site_threshold as usize > sites.len() {
-    Err(AppError::BadRequest(anyhow!("`site_threshold` cannot exceed the number of `sites`"))).apierr()?;
+    Err(anyhow!("`site_threshold` cannot exceed the number of `sites`").context(AppError::BadRequest)).short()?;
   }
 
-  txn.commit().await.context("could not commit transaction").apierr()?;
+  txn.commit().await.context("could not commit transaction").short()?;
 
   Ok(())
 }
 
 #[delete("/api/checks/<uuid>")]
 pub async fn delete(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  Check::delete(&mut conn, &uuid).await.apierr()?;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  Check::delete(&mut conn, &uuid).await.context("could not delete check").short()?;
 
   Ok(NoContent)
 }

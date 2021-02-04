@@ -23,12 +23,8 @@ mod tests;
 use anyhow::Error;
 
 pub fn log_error(err: &Error) {
-  let desc = err.to_string();
-  let cause = err.root_cause().to_string();
+  // let desc = err.to_string();
+  // let cause = err.root_cause().to_string();
 
-  if desc == cause {
-    log::error!("{}", desc);
-  } else {
-    log::error!("{}: {}", desc, cause);
-  }
+  log::error!("{:#}", err);
 }

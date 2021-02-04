@@ -5,7 +5,7 @@ use sqlx::{Done, FromRow, MySqlConnection};
 use uuid::Uuid;
 
 use crate::{
-  api::error::{server_error, AppError},
+  api::error::Shortable,
   model::{Check, Event},
 };
 
@@ -53,7 +53,7 @@ impl SiteOutage {
     .bind(end)
     .fetch_all(&mut *conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     Ok(outages)
   }
@@ -70,7 +70,7 @@ impl SiteOutage {
     )
     .fetch_all(&mut *conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     Ok(outages)
   }
@@ -86,10 +86,7 @@ impl SiteOutage {
     .bind(uuid)
     .fetch_one(&mut *conn)
     .await
-    .map_err(|err| match err {
-      sqlx::Error::RowNotFound => AppError::ResourceNotFound(anyhow!(err).context("unknown check UUID")),
-      err => server_error(err),
-    })?;
+    .short()?;
 
     Ok(outage)
   }
@@ -112,7 +109,7 @@ impl SiteOutage {
 
       Err(err) => match err {
         sqlx::Error::RowNotFound => Ok(OutageRef::New),
-        err => Err(err.into()),
+        err => Err(err).short()?,
       },
     }
   }
@@ -132,10 +129,11 @@ impl SiteOutage {
           )
           .bind(outage.id)
           .execute(&mut *conn)
-          .await?;
+          .await
+          .short()?;
 
           if outage.failing_strikes + 1 == check.failing_threshold {
-            kvlog!(Info, "outage started", {
+            kvlog!(Info, "site outage started", {
               "kind" => check.kind,
               "check" => check.uuid,
               "failed" => format!("{}/{}", outage.failing_strikes + 1, check.failing_threshold),
@@ -146,7 +144,8 @@ impl SiteOutage {
 
         if outage.passing_strikes < check.passing_threshold && event.status == 0 {
           let ended_on = if outage.passing_strikes + 1 == check.passing_threshold {
-            kvlog!(Info, "outage resolved", {
+            kvlog!(Info, "site outage resolved", {
+              "site" => event.site,
               "kind" => check.kind,
               "check" => check.uuid,
               "failed" => format!("{}/{}", outage.failing_strikes, check.failing_threshold),
@@ -168,7 +167,8 @@ impl SiteOutage {
           .bind(ended_on)
           .bind(outage.id)
           .execute(&mut *conn)
-          .await?;
+          .await
+          .short()?;
         }
 
         let outage = SiteOutage::by_uuid(&mut *conn, &outage.uuid).await?;
@@ -190,12 +190,14 @@ impl SiteOutage {
           .bind(event.check_id)
           .bind(&event.site)
           .execute(&mut *conn)
-          .await?;
+          .await
+          .short()?;
 
           let outage = SiteOutage::by_uuid(&mut *conn, &uuid).await?;
 
           if check.failing_threshold == 1 {
             kvlog!(Info, "outage started", {
+              "site" => event.site,
               "kind" => check.kind,
               "check" => check.uuid,
               "failed" => format!("1/{}", check.failing_threshold),
@@ -228,7 +230,8 @@ impl SiteOutage {
     )
     .bind(epoch)
     .execute(conn)
-    .await?;
+    .await
+    .short()?;
 
     Ok(result.rows_affected())
   }
@@ -248,7 +251,8 @@ impl SiteOutage {
     )
     .bind(check.id)
     .fetch_one(&mut *conn)
-    .await?;
+    .await
+    .short()?;
 
     Ok(count.0)
   }

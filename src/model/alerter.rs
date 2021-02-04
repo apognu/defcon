@@ -2,11 +2,7 @@ use anyhow::Result;
 use sqlx::{FromRow, MySqlConnection};
 use uuid::Uuid;
 
-use crate::{
-  alerters::*,
-  api::error::{server_error, AppError},
-  model::AlerterKind,
-};
+use crate::{alerters::*, api::error::Shortable, model::AlerterKind};
 
 #[derive(Debug, Default, FromRow, Serialize, Deserialize)]
 pub struct Alerter {
@@ -28,7 +24,7 @@ impl Alerter {
     )
     .fetch_all(&mut *conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     Ok(alerters)
   }
@@ -44,10 +40,7 @@ impl Alerter {
     .bind(id)
     .fetch_one(&mut *conn)
     .await
-    .map_err(|err| match err {
-      sqlx::Error::RowNotFound => AppError::ResourceNotFound(anyhow!(err).context("unknown alerter")),
-      err => server_error(err),
-    })?;
+    .short()?;
 
     Ok(alerter)
   }
@@ -63,16 +56,14 @@ impl Alerter {
     .bind(uuid)
     .fetch_one(&mut *conn)
     .await
-    .map_err(|err| match err {
-      sqlx::Error::RowNotFound => AppError::ResourceNotFound(anyhow!(err).context("unknown alerter")),
-      err => server_error(err),
-    })?;
+    .short()?;
 
     Ok(alerter)
   }
 
   pub async fn insert(self, conn: &mut MySqlConnection) -> Result<Alerter> {
     let uuid = Uuid::new_v4().to_string();
+
     sqlx::query(
       "
         INSERT INTO alerters ( uuid, kind, webhook )
@@ -84,7 +75,7 @@ impl Alerter {
     .bind(self.webhook)
     .execute(&mut *conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     let alerter = Alerter::by_uuid(&mut *conn, &uuid).await?;
 
@@ -104,7 +95,7 @@ impl Alerter {
     .bind(self.id)
     .execute(&mut *conn)
     .await
-    .map_err(server_error)?;
+    .short()?;
 
     let alerter = Alerter::by_uuid(conn, &self.uuid).await?;
 

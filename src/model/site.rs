@@ -1,7 +1,7 @@
 use anyhow::Result;
 use sqlx::{FromRow, MySqlConnection};
 
-use crate::model::Check;
+use crate::{api::error::Shortable, model::Check};
 
 #[derive(Debug, FromRow)]
 pub struct Site {
@@ -11,14 +11,15 @@ pub struct Site {
 
 impl Site {
   pub async fn insert(conn: &mut MySqlConnection, check: &Check, sites: &[String]) -> Result<()> {
-    sqlx::query("DELETE FROM check_sites WHERE check_id = ?").bind(check.id).execute(&mut *conn).await?;
+    sqlx::query("DELETE FROM check_sites WHERE check_id = ?").bind(check.id).execute(&mut *conn).await.short()?;
 
     for slug in sites {
       sqlx::query("INSERT INTO check_sites (check_id, slug) VALUES ( ?, ? )")
         .bind(check.id)
         .bind(slug)
         .execute(&mut *conn)
-        .await?;
+        .await
+        .short()?;
     }
 
     Ok(())

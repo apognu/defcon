@@ -5,7 +5,7 @@ use sqlx::{MySql, Pool};
 
 use crate::{
   api::{
-    error::{check_json, Errorable},
+    error::{check_json, Shortable},
     types as api, ApiResponse,
   },
   model::Outage,
@@ -13,11 +13,11 @@ use crate::{
 
 #[put("/api/outages/<uuid>/comment", data = "<payload>")]
 pub async fn comment(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<api::OutageComment>, JsonError<'_>>) -> ApiResponse<()> {
-  let payload = check_json(payload).apierr()?;
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").apierr()?;
-  let outage = Outage::by_uuid(&mut conn, &uuid).await.apierr()?;
+  let payload = check_json(payload).short()?;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let outage = Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
 
-  outage.comment(&mut conn, &payload.comment).await.apierr()?;
+  outage.comment(&mut conn, &payload.comment).await.context("could not add comment to outage").short()?;
 
   Ok(())
 }

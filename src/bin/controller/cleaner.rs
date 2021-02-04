@@ -7,7 +7,7 @@ use sqlx::{MySql, Pool};
 
 use defcon::{
   config::Config,
-  model::{Event, SiteOutage},
+  model::{Event, Outage, SiteOutage},
 };
 
 pub async fn tick(pool: Pool<MySql>, config: Arc<Config>) {
@@ -17,13 +17,15 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>) {
     let mut txn = pool.begin().await?;
 
     let events = Event::delete_before(&mut txn, &epoch).await?;
-    let outages = SiteOutage::delete_before(&mut txn, &epoch).await?;
+    let site_outages = SiteOutage::delete_before(&mut txn, &epoch).await?;
+    let outages = Outage::delete_before(&mut txn, &epoch).await?;
 
     txn.commit().await.context("could not commit transaction")?;
 
-    if outages > 0 && events > 0 {
+    if outages > 0 || site_outages > 0 || events > 0 {
       kvlog!(Info, "cleaned database", {
         "outages" => outages,
+        "site_outages" => site_outages,
         "events" => events
       });
     }
