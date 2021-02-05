@@ -35,6 +35,8 @@ pub fn routes() -> Vec<Route> {
     site_outages::list,
     site_outages::list_between,
     site_outages::get,
+    outages::list,
+    outages::list_between,
     outages::comment,
     events::list,
     alerters::list,

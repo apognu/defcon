@@ -46,7 +46,7 @@ pub async fn report(pool: State<'_, Pool<MySql>>, credentials: RunnerCredentials
     ..Default::default()
   };
 
-  handlers::handle_event(&mut *conn, &credentials.site, &event, &check, None).await.short()?;
+  handlers::handle_event(&mut *conn, &event, &check, None).await.short()?;
 
   Ok(())
 }

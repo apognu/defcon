@@ -41,7 +41,7 @@ impl Event {
     Ok(events)
   }
 
-  pub async fn insert(&self, conn: &mut MySqlConnection, outage: Option<&SiteOutage>, site: &str) -> Result<()> {
+  pub async fn insert(&self, conn: &mut MySqlConnection, outage: Option<&SiteOutage>) -> Result<()> {
     sqlx::query(
       "
         INSERT INTO events (check_id, outage_id, site, status, message, created_at)
@@ -50,7 +50,7 @@ impl Event {
     )
     .bind(self.check_id)
     .bind(outage.map(|outage| outage.id))
-    .bind(site)
+    .bind(&self.site)
     .bind(self.status)
     .bind(&self.message)
     .execute(conn)
@@ -92,7 +92,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "for_outage()", None).await?;
+    pool.create_check(None, None, "for_outage()", None, None).await?;
     pool.create_unresolved_site_outage(None, None).await?;
 
     let outage = SiteOutage { id: 1, ..Default::default() };
@@ -111,7 +111,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "insert()", None).await?;
+    pool.create_check(None, None, "insert()", None, None).await?;
     pool.create_unresolved_site_outage(None, None).await?;
 
     let outage = SiteOutage { id: 1, ..Default::default() };
@@ -122,7 +122,7 @@ mod tests {
       ..Default::default()
     };
 
-    event.insert(&mut *conn, Some(&outage), "@controller").await?;
+    event.insert(&mut *conn, Some(&outage)).await?;
 
     let event = sqlx::query_as::<_, (u8, String)>(r#"SELECT status, message FROM events ORDER BY id DESC LIMIT 1"#)
       .fetch_one(&*pool)
@@ -141,7 +141,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "delete_before()", None).await?;
+    pool.create_check(None, None, "delete_before()", None, None).await?;
     pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
     pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 

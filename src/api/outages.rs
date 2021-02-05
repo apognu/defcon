@@ -6,10 +6,34 @@ use sqlx::{MySql, Pool};
 use crate::{
   api::{
     error::{check_json, Shortable},
-    types as api, ApiResponse,
+    types::{self as api, ApiMapper},
+    ApiResponse,
   },
   model::Outage,
 };
+
+#[get("/api/outages", rank = 10)]
+pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<api::Outage>>> {
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let outages = Outage::current(&mut conn).await.context("could not retrieve outages").short()?.map(&*pool).await.short()?;
+
+  Ok(Json(outages))
+}
+
+#[get("/api/outages?<start>&<end>", rank = 5)]
+pub async fn list_between(pool: State<'_, Pool<MySql>>, start: api::DateTime, end: api::DateTime) -> ApiResponse<Json<Vec<api::Outage>>> {
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+
+  let outages = Outage::between(&mut conn, *start, *end)
+    .await
+    .context("could not retrieve outages")
+    .short()?
+    .map(&*pool)
+    .await
+    .short()?;
+
+  Ok(Json(outages))
+}
 
 #[put("/api/outages/<uuid>/comment", data = "<payload>")]
 pub async fn comment(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<api::OutageComment>, JsonError<'_>>) -> ApiResponse<()> {
@@ -34,7 +58,7 @@ mod tests {
   async fn comment() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "comment()", None).await?;
+    pool.create_check(None, None, "comment()", None, None).await?;
     pool.create_resolved_outage(None, None).await?;
 
     let payload = json!({

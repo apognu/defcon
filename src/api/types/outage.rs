@@ -8,15 +8,20 @@ use crate::{
 };
 
 #[derive(Debug, Serialize)]
-pub struct SiteOutage {
+pub struct Outage {
   #[serde(flatten)]
-  pub outage: db::SiteOutage,
+  pub outage: db::Outage,
   pub check: api::Check,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct OutageComment {
+  pub comment: String,
+}
+
 #[async_trait]
-impl ApiMapper for db::SiteOutage {
-  type Output = api::SiteOutage;
+impl ApiMapper for db::Outage {
+  type Output = api::Outage;
 
   async fn map(self, pool: &Pool<MySql>) -> Result<Self::Output> {
     let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
@@ -25,7 +30,7 @@ impl ApiMapper for db::SiteOutage {
     let alerter = check.alerter(&mut *conn).await;
     let sites = check.sites(&mut *conn).await?;
 
-    let outage = api::SiteOutage {
+    let outage = api::Outage {
       outage: self,
       check: api::Check {
         check,
@@ -40,8 +45,8 @@ impl ApiMapper for db::SiteOutage {
 }
 
 #[async_trait]
-impl ApiMapper for Vec<db::SiteOutage> {
-  type Output = Vec<api::SiteOutage>;
+impl ApiMapper for Vec<db::Outage> {
+  type Output = Vec<api::Outage>;
 
   async fn map(self, pool: &Pool<MySql>) -> Result<Self::Output> {
     let outages = stream::iter(self)
@@ -53,7 +58,7 @@ impl ApiMapper for Vec<db::SiteOutage> {
                 let alerter = check.alerter(&mut *conn).await;
                 let sites = check.sites(&mut *conn).await.unwrap_or_default();
 
-                let outage = api::SiteOutage {
+                let outage = api::Outage {
                   outage,
                   check: api::Check {
                     check,

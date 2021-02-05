@@ -55,7 +55,7 @@ mod tests {
   async fn list() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "list()", None).await?;
+    pool.create_check(None, None, "list()", None, None).await?;
     pool.create_unresolved_site_outage(Some(1), None).await?;
     pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
@@ -73,7 +73,7 @@ mod tests {
   async fn list_between() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "list_between()", None).await?;
+    pool.create_check(None, None, "list_between()", None, None).await?;
     pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
     pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
@@ -92,7 +92,7 @@ mod tests {
   async fn get() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "get()", None).await?;
+    pool.create_check(None, None, "get()", None, None).await?;
     pool.create_unresolved_site_outage(Some(1), None).await?;
 
     let response = client.get("/api/sites/outages/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
@@ -110,7 +110,7 @@ mod tests {
   async fn get_not_found() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "get_not_found()", None).await?;
+    pool.create_check(None, None, "get_not_found()", None, None).await?;
     pool.create_unresolved_site_outage(Some(1), None).await?;
 
     let response = client.get("/api/sites/outages/nonexistant").dispatch().await;

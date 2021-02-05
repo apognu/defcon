@@ -18,6 +18,52 @@ pub struct Outage {
 }
 
 impl Outage {
+  pub async fn between(conn: &mut MySqlConnection, from: NaiveDateTime, end: NaiveDateTime) -> Result<Vec<Outage>> {
+    let outages = sqlx::query_as::<_, Outage>(
+      "
+        SELECT outages.id, check_id, outages.uuid, started_on, ended_on, comment
+        FROM outages
+        INNER JOIN checks
+        ON checks.id = outages.check_id
+        WHERE
+          checks.enabled = 1 AND
+          (
+            (outages.started_on <= ? AND outages.ended_on IS NULL) OR
+            (outages.started_on <= ? AND outages.ended_on >= ?) OR
+            (outages.started_on BETWEEN ? AND ? AND (outages.ended_on IS NULL OR outages.ended_on <= ?))
+          )
+      ",
+    )
+    .bind(end)
+    .bind(from)
+    .bind(from)
+    .bind(from)
+    .bind(end)
+    .bind(end)
+    .fetch_all(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(outages)
+  }
+
+  pub async fn current(conn: &mut MySqlConnection) -> Result<Vec<Outage>> {
+    let outages = sqlx::query_as::<_, Outage>(
+      "
+        SELECT outages.id, check_id, outages.uuid, started_on, ended_on, comment
+        FROM outages
+        INNER JOIN checks
+        ON checks.id = outages.check_id
+        WHERE outages.ended_on IS NULL AND checks.enabled = 1
+      ",
+    )
+    .fetch_all(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(outages)
+  }
+
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Outage> {
     let outage = sqlx::query_as::<_, Outage>(
       "

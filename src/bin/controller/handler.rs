@@ -58,7 +58,7 @@ async fn run(pool: Pool<MySql>, config: Arc<Config>, check: Check, mut inhibitor
     let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
 
     match check.run(&mut *conn, config, "@controller").await {
-      Ok(event) => handlers::handle_event(&mut conn, "@controller", &event, &check, Some(inhibitor)).await?,
+      Ok(event) => handlers::handle_event(&mut conn, &event, &check, Some(inhibitor)).await?,
 
       Err(err) => {
         inhibitor.inhibit_for("@controller", &check.uuid, *check.interval);

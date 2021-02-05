@@ -307,7 +307,7 @@ impl Check {
       };
 
       if let Err(err) = inner().await {
-        crate::log_error(&err);
+        log::error!("{:#}", err);
       }
     }
   }
@@ -345,7 +345,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "all()", None).await?;
+    pool.create_check(None, None, "all()", None, None).await?;
 
     let checks = Check::all(&mut *conn).await?;
 
@@ -368,8 +368,8 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "enabled()", Some(true)).await?;
-    pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "enabled()", Some(false)).await?;
+    pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "enabled()", Some(true), None).await?;
+    pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "enabled()", Some(false), None).await?;
 
     let checks = Check::enabled(&mut *conn).await?;
 
@@ -384,7 +384,7 @@ mod tests {
   async fn by_uuid() -> Result<()> {
     let pool = tests::db_client().await?;
 
-    pool.create_check(None, None, "by_uuid()", None).await?;
+    pool.create_check(None, None, "by_uuid()", None, None).await?;
 
     let check = sqlx::query_as::<_, (String, String, bool, u64)>(r#"SELECT name, kind, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
       .fetch_one(&*pool)
@@ -404,7 +404,7 @@ mod tests {
   async fn by_id() -> Result<()> {
     let pool = tests::db_client().await?;
 
-    pool.create_check(None, None, "by_id()", None).await?;
+    pool.create_check(None, None, "by_id()", None, None).await?;
 
     let check = sqlx::query_as::<_, (String, String, bool, u64)>(r#"SELECT name, kind, enabled, `interval` FROM checks WHERE id = 1"#)
       .fetch_one(&*pool)
@@ -459,7 +459,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "update()", None).await?;
+    pool.create_check(None, None, "update()", None, None).await?;
 
     let update = Check {
       id: 1,
@@ -495,7 +495,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "delete()", None).await?;
+    pool.create_check(None, None, "delete()", None, None).await?;
 
     let check = Check {
       uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
@@ -533,17 +533,18 @@ mod tests {
 
     let mut event = Event {
       check_id: check.id,
+      site: "@controller".to_string(),
       status: 0,
       message: "First event".to_string(),
       ..Default::default()
     };
 
-    event.insert(&mut *conn, None, "@controller").await?;
+    event.insert(&mut *conn, None).await?;
 
-    tokio::time::delay_for(StdDuration::from_secs(2)).await;
+    tokio::time::delay_for(StdDuration::from_secs(1)).await;
 
     event.message = "Last event".to_string();
-    event.insert(&mut *conn, None, "@controller").await?;
+    event.insert(&mut *conn, None).await?;
 
     let last = check.last_event_for_site(&mut *conn, "@controller").await?;
 

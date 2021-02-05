@@ -181,8 +181,8 @@ mod tests {
   async fn list() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true)).await?;
-    pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "list_checks_2()", Some(false)).await?;
+    pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true), None).await?;
+    pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "list_checks_2()", Some(false), None).await?;
 
     let response = client.get("/api/checks").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
@@ -200,8 +200,8 @@ mod tests {
   async fn list_all() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true)).await?;
-    pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "list_checks_2()", Some(false)).await?;
+    pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true), None).await?;
+    pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "list_checks_2()", Some(false), None).await?;
 
     let response = client.get("/api/checks?all=true").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
@@ -218,7 +218,7 @@ mod tests {
   async fn get() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "get_check()", None).await?;
+    pool.create_check(None, None, "get_check()", None, None).await?;
 
     let response = client.get("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
@@ -376,7 +376,7 @@ mod tests {
   async fn update() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "update()", None).await?;
+    pool.create_check(None, None, "update()", None, None).await?;
 
     let check = json!({
       "name": "new_update()",
@@ -421,7 +421,7 @@ mod tests {
   async fn update_different_kind() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "update_different_kind()", None).await?;
+    pool.create_check(None, None, "update_different_kind()", None, None).await?;
 
     let check = json!({
       "name": "update_different_kind()",
@@ -473,7 +473,7 @@ mod tests {
   async fn patch() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "patch()", None).await?;
+    pool.create_check(None, None, "patch()", None, None).await?;
 
     let check = json!({
       "name": "new_patch()",
@@ -508,7 +508,7 @@ mod tests {
   async fn patch_not_enough_sites() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "patch_not_enough_sites()", None).await?;
+    pool.create_check(None, None, "patch_not_enough_sites()", None, None).await?;
 
     let check = json!({
       "sites": ["@controller"],
@@ -527,7 +527,7 @@ mod tests {
   async fn delete() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "delete()", None).await?;
+    pool.create_check(None, None, "delete()", None, None).await?;
 
     let response = client.delete("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
     assert_eq!(response.status(), Status::NoContent);

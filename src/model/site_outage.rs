@@ -9,6 +9,7 @@ use crate::{
   model::{Check, Event},
 };
 
+#[derive(Debug)]
 enum OutageRef {
   New,
   Existing(SiteOutage),
@@ -212,7 +213,7 @@ impl SiteOutage {
       }
 
       Err(err) => {
-        crate::log_error(&err);
+        log::error!("{:#}", err);
 
         None
       }
@@ -276,7 +277,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "between()", None).await?;
+    pool.create_check(None, None, "between()", None, None).await?;
     pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
     pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
@@ -308,7 +309,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "by_uuid()", None).await?;
+    pool.create_check(None, None, "by_uuid()", None, None).await?;
     pool.create_unresolved_site_outage(None, None).await?;
 
     let outage = SiteOutage::by_uuid(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
@@ -326,7 +327,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "by_uuid()", None).await?;
+    pool.create_check(None, None, "by_uuid()", None, None).await?;
 
     let check = Check { id: 1, ..Default::default() };
 
@@ -348,7 +349,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "insert()", None).await?;
+    pool.create_check(None, None, "insert()", None, None).await?;
 
     let check = Check {
       id: 1,
@@ -407,7 +408,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "between()", None).await?;
+    pool.create_check(None, None, "between()", None, None).await?;
     pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
     pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
@@ -426,7 +427,7 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "delete_before()", None).await?;
+    pool.create_check(None, None, "delete_before()", None, None).await?;
     pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
     pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 

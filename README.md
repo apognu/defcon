@@ -152,6 +152,8 @@ Defcon exposes an **unauthenticated** API used to manipulate and retrieve the da
 | GET    | /api/sites/outages?start=`YYYY-MM-DDTHH:MM:SS`&end=`YYYY-MM-DDTHH:MM:SS` | List all site outages during a time period           |
 | GET    | /api/sites/outages/`uuid`                                                | Get information on a specific site outage            |
 | GET    | /api/sites/outages/`uuid`/events                                         | Get all events related to a site outage              |
+| GET    | /api/outages                                                             | List all active outages, with the related check      |
+| GET    | /api/outages?start=`YYYY-MM-DDTHH:MM:SS`&end=`YYYY-MM-DDTHH:MM:SS`       | List all outages during a time period                |
 | PUT    | /api/outages/`uuid`/comment                                              | Add a comment to an outage                           |
 | GET    | /api/alerters                                                            | Get all configured alerters                          |
 | GET    | /api/alerters/`uuid`                                                     | Get information on a specific alerter                |

@@ -30,13 +30,13 @@ pub trait Handler: Send {
   async fn run(&self, spec: &Self::Spec, site: &str) -> Result<Event>;
 }
 
-pub async fn handle_event(conn: &mut MySqlConnection, site: &str, event: &Event, check: &Check, inhibitor: Option<Inhibitor>) -> Result<()> {
+pub async fn handle_event(conn: &mut MySqlConnection, event: &Event, check: &Check, inhibitor: Option<Inhibitor>) -> Result<()> {
   let outage = SiteOutage::insert(&mut *conn, &check, &event).await.ok().flatten();
 
-  event.insert(&mut *conn, outage.as_ref(), site).await?;
+  event.insert(&mut *conn, outage.as_ref()).await?;
 
   if let Some(mut inhibitor) = inhibitor {
-    inhibitor.release(site, &check.uuid);
+    inhibitor.release(&event.site, &check.uuid);
   }
 
   if let Some(outage) = outage {
@@ -57,7 +57,7 @@ pub async fn handle_event(conn: &mut MySqlConnection, site: &str, event: &Event,
 
   if event.status == 0 {
     kvlog!(Debug, "check passed", {
-      "site" => site,
+      "site" => event.site,
       "kind" => check.kind,
       "check" => check.uuid,
       "name" => check.name,
@@ -65,7 +65,7 @@ pub async fn handle_event(conn: &mut MySqlConnection, site: &str, event: &Event,
     });
   } else {
     kvlog!(Debug, "check failed", {
-      "site" => site,
+      "site" => event.site,
       "kind" => check.kind,
       "check" => check.uuid,
       "name" => check.name,
@@ -74,4 +74,82 @@ pub async fn handle_event(conn: &mut MySqlConnection, site: &str, event: &Event,
   }
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  use anyhow::Result;
+
+  use crate::{
+    model::{Check, Event, Outage, SiteOutage},
+    tests,
+  };
+
+  #[tokio::test]
+  async fn outages_are_created() -> Result<()> {
+    let pool = tests::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    pool.create_check(None, None, "outages_are_created()", None, Some(&["@controller", "eu-1"])).await?;
+
+    let check = Check::by_id(&mut *conn, 1).await?;
+    let mut event = Event {
+      check_id: 1,
+      site: "@controller".to_string(),
+      status: 1,
+      message: "failure".to_string(),
+      ..Default::default()
+    };
+
+    super::handle_event(&mut *conn, &event, &check, None).await?;
+    assert_eq!(SiteOutage::count(&mut *conn, &check).await?, 0);
+    super::handle_event(&mut *conn, &event, &check, None).await?;
+    assert_eq!(SiteOutage::count(&mut *conn, &check).await?, 1);
+
+    assert!(matches!(Outage::for_check(&mut *conn, &check).await, Err(_)));
+
+    event.site = "eu-1".to_string();
+
+    super::handle_event(&mut *conn, &event, &check, None).await?;
+    assert_eq!(SiteOutage::current(&mut *conn).await?.len(), 1);
+    super::handle_event(&mut *conn, &event, &check, None).await?;
+    assert_eq!(SiteOutage::current(&mut *conn).await?.len(), 2);
+
+    assert!(matches!(Outage::for_check(&mut *conn, &check).await, Ok(_)));
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn outages_are_resolved() -> Result<()> {
+    let pool = tests::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    pool.create_check(None, None, "outages_are_resolved()", None, None).await?;
+
+    let check = Check::by_id(&mut *conn, 1).await?;
+    let mut event = Event {
+      check_id: 1,
+      site: "@controller".to_string(),
+      status: 1,
+      message: "failure".to_string(),
+      ..Default::default()
+    };
+
+    super::handle_event(&mut *conn, &event, &check, None).await?;
+    super::handle_event(&mut *conn, &event, &check, None).await?;
+
+    event.status = 0;
+
+    super::handle_event(&mut *conn, &event, &check, None).await?;
+    super::handle_event(&mut *conn, &event, &check, None).await?;
+
+    assert!(matches!(Outage::for_check(&mut *conn, &check).await, Err(_)));
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
 }
