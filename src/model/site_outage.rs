@@ -196,7 +196,7 @@ impl SiteOutage {
           let outage = SiteOutage::by_uuid(&mut *conn, &uuid).await?;
 
           if check.failing_threshold == 1 {
-            kvlog!(Info, "outage started", {
+            kvlog!(Info, "site outage started", {
               "site" => event.site,
               "kind" => check.kind,
               "check" => check.uuid,

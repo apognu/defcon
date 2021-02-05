@@ -1,3 +1,5 @@
+use extend::ext;
+
 pub trait Run<T> {
   type Target;
 
@@ -16,6 +18,16 @@ impl<T> Run<T> for Option<T> {
     if let Some(value) = self {
       f(value);
     }
+  }
+}
+
+#[ext(pub, name = EnvExt)]
+impl<E> Result<String, E>
+where
+  E: std::error::Error,
+{
+  fn or_string(self, value: &str) -> String {
+    self.unwrap_or_else(|_| value.to_owned())
   }
 }
 

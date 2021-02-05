@@ -26,7 +26,7 @@ pub async fn list_between(pool: State<'_, Pool<MySql>>, start: api::DateTime, en
 
   let outages = SiteOutage::between(&mut conn, *start, *end)
     .await
-    .context("could not find alerters")
+    .context("could not retrieve outages")
     .short()?
     .map(&*pool)
     .await

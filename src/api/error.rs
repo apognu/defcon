@@ -10,6 +10,8 @@ use rocket_contrib::{json, json::JsonError};
 pub enum AppError {
   #[error("bad request")]
   BadRequest,
+  #[error("invalid credentials")]
+  InvalidCredentials,
   #[error("missing resource")]
   ResourceNotFound,
   #[error("server error, please check your logs for more information")]
@@ -79,6 +81,7 @@ impl<'a, T> Shortable<'a, T> for Result<T, Error> {
   fn short(self) -> Self::Output {
     self.map_err(|err| match err.downcast_ref::<AppError>() {
       Some(AppError::BadRequest) => ErrorResponse(Custom(Status::BadRequest, err)),
+      Some(AppError::InvalidCredentials) => ErrorResponse(Custom(Status::Unauthorized, err)),
       Some(AppError::ResourceNotFound) => ErrorResponse(Custom(Status::NotFound, err)),
       Some(AppError::ServerError) => ErrorResponse(Custom(Status::InternalServerError, err)),
       Some(AppError::DatabaseError) => ErrorResponse(Custom(Status::InternalServerError, err)),

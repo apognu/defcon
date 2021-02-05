@@ -12,7 +12,7 @@ use std::{env, sync::Arc, time::Instant};
 
 use anyhow::{Context, Error, Result};
 use futures::future;
-use kvlogger::KvLoggerBuilder;
+use lazy_static::lazy_static;
 use rocket::config::Config as RocketConfig;
 use sqlx::{
   mysql::{MySql, MySqlPoolOptions},
@@ -20,11 +20,19 @@ use sqlx::{
 };
 
 use defcon::{
-  api::{self, middlewares::ApiLogger},
+  api::{self, auth::Keys, middlewares::ApiLogger},
   config::Config,
   inhibitor::Inhibitor,
   model::migrations,
 };
+
+lazy_static! {
+  static ref PUBLIC_KEY: Vec<u8> = env::var("PUBLIC_KEY")
+    .map(|key| format!("-----BEGIN PUBLIC KEY-----{}-----END PUBLIC KEY-----", key))
+    .unwrap_or_default()
+    .as_bytes()
+    .to_vec();
+}
 
 pub fn log_error(err: &Error) {
   let desc = err.to_string();
@@ -38,17 +46,11 @@ pub fn log_error(err: &Error) {
 }
 
 #[tokio::main]
-async fn main() {
-  if let Err(err) = start().await {
-    log_error(&err);
-  }
-}
-
-async fn start() -> Result<()> {
-  Config::set_log_level();
-  KvLoggerBuilder::default().init()?;
+async fn main() -> Result<()> {
+  Config::set_log_level()?;
 
   let config = Config::parse()?;
+  let keys = Keys::new_public(&PUBLIC_KEY).context("public key should be ECDSA in PEM format")?;
 
   let dsn = env::var("DSN")?;
   let pool = MySqlPoolOptions::new().max_connections(20).connect(&dsn).await?;
@@ -83,7 +85,7 @@ async fn start() -> Result<()> {
 
   match config.api {
     true => {
-      if let Err(err) = run_api(pool, config).await {
+      if let Err(err) = run_api(pool, config, keys).await {
         log_error(&err);
       }
     }
@@ -94,13 +96,13 @@ async fn start() -> Result<()> {
   Ok(())
 }
 
-async fn run_api(pool: Pool<MySql>, config: Arc<Config>) -> Result<()> {
+async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Keys<'static>) -> Result<()> {
   log::info!("started API process on port {}", config.api_port);
 
   let mut provider = RocketConfig::release_default();
   provider.port = config.api_port;
 
-  api::server(provider, pool).attach(ApiLogger::new()).launch().await.context("could not launch API handler")?;
+  api::server(provider, pool, keys).attach(ApiLogger::new()).launch().await.context("could not launch API handler")?;
 
   Ok(())
 }

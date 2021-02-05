@@ -1,4 +1,5 @@
 mod alerters;
+pub mod auth;
 mod checks;
 pub mod error;
 mod events;
@@ -8,16 +9,16 @@ mod runner;
 mod site_outages;
 pub mod types;
 
-use rocket::{Config, Rocket, Route};
+use rocket::{Config as RocketConfig, Rocket, Route};
 use rocket_contrib::{json, json::JsonValue};
 use sqlx::{MySql, Pool};
 
-use crate::api::error::ErrorResponse;
+use crate::api::{auth::Keys, error::ErrorResponse};
 
 type ApiResponse<T> = Result<T, ErrorResponse>;
 
-pub fn server(provider: Config, pool: Pool<MySql>) -> Rocket {
-  rocket::custom(provider).manage(pool).mount("/", routes()).register(catchers![not_found, unprocessable])
+pub fn server(provider: RocketConfig, pool: Pool<MySql>, keys: Keys<'static>) -> Rocket {
+  rocket::custom(provider).manage(pool).manage(keys).mount("/", routes()).register(catchers![not_found, unprocessable])
 }
 
 pub fn routes() -> Vec<Route> {

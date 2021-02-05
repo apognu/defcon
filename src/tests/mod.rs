@@ -11,7 +11,11 @@ use sqlx::mysql::MySqlPoolOptions;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{api, model::migrations, tests::TestConnection};
+use crate::{
+  api::{self, auth::Keys},
+  model::migrations,
+  tests::TestConnection,
+};
 
 pub use self::{alerters::*, checks::*, db::*, outages::*};
 
@@ -27,7 +31,11 @@ pub async fn api_client() -> Result<(TestConnection, Client)> {
 
   migrations::migrate(&dsn.to_string())?;
 
-  let server = api::server(Config::default(), pool.clone());
+  let keys = Keys::new_public(
+    "-----BEGIN PUBLIC KEY-----MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMUdYFmfbi57NV7pTIht38+w8yPly7rmrD1MPXenlCOu8Mu5623/ztsGeTV9uatuMQeMS+a7NEFzPGjMIKiR3AA==-----END PUBLIC KEY-----".as_bytes(),
+  )?;
+
+  let server = api::server(Config::default(), pool.clone(), keys);
 
   Ok((TestConnection(pool, database), Client::untracked(server).await?))
 }

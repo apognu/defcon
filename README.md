@@ -8,7 +8,7 @@ Defcon is a tool allows you to define and periodically run monitoring checks (al
 
 Defcon requires the following infrastructure to be run:
 
- * A server to run it on (only tested on Linux as of now)
+ * At least one Linux server to run it on
  * A MySQL database
 
 Until clearly stated, the database schema is subject to breaking changes, and migrations will not be used.
@@ -29,11 +29,14 @@ Some of Defcon's default behavior can be customized through environment variable
 | `CLEANER_ENABLE`     | false    | 0             | Enable or disable the cleaner process                  |
 | `CLEANER_INTERVAL`   | false    | 10m           | Interval between cleaner loop iterations               |
 | `CLEANER_THRESHOLD`  | false    | 1y            | Period of time after which to delete stale objects     |
+| `PUBLIC_KEY`         | true     |               | Headerless PEM-formatted ECDSA public key              |
 
 ### Let's go!
 
-```shell
-$ DSN=mysql://defcon:password@mysql.host/defcon?ssl-mode=DISABLED defcon
+```sh
+$ DSN=mysql://defcon:password@mysql.host/defcon?ssl-mode=DISABLED \
+  PUBLIC_KEY=MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMUdYFmfbi57NV7pTIht38+w8yPly7rmrD1MPXenlCOu8Mu5623/ztsGeTV9uatuMQeMS+a7NEFzPGjMIKiR3AA== \
+  defcon
 INFO[2021-01-30T00:19:39.576+0000] started API server on port 8000
 INFO[2021-01-30T00:19:39.576+0000] started handler loop
 ```
@@ -73,17 +76,41 @@ A check is defined as so (here, for an HTTP request check):
 
 When a check fails, an **outage** is created, and kept until such time that the check passes again.
 
-Defcon comes with three components:
+Defcon comes with four components:
 
  * An **API** process, used as our control plane
  * A **cleaner** process, optionally used to delete resolved outages and events
  * A **handler** process, in charge of actually running the cruft of Defcon
+ * An independent **runner** that pulls elligible checks to be run on a remote machine
 
 The **handler** process, every `HANDLER_INTERVAL`, will look at all `enabled` checks and, depending on the timestamp for their last emitted event, determine which one should be run (depending on their respective `interval`s).
 
 If a checks returns an error unrelated to the monitored service (`permission denied` to open local raw socket, for example), no event is emitted an no outage is created. Moreover, the next run for the check will be delayed by `interval` to prevent spam.
 
 When an outage is confirmed, an optional `alerter` is called, with details attached, to export the outage and related objects to a Slack channel (through a webhook) or to a generic webhook URL.
+
+### Multi-site monitoring
+
+On top of the main controller, defcon comes with a runner that is able to be run on other machines to help monitor services from multiple locations. Each check is created with a list of locations where it should be run as well as a threshold of failing `sites` (read: _locations_) above which the service will be considered as globally failing. We then have two kinds of outages:
+
+ * Site-wide outages are triggered when a check exceeds its `failing_threshold` on a specific site. Alerts are not sent for this kind of outage.
+ * Global outages are triggered when the number of site-wide outages for a check exceeds `site_threshold`. It is resolved when it falls under that threshold. Alerts are sent for these.
+
+Sites are only represented as tag values in the `sites` attribute on checks that defines on which sites a check should run. You should configure the runners with the tag value for their site. There should only be one runner using a specific tag value. The controller has a special tag value of `@controller`. Other tag values should conform to `[a-z0-9-]+`.
+
+Runners are authenticated through a common shared private key, used to sign token appended to the requests to the controller.
+
+A runner will periodically ask the controller for all checks that are due for running and locally launch the handlers for those checks. When one of those checks completes, it reports its status back to the controller.
+
+In order to launch a runner, the following command can be performed:
+
+```shell
+$ PRIVATE_KEY=MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgk4Y6hyXXUAE4BD/zjDTKo3ExdCcd/ddCDbiR1M8E+DChRANCAAQxR1gWZ9uLns1XulMiG3fz7DzI+XLuuasPUw9d6eUI67wy7nrbf/O2wZ5NX25q24xB4xL5rs0QXM8aMwgqJHcA \
+  CONTROLLER_URL=https://controller.example.com \
+  SITE=eu-west-1 \
+  POLL_INTERVAL=30s \
+  defcon-runner
+```
 
 ## Checks
 
@@ -111,25 +138,25 @@ You can find example schemas for all these specs (to be used in the API, describ
 
 Defcon exposes an **unauthenticated** API used to manipulate and retrieve the data it uses internally. The available endpoints are detailed in the table below:
 
-| Method | Endpoint                                                           | Description                                     |
-| ------ | ------------------------------------------------------------------ | ----------------------------------------------- |
-| GET    | /api/-/health                                                      | Health endpoint                                 |
-| GET    | /api/checks                                                        | List all enabled checks                         |
-| GET    | /api/check?all=true                                                | List all defined checks                         |
-| GET    | /api/checks/`uuid`                                                 | Get information on a specific check             |
-| POST   | /api/checks                                                        | Create a new check                              |
-| PUT    | /api/checks/`uuid`                                                 | Update a check                                  |
-| PATCH  | /api/checks/`uuid`                                                 | Update a check, with only attributes to update  |
-| DELETE | /api/checks/`uuid`                                                 | Disables a check                                |
-| GET    | /api/outages                                                       | List all active outages, with the related check |
-| GET    | /api/outages?start=`YYYY-MM-DDTHH:MM:SS`&end=`YYYY-MM-DDTHH:MM:SS` | List all outages during a time period           |
-| GET    | /api/outages/`uuid`                                                | Get information on a specific outage            |
-| GET    | /api/outages/`uuid`/events                                         | Get all events related to an outage             |
-| PUT    | /api/outages/`uuid`/comment                                        | Add a comment to an outage                      |
-| GET    | /api/alerters                                                      | Get all configured alerters                     |
-| GET    | /api/alerters/`uuid`                                               | Get information on a specific alerter           |
-| POST   | /api/alerters                                                      | Create a new alerter                            |
-| PUT    | /api/alerters/`uuid`                                               | Update an existing alerter                      |
+| Method | Endpoint                                                                 | Description                                          |
+| ------ | ------------------------------------------------------------------------ | ---------------------------------------------------- |
+| GET    | /api/-/health                                                            | Health endpoint                                      |
+| GET    | /api/checks                                                              | List all enabled checks                              |
+| GET    | /api/check?all=true                                                      | List all defined checks                              |
+| GET    | /api/checks/`uuid`                                                       | Get information on a specific check                  |
+| POST   | /api/checks                                                              | Create a new check                                   |
+| PUT    | /api/checks/`uuid`                                                       | Update a check                                       |
+| PATCH  | /api/checks/`uuid`                                                       | Update a check, with only attributes to update       |
+| DELETE | /api/checks/`uuid`                                                       | Disables a check                                     |
+| GET    | /api/sites/outages                                                       | List all active site outages, with the related check |
+| GET    | /api/sites/outages?start=`YYYY-MM-DDTHH:MM:SS`&end=`YYYY-MM-DDTHH:MM:SS` | List all site outages during a time period           |
+| GET    | /api/sites/outages/`uuid`                                                | Get information on a specific site outage            |
+| GET    | /api/sites/outages/`uuid`/events                                         | Get all events related to a site outage              |
+| PUT    | /api/outages/`uuid`/comment                                              | Add a comment to an outage                           |
+| GET    | /api/alerters                                                            | Get all configured alerters                          |
+| GET    | /api/alerters/`uuid`                                                     | Get information on a specific alerter                |
+| POST   | /api/alerters                                                            | Create a new alerter                                 |
+| PUT    | /api/alerters/`uuid`                                                     | Update an existing alerter                           |
 
 Did you pay attention to the fact that this API is **NOT AUTHENTICATED** and should therefore be used behind some kind of reverse proxy that will add some semblance of security to it?
 
@@ -138,3 +165,4 @@ Did you pay attention to the fact that this API is **NOT AUTHENTICATED** and sho
  * More check types (ideas and PRs are welcome)?
  * Statistics API
  * More extensive, step-by-step documentation
+ * Site registration and specific runner authentication
