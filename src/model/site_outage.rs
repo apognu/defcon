@@ -135,6 +135,7 @@ impl SiteOutage {
 
           if outage.failing_strikes + 1 == check.failing_threshold {
             kvlog!(Info, "site outage started", {
+              "site" => event.site,
               "kind" => check.kind,
               "check" => check.uuid,
               "failed" => format!("{}/{}", outage.failing_strikes + 1, check.failing_threshold),

@@ -36,7 +36,7 @@ pub struct Check {
   pub spec: api::Spec,
 
   pub alerter: Option<String>,
-  pub sites: api::Sites,
+  pub sites: Option<api::Sites>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -67,7 +67,7 @@ impl ApiMapper for db::Check {
       check: self,
       spec,
       alerter: alerter.map(|alerter| alerter.uuid),
-      sites: sites.into(),
+      sites: Some(sites.into()),
     };
 
     Ok(check)
@@ -91,7 +91,7 @@ impl ApiMapper for Vec<db::Check> {
                 check,
                 spec,
                 alerter: alerter.map(|alerter| alerter.uuid),
-                sites: sites.into(),
+                sites: Some(sites.into()),
               };
 
               Some(check)

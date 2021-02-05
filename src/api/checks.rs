@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::{
   api::{
     error::{check_json, AppError, Shortable},
-    types::{self as api, ApiMapper},
+    types::{self as api, ApiMapper, Sites},
     ApiResponse,
   },
   ext::Run,
@@ -43,7 +43,12 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
   let payload = check_json(payload).short()?.0;
   let uuid = Uuid::new_v4().to_string();
 
-  if payload.check.site_threshold as usize > payload.sites.len() {
+  let sites = match payload.sites {
+    Some(sites) => sites,
+    None => Sites(vec!["@controller".to_string()]),
+  };
+
+  if payload.check.site_threshold as usize > sites.len() {
     Err(anyhow!("`site_threshold` cannot exceed the number of `sites`")).context(AppError::BadRequest).short()?;
   }
 
@@ -61,6 +66,7 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
     enabled: payload.check.enabled,
     kind: payload.spec.kind(),
     interval: payload.check.interval,
+    site_threshold: payload.check.site_threshold,
     passing_threshold: payload.check.passing_threshold,
     failing_threshold: payload.check.failing_threshold,
     silent: payload.check.silent,
@@ -69,7 +75,7 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
 
   let check = check.insert(&mut *txn).await.context("could not create check").short()?;
   payload.spec.insert(&mut *txn, &check).await.context("could not create spec").short()?;
-  check.update_sites(&mut *txn, &payload.sites).await.context("could not update check sites").short()?;
+  check.update_sites(&mut *txn, &sites).await.context("could not update check sites").short()?;
 
   txn.commit().await.context("could not commit transaction").short()?;
 
@@ -80,7 +86,12 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
 pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?.0;
 
-  if payload.check.site_threshold as usize > payload.sites.len() {
+  let sites = match payload.sites {
+    Some(sites) => sites,
+    None => Sites(vec!["@controller".to_string()]),
+  };
+
+  if payload.check.site_threshold as usize > sites.len() {
     Err(anyhow!("`site_threshold` cannot exceed the number of `sites`").context(AppError::BadRequest)).short()?;
   }
 
@@ -109,7 +120,7 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
   };
 
   payload.spec.update(&mut *txn, &check).await.context("could not update spec").short()?;
-  check.update_sites(&mut *txn, &payload.sites).await.context("could not update check sites").short()?;
+  check.update_sites(&mut *txn, &sites).await.context("could not update check sites").short()?;
   check.update(&mut *txn).await.context("could not update check").short()?;
 
   txn.commit().await.context("could not commit transaction").short()?;

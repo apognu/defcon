@@ -31,7 +31,7 @@ impl ApiMapper for db::SiteOutage {
         check,
         spec,
         alerter: alerter.map(|alerter| alerter.uuid),
-        sites: sites.into(),
+        sites: Some(sites.into()),
       },
     };
 
@@ -59,7 +59,7 @@ impl ApiMapper for Vec<db::SiteOutage> {
                     check,
                     spec,
                     alerter: alerter.map(|alerter| alerter.uuid),
-                    sites: sites.into(),
+                    sites: Some(sites.into()),
                   },
                 };
 

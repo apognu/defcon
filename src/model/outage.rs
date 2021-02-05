@@ -1,5 +1,6 @@
 use anyhow::Result;
 use chrono::{DateTime, NaiveDateTime, Utc};
+use kvlogger::*;
 use sqlx::{Done, FromRow, MySqlConnection};
 use uuid::Uuid;
 
@@ -114,6 +115,12 @@ impl Outage {
 
         let outage = Outage::by_uuid(conn, &uuid).await?;
 
+        kvlog!(Info, "outage confirmed", {
+          "check" => check.uuid,
+          "outage" => outage.uuid,
+          "since" => outage.started_on.map(|dt| dt.to_string()).unwrap_or_else(|| "-".to_string())
+        });
+
         check.alert(&mut *conn, &outage.uuid).await;
 
         Ok(outage)
@@ -125,6 +132,12 @@ impl Outage {
 
   pub async fn resolve(conn: &mut MySqlConnection, check: &Check) -> Result<()> {
     if let Ok(outage) = Outage::for_check(conn, check).await {
+      kvlog!(Info, "outage resolved", {
+        "check" => check.uuid,
+        "outage" => outage.uuid,
+        "since" => outage.started_on.map(|dt| dt.to_string()).unwrap_or_else(|| "-".to_string())
+      });
+
       let result = sqlx::query(
         "
         UPDATE outages

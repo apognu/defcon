@@ -238,7 +238,7 @@ impl Check {
         ON check_sites.check_id = checks.id
         LEFT JOIN events
         ON events.check_id = checks.id AND events.site = check_sites.slug
-        WHERE check_sites.slug = ?
+        WHERE checks.enabled = 1 AND check_sites.slug = ?
         GROUP BY checks.id, check_sites.slug
         HAVING event_date IS NULL OR event_date < TIMESTAMPADD(SECOND, -`interval`, NOW());
       ",

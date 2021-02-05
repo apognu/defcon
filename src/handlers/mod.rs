@@ -31,6 +31,24 @@ pub trait Handler: Send {
 }
 
 pub async fn handle_event(conn: &mut MySqlConnection, event: &Event, check: &Check, inhibitor: Option<Inhibitor>) -> Result<()> {
+  if event.status == 0 {
+    kvlog!(Debug, "check passed", {
+      "site" => event.site,
+      "kind" => check.kind,
+      "check" => check.uuid,
+      "name" => check.name,
+      "message" => event.message
+    });
+  } else {
+    kvlog!(Debug, "check failed", {
+      "site" => event.site,
+      "kind" => check.kind,
+      "check" => check.uuid,
+      "name" => check.name,
+      "message" => event.message
+    });
+  }
+
   let outage = SiteOutage::insert(&mut *conn, &check, &event).await.ok().flatten();
 
   event.insert(&mut *conn, outage.as_ref()).await?;
@@ -53,24 +71,6 @@ pub async fn handle_event(conn: &mut MySqlConnection, event: &Event, check: &Che
         }
       }
     }
-  }
-
-  if event.status == 0 {
-    kvlog!(Debug, "check passed", {
-      "site" => event.site,
-      "kind" => check.kind,
-      "check" => check.uuid,
-      "name" => check.name,
-      "message" => event.message
-    });
-  } else {
-    kvlog!(Debug, "check failed", {
-      "site" => event.site,
-      "kind" => check.kind,
-      "check" => check.uuid,
-      "name" => check.name,
-      "message" => event.message
-    });
   }
 
   Ok(())
