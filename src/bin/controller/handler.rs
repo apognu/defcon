@@ -5,20 +5,25 @@ use kvlogger::*;
 use rand::Rng;
 use sqlx::{MySql, Pool};
 
-use defcon::{config::Config, handlers, inhibitor::Inhibitor, model::Check};
+use defcon::{
+  config::{Config, CONTROLLER_ID},
+  handlers,
+  inhibitor::Inhibitor,
+  model::Check,
+};
 
 pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, inhibitor: Inhibitor) -> Result<()> {
   let checks = {
     let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
 
-    Check::stale(&mut conn, "@controller").await
+    Check::stale(&mut conn, CONTROLLER_ID).await
   };
 
   if let Ok(checks) = checks {
     let mut rng = rand::thread_rng();
 
     for check in checks {
-      if inhibitor.inhibited("@controller", &check.uuid) {
+      if inhibitor.inhibited(CONTROLLER_ID, &check.uuid) {
         continue;
       }
 
@@ -31,7 +36,7 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, inhibitor: Inhibitor) 
 
         async move {
           let inner = async move || -> Result<()> {
-            inhibitor.inhibit("@controller", &check.uuid);
+            inhibitor.inhibit(CONTROLLER_ID, &check.uuid);
 
             if let Some(spread) = spread {
               tokio::time::delay_for(Duration::from_millis(spread)).await
@@ -56,11 +61,11 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, inhibitor: Inhibitor) 
 async fn run(pool: Pool<MySql>, config: Arc<Config>, check: Check, mut inhibitor: Inhibitor) -> Result<()> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
 
-  match check.run(&mut *conn, config, "@controller").await {
+  match check.run(&mut *conn, config, CONTROLLER_ID).await {
     Ok(event) => handlers::handle_event(&mut conn, &event, &check, Some(inhibitor)).await?,
 
     Err(err) => {
-      inhibitor.inhibit_for("@controller", &check.uuid, *check.interval);
+      inhibitor.inhibit_for(CONTROLLER_ID, &check.uuid, *check.interval);
 
       kvlog!(Error, format!("{}: {}", err, err.root_cause()), {
         "kind" => check.kind,

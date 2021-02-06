@@ -13,6 +13,5 @@
   - [DNS](./handlers/dns.md)
   - [Domain expiration](./handlers/whois.md)
   - [TLS expiration](./handlers/tls.md)
-  - [App Store app](./handlers/appstore.md)
-  - [Play Store app](./handlers/playstore.md)
+  - [App stores](./handlers/appstores.md)
 - [Alerters](./07-alerters.md)

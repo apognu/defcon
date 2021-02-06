@@ -52,7 +52,10 @@ mod tests {
   use tokio_test::*;
 
   use super::{Handler, PlayStoreHandler};
-  use crate::model::{specs::PlayStore, status::*, Check};
+  use crate::{
+    config::CONTROLLER_ID,
+    model::{specs::PlayStore, status::*, Check},
+  };
 
   #[tokio::test]
   async fn handler_play_store_ok() {
@@ -63,7 +66,7 @@ mod tests {
       app_id: "com.google.android.apps.maps".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -79,7 +82,7 @@ mod tests {
       app_id: "29c4e9c3-c6f8-47d7-a64c-004e463d3aa8".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();

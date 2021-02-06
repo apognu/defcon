@@ -102,10 +102,13 @@ mod tests {
   use tokio_test::*;
 
   use super::{Handler, HttpHandler};
-  use crate::model::{
-    specs::{Http, HttpHeaders},
-    status::*,
-    Check, Duration,
+  use crate::{
+    config::CONTROLLER_ID,
+    model::{
+      specs::{Http, HttpHeaders},
+      status::*,
+      Check, Duration,
+    },
   };
 
   #[tokio::test]
@@ -125,7 +128,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -147,7 +150,7 @@ mod tests {
       digest: Some("d06b93c883f8126a04589937a884032df031b05518eed9d433efb6447834df2596aebd500d69b8283e5702d988ed49655ae654c1683c7a4ae58bfa6b92f2b73a".to_string()),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -169,7 +172,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -191,7 +194,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -213,7 +216,7 @@ mod tests {
       digest: Some("INVALIDDIGEST".to_string()),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -235,7 +238,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();

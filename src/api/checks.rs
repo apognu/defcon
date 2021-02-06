@@ -13,6 +13,7 @@ use crate::{
     types::{self as api, ApiMapper, Sites},
     ApiResponse,
   },
+  config::CONTROLLER_ID,
   ext::Run,
   model::{Alerter, Check},
 };
@@ -45,7 +46,7 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
 
   let sites = match payload.sites {
     Some(sites) => sites,
-    None => Sites(vec!["@controller".to_string()]),
+    None => Sites(vec![CONTROLLER_ID.to_string()]),
   };
 
   if payload.check.site_threshold as usize > sites.len() {
@@ -88,7 +89,7 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
 
   let sites = match payload.sites {
     Some(sites) => sites,
-    None => Sites(vec!["@controller".to_string()]),
+    None => Sites(vec![CONTROLLER_ID.to_string()]),
   };
 
   if payload.check.site_threshold as usize > sites.len() {
@@ -186,7 +187,7 @@ mod tests {
   use rocket_contrib::json;
   use uuid::Uuid;
 
-  use crate::{api::types as api, tests};
+  use crate::{api::types as api, config::CONTROLLER_ID, tests};
 
   #[tokio::test]
   async fn list() -> Result<()> {
@@ -262,7 +263,7 @@ mod tests {
       "name": "create()",
       "enabled": false,
       "interval": "10s",
-      "sites": ["@controller"],
+      "sites": [CONTROLLER_ID],
       "site_threshold": 1,
       "passing_threshold": 1,
       "failing_threshold": 1,
@@ -293,7 +294,7 @@ mod tests {
       "name": "create_invalid_kind()",
       "enabled": false,
       "interval": "10s",
-      "sites": ["@controller"],
+      "sites": [CONTROLLER_ID],
       "site_threshold": 1,
       "passing_threshold": 1,
       "failing_threshold": 1,
@@ -319,7 +320,7 @@ mod tests {
       "name": "create_invalid_spec()",
       "enabled": false,
       "interval": "10s",
-      "sites": ["@controller"],
+      "sites": [CONTROLLER_ID],
       "site_threshold": 1,
       "passing_threshold": 1,
       "failing_threshold": 1,
@@ -345,7 +346,7 @@ mod tests {
       "name": "create_not_enough_sites()",
       "enabled": false,
       "interval": "10s",
-      "sites": ["@controller"],
+      "sites": [CONTROLLER_ID],
       "site_threshold": 2,
       "passing_threshold": 1,
       "failing_threshold": 1,
@@ -393,7 +394,7 @@ mod tests {
       "name": "new_update()",
       "enabled": false,
       "interval": "15s",
-      "sites": ["@controller"],
+      "sites": [CONTROLLER_ID],
       "site_threshold": 1,
       "passing_threshold": 1,
       "failing_threshold": 1,
@@ -462,7 +463,7 @@ mod tests {
       "name": "update_not_enough_sites()",
       "enabled": false,
       "interval": "10s",
-      "sites": ["@controller"],
+      "sites": [CONTROLLER_ID],
       "site_threshold": 2,
       "passing_threshold": 1,
       "failing_threshold": 1,
@@ -522,7 +523,7 @@ mod tests {
     pool.create_check(None, None, "patch_not_enough_sites()", None, None).await?;
 
     let check = json!({
-      "sites": ["@controller"],
+      "sites": [CONTROLLER_ID],
       "site_threshold": 2
     });
 

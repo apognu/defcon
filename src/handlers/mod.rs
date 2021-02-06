@@ -81,6 +81,7 @@ mod tests {
   use anyhow::Result;
 
   use crate::{
+    config::CONTROLLER_ID,
     model::{Check, Event, Outage, SiteOutage},
     tests,
   };
@@ -90,12 +91,12 @@ mod tests {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "outages_are_created()", None, Some(&["@controller", "eu-1"])).await?;
+    pool.create_check(None, None, "outages_are_created()", None, Some(&[CONTROLLER_ID, "eu-1"])).await?;
 
     let check = Check::by_id(&mut *conn, 1).await?;
     let mut event = Event {
       check_id: 1,
-      site: "@controller".to_string(),
+      site: CONTROLLER_ID.to_string(),
       status: 1,
       message: "failure".to_string(),
       ..Default::default()
@@ -132,7 +133,7 @@ mod tests {
     let check = Check::by_id(&mut *conn, 1).await?;
     let mut event = Event {
       check_id: 1,
-      site: "@controller".to_string(),
+      site: CONTROLLER_ID.to_string(),
       status: 1,
       message: "failure".to_string(),
       ..Default::default()

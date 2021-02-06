@@ -11,6 +11,8 @@ use lazy_static::lazy_static;
 
 use crate::ext::EnvExt;
 
+pub const CONTROLLER_ID: &str = "@controller";
+
 lazy_static! {
   pub static ref PUBLIC_KEY: Vec<u8> = env::var("PUBLIC_KEY")
     .map(std::fs::read_to_string)
@@ -23,7 +25,7 @@ lazy_static! {
 #[derive(Debug, Clone)]
 pub struct Config {
   pub api: bool,
-  pub api_port: u16,
+  pub api_listen: SocketAddr,
 
   pub handler: bool,
   pub handler_interval: Duration,
@@ -54,7 +56,7 @@ impl Config {
 
   pub fn parse() -> Result<Arc<Config>> {
     let api = env::var("API_ENABLE").or_string("1") == "1";
-    let api_port = env::var("API_PORT").or_string("8000").parse::<u16>().unwrap_or(8000);
+    let api_listen = env::var("API_LISTEN").or_string("127.0.0.1:8000").parse::<SocketAddr>().context("could not parse API listen address")?;
 
     let handler = env::var("HANDLER_ENABLE").or_string("1") == "1";
     let handler_interval = env::var("HANDLER_INTERVAL")
@@ -84,7 +86,7 @@ impl Config {
 
     let config = Config {
       api,
-      api_port,
+      api_listen,
       handler,
       handler_interval,
       handler_spread,
@@ -132,7 +134,8 @@ mod tests {
     let config = Config::parse()?;
 
     assert_eq!(config.api, true);
-    assert_eq!(config.api_port, 8000);
+    assert_eq!(config.api_listen.ip(), Ipv4Addr::new(127, 0, 0, 1));
+    assert_eq!(config.api_listen.port(), 8000);
     assert_eq!(config.handler, true);
     assert_eq!(config.handler_interval, Duration::from_secs(1));
     assert_eq!(config.handler_spread, None);
@@ -154,7 +157,7 @@ mod tests {
     write_keys()?;
 
     env::set_var("API_ENABLE", "0");
-    env::set_var("API_PORT", "10000");
+    env::set_var("API_LISTEN", "0.0.0.0:10000");
     env::set_var("HANDLER_ENABLE", "0");
     env::set_var("HANDLER_INTERVAL", "10s");
     env::set_var("HANDLER_SPREAD", "10s");
@@ -165,7 +168,8 @@ mod tests {
     let config = Config::parse()?;
 
     assert_eq!(config.api, false);
-    assert_eq!(config.api_port, 10000);
+    assert_eq!(config.api_listen.ip(), Ipv4Addr::new(0, 0, 0, 0));
+    assert_eq!(config.api_listen.port(), 10000);
     assert_eq!(config.handler, false);
     assert_eq!(config.handler_interval, Duration::from_secs(10));
     assert_eq!(config.handler_spread, Some(Duration::from_secs(10)));
@@ -174,7 +178,7 @@ mod tests {
     assert_eq!(config.cleaner_threshold, Duration::from_secs(10));
 
     env::remove_var("API_ENABLE");
-    env::remove_var("API_PORT");
+    env::remove_var("API_LISTEN");
     env::remove_var("HANDLER_ENABLE");
     env::remove_var("HANDLER_INTERVAL");
     env::remove_var("HANDLER_SPREAD");

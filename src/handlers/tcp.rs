@@ -53,7 +53,10 @@ mod tests {
   use tokio_test::*;
 
   use super::{Handler, TcpHandler};
-  use crate::model::{specs::Tcp, status::*, Check, Duration};
+  use crate::{
+    config::CONTROLLER_ID,
+    model::{specs::Tcp, status::*, Check, Duration},
+  };
 
   #[tokio::test]
   async fn handler_tcp_ok() {
@@ -66,7 +69,7 @@ mod tests {
       timeout: None,
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
 
     assert_ok!(&result);
 
@@ -86,7 +89,7 @@ mod tests {
       timeout: Some(Duration::from(1)),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
 
     assert_ok!(&result);
 
@@ -107,7 +110,7 @@ mod tests {
       timeout: None,
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
 
     assert_err!(&result);
   }

@@ -267,6 +267,7 @@ mod tests {
   use uuid::Uuid;
 
   use crate::{
+    config::CONTROLLER_ID,
     model::{Check, Event, SiteOutage},
     tests,
   };
@@ -332,12 +333,12 @@ mod tests {
 
     let check = Check { id: 1, ..Default::default() };
 
-    let outage = SiteOutage::for_check(&mut *conn, &check, "@controller").await?;
+    let outage = SiteOutage::for_check(&mut *conn, &check, CONTROLLER_ID).await?;
     assert!(matches!(outage, OutageRef::New));
 
     pool.create_unresolved_site_outage(None, None).await?;
 
-    let outage = SiteOutage::for_check(&mut *conn, &check, "@controller").await?;
+    let outage = SiteOutage::for_check(&mut *conn, &check, CONTROLLER_ID).await?;
     assert!(matches!(outage, OutageRef::Existing(SiteOutage { id: 1, ref uuid, .. }) if uuid == "dd9a531a-1b0b-4a12-bc09-e5637f916261" ));
 
     pool.cleanup().await;

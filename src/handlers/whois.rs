@@ -63,7 +63,10 @@ mod tests {
   use tokio_test::*;
 
   use super::{Handler, WhoisHandler};
-  use crate::model::{specs::Whois, status::*, Check, Duration};
+  use crate::{
+    config::CONTROLLER_ID,
+    model::{specs::Whois, status::*, Check, Duration},
+  };
 
   #[tokio::test]
   async fn handler_whois_ok() {
@@ -76,7 +79,7 @@ mod tests {
       window: Duration::try_from("90 days").unwrap(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -94,7 +97,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -112,7 +115,7 @@ mod tests {
       window: Duration::try_from("100 years").unwrap(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -130,7 +133,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_err!(&result);
   }
 
@@ -145,7 +148,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_err!(&result);
   }
 }

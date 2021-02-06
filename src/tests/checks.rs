@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::tests::db::TestConnection;
+use crate::{config::CONTROLLER_ID, tests::db::TestConnection};
 
 impl TestConnection {
   pub async fn create_check(&self, id: Option<u64>, uuid: Option<String>, name: &str, enabled: Option<bool>, sites: Option<&[&str]>) -> Result<()> {
@@ -20,7 +20,7 @@ impl TestConnection {
     };
 
     let sites = match sites {
-      None => &["@controller"],
+      None => &[CONTROLLER_ID],
       Some(sites) => sites,
     };
 

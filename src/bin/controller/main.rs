@@ -80,13 +80,16 @@ async fn main() -> Result<()> {
 
 async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Keys<'static>) -> Result<()> {
   kvlog!(Info, "starting api process", {
-    "port" => config.api_port
+    "listen" => config.api_listen
   });
 
-  let mut provider = RocketConfig::release_default();
-  provider.port = config.api_port;
+  let provider = RocketConfig {
+    address: config.api_listen.ip(),
+    port: config.api_listen.port(),
+    ..RocketConfig::release_default()
+  };
 
-  api::server(provider, pool, keys).attach(ApiLogger::new()).launch().await.context("could not launch API handler")?;
+  api::server(provider, pool, keys).attach(ApiLogger::new()).launch().await.context("could not launch api process")?;
 
   Ok(())
 }

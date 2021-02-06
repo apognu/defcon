@@ -86,10 +86,13 @@ mod tests {
   use tokio_test::*;
 
   use super::{DnsHandler, Handler};
-  use crate::model::{
-    specs::{Dns, DnsRecord},
-    status::*,
-    Check,
+  use crate::{
+    config::CONTROLLER_ID,
+    model::{
+      specs::{Dns, DnsRecord},
+      status::*,
+      Check,
+    },
   };
 
   #[tokio::test]
@@ -103,7 +106,7 @@ mod tests {
       value: "a.iana-servers.net".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -121,7 +124,7 @@ mod tests {
       value: "aspmx.l.google.com".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -139,7 +142,7 @@ mod tests {
       value: "93.184.216.34".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -157,7 +160,7 @@ mod tests {
       value: "2606:2800:220:1:248:1893:25c8:1946".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -175,7 +178,7 @@ mod tests {
       value: "github.com".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -193,7 +196,7 @@ mod tests {
       value: "pki.goog".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -211,7 +214,7 @@ mod tests {
       value: "1.2.3.4".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -229,7 +232,7 @@ mod tests {
       value: "example.com".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_err!(&result);
   }
 }

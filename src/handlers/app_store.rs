@@ -63,7 +63,10 @@ mod tests {
   use tokio_test::*;
 
   use super::{AppStoreHandler, Handler};
-  use crate::model::{specs::AppStore, status::*, Check};
+  use crate::{
+    config::CONTROLLER_ID,
+    model::{specs::AppStore, status::*, Check},
+  };
 
   #[tokio::test]
   async fn handler_app_store_ok() {
@@ -74,7 +77,7 @@ mod tests {
       bundle_id: "com.apple.Maps".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -90,7 +93,7 @@ mod tests {
       bundle_id: "2e0a5188-7220-41bf-b684-82d6a54b868a".to_string(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();

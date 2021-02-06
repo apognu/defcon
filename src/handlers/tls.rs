@@ -53,7 +53,10 @@ mod tests {
   use tokio_test::*;
 
   use super::{Handler, TlsHandler};
-  use crate::model::{specs::Tls, status::*, Check, Duration};
+  use crate::{
+    config::CONTROLLER_ID,
+    model::{specs::Tls, status::*, Check, Duration},
+  };
 
   #[tokio::test]
   async fn handler_tls_ok() {
@@ -65,7 +68,7 @@ mod tests {
       window: Duration::try_from("0 days").unwrap(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -82,7 +85,7 @@ mod tests {
       window: Duration::try_from("91 days").unwrap(),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -100,7 +103,7 @@ mod tests {
       window: Duration::from(1),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
     assert_ok!(&result);
 
     let result = result.unwrap();
@@ -118,7 +121,7 @@ mod tests {
       window: Duration::from(1),
     };
 
-    let result = handler.run(&spec, "@controller").await;
+    let result = handler.run(&spec, CONTROLLER_ID).await;
 
     assert_err!(&result);
   }

@@ -335,10 +335,8 @@ mod tests {
   use anyhow::Result;
   use uuid::Uuid;
 
-  use crate::tests;
-
   use super::{Check, CheckKind, Event};
-  use crate::model::Duration;
+  use crate::{config::CONTROLLER_ID, model::Duration, tests};
 
   #[tokio::test]
   async fn list() -> Result<()> {
@@ -533,7 +531,7 @@ mod tests {
 
     let mut event = Event {
       check_id: check.id,
-      site: "@controller".to_string(),
+      site: CONTROLLER_ID.to_string(),
       status: 0,
       message: "First event".to_string(),
       ..Default::default()
@@ -546,7 +544,7 @@ mod tests {
     event.message = "Last event".to_string();
     event.insert(&mut *conn, None).await?;
 
-    let last = check.last_event_for_site(&mut *conn, "@controller").await?;
+    let last = check.last_event_for_site(&mut *conn, CONTROLLER_ID).await?;
 
     assert_eq!(last.is_some(), true);
     assert_eq!(&last.unwrap().message, "Last event");

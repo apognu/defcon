@@ -4,19 +4,19 @@ The controller has a few configuration knobs you can tweak to adjust its overall
 
 ## Handler configuration
 
-| Environment variable | Required | Default value | Description                                            |
-| -------------------- | -------- | ------------- | ------------------------------------------------------ |
-| `RUST_LOG`           |          | defcon=info   |                                                        |
-| `DSN`                | Yes      |               | Connection string to the MySQL database                |
-| `PUBLIC_KEY`         | Yes      |               | Path to an PEM-encoded ECDSA public key                |
-| `API_ENABLE`         |          | 1             | Enable or disable the API process                      |
-| `API_PORT`           |          | 8000          | Set the listen port of the API process                 |
-| `HANDLER_ENABLE`     |          | 1             | Enable or disable the handler process                  |
-| `HANDLER_INTERVAL`   |          | 1s            | Interval between handler loop iterations               |
-| `HANDLER_SPREAD`     |          | 0s            | Maximum random delay applied when a check needs to run |
-| `CLEANER_ENABLE`     |          | 0             | Enable or disable the cleaner process                  |
-| `CLEANER_INTERVAL`   |          | 10m           | Interval between cleaner loop iterations               |
-| `CLEANER_THRESHOLD`  |          | 1y            | Period of time after which to delete stale objects     |
+| Environment variable | Required | Default value  | Description                                            |
+| -------------------- | -------- | -------------- | ------------------------------------------------------ |
+| `RUST_LOG`           |          | defcon=info    |                                                        |
+| `DSN`                | Yes      |                | Connection string to the MySQL database                |
+| `PUBLIC_KEY`         | Yes      |                | Path to an PEM-encoded ECDSA public key                |
+| `API_ENABLE`         |          | 1              | Enable or disable the API process                      |
+| `API_LISTEN`         |          | 127.0.0.1:8000 | Set the listen address and port of the API process     |
+| `HANDLER_ENABLE`     |          | 1              | Enable or disable the handler process                  |
+| `HANDLER_INTERVAL`   |          | 1s             | Interval between handler loop iterations               |
+| `HANDLER_SPREAD`     |          | 0s             | Maximum random delay applied when a check needs to run |
+| `CLEANER_ENABLE`     |          | 0              | Enable or disable the cleaner process                  |
+| `CLEANER_INTERVAL`   |          | 10m            | Interval between cleaner loop iterations               |
+| `CLEANER_THRESHOLD`  |          | 1y             | Period of time after which to delete stale objects     |
 
 ### `RUST_LOG`
 
@@ -43,9 +43,9 @@ $ openssl ec -in defcon-private.pem -pubout -out defcon-public.pem
 
 A value of `0` or `1` respectively disables and enables the API process bundled within Defcon.
 
-### `API_PORT`
+### `API_LISTEN`
 
-An integer value in the environment variable will set the bind port on which Defcon will listen for incoming connections for the API.
+A string representing an IP address and port on which the API process will bind its process. By default, the API is only reachable by the local host on port 8000.
 
 ### `HANDLER_ENABLE`
 

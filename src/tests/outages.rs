@@ -1,6 +1,6 @@
 use anyhow::Result;
 
-use crate::tests::TestConnection;
+use crate::{config::CONTROLLER_ID, tests::TestConnection};
 
 impl TestConnection {
   pub async fn create_unresolved_site_outage(&self, id: Option<u64>, uuid: Option<String>) -> Result<()> {
@@ -17,22 +17,24 @@ impl TestConnection {
     sqlx::query(
       r#"
         INSERT INTO site_outages (id, check_id, uuid, site, passing_strikes, failing_strikes, started_on, ended_on)
-        VALUES ( ?, 1, ?, "@controller", 0, 2, "2021-01-02T00:00:00", NULL )
+        VALUES ( ?, 1, ?, ?, 0, 2, "2021-01-02T00:00:00", NULL )
       "#,
     )
     .bind(id)
     .bind(&uuid)
+    .bind(CONTROLLER_ID)
     .execute(&**self)
     .await?;
 
     sqlx::query(
       r#"
         INSERT INTO events (id, check_id, outage_id, site, status, message, created_at)
-        VALUES ( ?, 1, ?, "@controller", 1, "failure", NOW() )
+        VALUES ( ?, 1, ?, ?, 1, "failure", NOW() )
       "#,
     )
     .bind(id)
     .bind(id)
+    .bind(CONTROLLER_ID)
     .execute(&**self)
     .await?;
 
@@ -53,22 +55,24 @@ impl TestConnection {
     sqlx::query(
       r#"
         INSERT INTO site_outages (id, check_id, uuid, site, passing_strikes, failing_strikes, started_on, ended_on)
-        VALUES ( ?, 1, ?, "@controller", 0, 2, "2021-01-15T00:00:00", "2021-01-16T23:59:59" )
+        VALUES ( ?, 1, ?, ?, 0, 2, "2021-01-15T00:00:00", "2021-01-16T23:59:59" )
       "#,
     )
     .bind(id)
     .bind(&uuid)
+    .bind(CONTROLLER_ID)
     .execute(&**self)
     .await?;
 
     sqlx::query(
       r#"
         INSERT INTO events (id, check_id, outage_id, site, status, message, created_at)
-        VALUES ( ?, 1, ?, "@controller", 1, "failure", NOW() )
+        VALUES ( ?, 1, ?, ?, 1, "failure", NOW() )
       "#,
     )
     .bind(id)
     .bind(id)
+    .bind(CONTROLLER_ID)
     .execute(&**self)
     .await?;
 
