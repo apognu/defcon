@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>App Store app - Defcon - User manual</title>
+        <title>App stores - Defcon - User manual</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="../03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="../05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="../06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="../handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="../handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="../handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="../handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="../handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="../handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="../handlers/appstore.html" class="active"><strong aria-hidden="true">6.8.</strong> App Store app</a></li><li class="chapter-item expanded "><a href="../handlers/playstore.html"><strong aria-hidden="true">6.9.</strong> Play Store app</a></li></ol></li><li class="chapter-item expanded "><a href="../07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="../03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="../05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="../06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="../handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="../handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="../handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="../handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="../handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="../handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="../handlers/appstores.html" class="active"><strong aria-hidden="true">6.8.</strong> App stores</a></li></ol></li><li class="chapter-item expanded "><a href="../07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,7 +163,20 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#app-store-app" id="app-store-app">App Store app</a></h1>
+                        <h1><a class="header" href="#application-stores" id="application-stores">Application stores</a></h1>
+<p>Two handlers exist to verify the availability of Android and iOS application on, respectively, the Play Store and the App Store. These can be used to monitor for Google or Apple removing your apps, as well as human error or malice.</p>
+<h1><a class="header" href="#app-store" id="app-store">App Store</a></h1>
+<h2><a class="header" href="#attributes" id="attributes">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;app_store&quot;</code></td><td>-</td></tr>
+<tr><td><code>bundle_id</code></td><td>string</td><td><code>&quot;com.apple.Maps&quot;</code></td><td>Bundle ID for the iOS app to monitor</td></tr>
+</tbody></table>
+<h1><a class="header" href="#play-store" id="play-store">Play Store</a></h1>
+<h2><a class="header" href="#attributes-1" id="attributes-1">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;play_store&quot;</code></td><td>-</td></tr>
+<tr><td><code>app_id</code></td><td>string</td><td><code>&quot;com.google.android.apps.maps&quot;</code></td><td>Application ID for the Android app to monitor</td></tr>
+</tbody></table>
 
                     </main>
 
@@ -176,7 +189,7 @@
                         
 
                         
-                            <a rel="next" href="../handlers/playstore.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../07-alerters.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -194,7 +207,7 @@
                 
 
                 
-                    <a rel="next" href="../handlers/playstore.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../07-alerters.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

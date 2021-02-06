@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="handlers/appstore.html"><strong aria-hidden="true">6.8.</strong> App Store app</a></li><li class="chapter-item expanded "><a href="handlers/playstore.html"><strong aria-hidden="true">6.9.</strong> Play Store app</a></li></ol></li><li class="chapter-item expanded "><a href="07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="handlers/appstores.html"><strong aria-hidden="true">6.8.</strong> App stores</a></li></ol></li><li class="chapter-item expanded "><a href="07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -286,7 +286,7 @@ INFO[2021-02-05T20:57:04.358+0000] outage confirmed check=&quot;4766d0dc-5d39-4e
 <tr><td><code>DSN</code></td><td>Yes</td><td></td><td>Connection string to the MySQL database</td></tr>
 <tr><td><code>PUBLIC_KEY</code></td><td>Yes</td><td></td><td>Path to an PEM-encoded ECDSA public key</td></tr>
 <tr><td><code>API_ENABLE</code></td><td></td><td>1</td><td>Enable or disable the API process</td></tr>
-<tr><td><code>API_PORT</code></td><td></td><td>8000</td><td>Set the listen port of the API process</td></tr>
+<tr><td><code>API_LISTEN</code></td><td></td><td>127.0.0.1:8000</td><td>Set the listen address and port of the API process</td></tr>
 <tr><td><code>HANDLER_ENABLE</code></td><td></td><td>1</td><td>Enable or disable the handler process</td></tr>
 <tr><td><code>HANDLER_INTERVAL</code></td><td></td><td>1s</td><td>Interval between handler loop iterations</td></tr>
 <tr><td><code>HANDLER_SPREAD</code></td><td></td><td>0s</td><td>Maximum random delay applied when a check needs to run</td></tr>
@@ -307,8 +307,8 @@ $ openssl ec -in defcon-private.pem -pubout -out defcon-public.pem
 </code></pre>
 <h3><a class="header" href="#api_enable" id="api_enable"><code>API_ENABLE</code></a></h3>
 <p>A value of <code>0</code> or <code>1</code> respectively disables and enables the API process bundled within Defcon.</p>
-<h3><a class="header" href="#api_port" id="api_port"><code>API_PORT</code></a></h3>
-<p>An integer value in the environment variable will set the bind port on which Defcon will listen for incoming connections for the API.</p>
+<h3><a class="header" href="#api_listen" id="api_listen"><code>API_LISTEN</code></a></h3>
+<p>A string representing an IP address and port on which the API process will bind its process. By default, the API is only reachable by the local host on port 8000.</p>
 <h3><a class="header" href="#handler_enable" id="handler_enable"><code>HANDLER_ENABLE</code></a></h3>
 <p>A value of <code>0</code> here disables check handling on the controller. If it is disabled, no check will run on this node. This is particularly useful if all your checks are configured to run on off-site runners and you would prefer to use the controller only as Defcon's control plane.</p>
 <h3><a class="header" href="#handler_interval" id="handler_interval"><code>HANDLER_INTERVAL</code></a></h3>
@@ -345,16 +345,135 @@ INFO[2021-02-06T14:18:36.973+0000] starting runner process site=&quot;eu-1&quot;
 </code></pre>
 <p>This runner will start running any stale check configured to run on site <code>eu-1</code>.</p>
 <h1><a class="header" href="#checks-1" id="checks-1">Checks</a></h1>
+<p>A check is used to describe an external service to be monitored. Among other things, it allows to specify some metadata about the check, how and where the check should be run, the actual handler configuration to use and conditions for confirming outages.</p>
+<h2><a class="header" href="#metadata" id="metadata">Metadata</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example value</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>name</code></td><td>string</td><td><code>&quot;acme-public-site&quot;</code></td><td>A human-friendly name used in logs and alerters</td></tr>
+<tr><td><code>alerter</code></td><td>UUID</td><td><code>&quot;19b9eb20-3e3e-46d5-801f-a912e159913c&quot;</code></td><td>Alerter to be triggered when an outage is created</td></tr>
+<tr><td><code>enabled</code></td><td>bool</td><td><code>true</code></td><td>When disabled, a check will not run</td></tr>
+<tr><td><code>silent</code></td><td>bool</td><td><code>false</code></td><td>When silent, a check will not trigger its alerter</td></tr>
+</tbody></table>
+<h2><a class="header" href="#run-and-error-condition" id="run-and-error-condition">Run and error condition</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example value</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>sites</code></td><td>[int]</td><td><code>[&quot;us-1&quot;, &quot;eu-1&quot;]</code></td><td>List of sites where this check should run</td></tr>
+<tr><td><code>interval</code></td><td>string</td><td><code>&quot;10s&quot;</code></td><td>Interval of time between subsequent runs</td></tr>
+<tr><td><code>site_threshold</code></td><td>int</td><td>2</td><td>Number of sites that have to fail to confirm an outage</td></tr>
+<tr><td><code>failing_threshold</code></td><td>int</td><td>3</td><td>Number of successive fails required to mark a site as failing</td></tr>
+<tr><td><code>passing_threshold</code></td><td>int</td><td>3</td><td>Number of successive passes required to mark a site as recovered</td></tr>
+</tbody></table>
+<blockquote>
+<p><strong>Note:</strong> if a check is to run on the controller, as well as another site, the controller's identifier should be given explicitely, e.g. <code>&quot;sites&quot;: [&quot;@controller&quot;, &quot;eu-1&quot;]</code>.</p>
+</blockquote>
+<h2><a class="header" href="#handler-specification" id="handler-specification">Handler specification</a></h2>
+<p>Each check needs one more attribute, <code>spec</code>, detailed in the next section, where the handler specification is configured.</p>
 <h1><a class="header" href="#handlers" id="handlers">Handlers</a></h1>
+<p>A handler is a process that knows how to determine the status of a particular kind of external service. A handler can, for example, perform an HTTP request, open a TCP connection, or check the presence of some domain-specific item on a remote server. The exact list of supported handler is described in the next sections.</p>
+<p>A handler specification is a series of attributes that describes how to perform the check, and conditions on when to report an issue (for example, <code>when the status code is not 200</code>).</p>
+<p>Valid attributs varies from handler to handler, but they all have one common attribute, <code>kind</code>, which specifies the kind of handler this is.</p>
+<p>In the context of a check, a handler specification is laid out as:</p>
+<pre><code class="language-json">{
+  // Check attributes
+  &quot;spec&quot;: {
+    &quot;kind&quot;: &quot;&lt;handler type&gt;&quot;,
+    // Spec attributes
+  }
+}
+</code></pre>
 <h1><a class="header" href="#ping" id="ping">Ping</a></h1>
+<p>This handler sends one ICMP echo request to the specified host and reports an error if it is unsuccessful.</p>
+<blockquote>
+<p>Note that this may require some sort of elevated privilege to be able to run. For example, on Linux, it needs either to be run as <code>root</code> (not recommended), or to have the <code>CAP_NET_RAW</code> capability.</p>
+<p>To set <code>CAP_NET_RAW</code>, you can execute the following command on Defcon's binary:</p>
+<pre><code class="language-shell">setcap cap_net_raw+ep defcon
+</code></pre>
+</blockquote>
+<h2><a class="header" href="#attributes" id="attributes">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;ping&quot;</code></td><td>-</td></tr>
+<tr><td><code>host</code></td><td>string</td><td><code>&quot;8.8.8.8&quot;</code></td><td>Host to which to send the ICMP echo request</td></tr>
+</tbody></table>
 <h1><a class="header" href="#tcp-connection" id="tcp-connection">TCP connection</a></h1>
+<p>This handler will attempt to open a TCP connection on a provided host and port, and fail if the connection is unsuccessful.</p>
+<h2><a class="header" href="#attributes-1" id="attributes-1">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;tcp&quot;</code></td><td>-</td></tr>
+<tr><td><code>host</code></td><td>string</td><td><code>&quot;93.184.216.34&quot;</code></td><td>Domain name or IP address of the target host</td></tr>
+<tr><td><code>port</code></td><td>int</td><td>80</td><td>Port on which to open the TCP connection</td></tr>
+</tbody></table>
 <h1><a class="header" href="#udp-datagram" id="udp-datagram">UDP datagram</a></h1>
+<p>The UDP handler will attempt to send a datagram to a host and port, and expect to receive a specific response in return.</p>
+<h2><a class="header" href="#attributes-2" id="attributes-2">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;udp&quot;</code></td><td>-</td></tr>
+<tr><td><code>host</code></td><td>string</td><td><code>&quot;1.2.3.4&quot;</code></td><td>Target host where to send the datagram</td></tr>
+<tr><td><code>port</code></td><td>int</td><td><code>10000</code></td><td>Port to use as destination</td></tr>
+<tr><td><code>message</code></td><td>string</td><td><code>&quot;aGVsbG8=&quot;</code></td><td>Base 64-encoded message to send on the socket</td></tr>
+<tr><td><code>timeout</code></td><td>string</td><td><code>&quot;5s&quot;</code></td><td>Timeout before giving up on the response</td></tr>
+<tr><td><code>content</code></td><td>string</td><td><code>&quot;Z29vZGJ5ZQ==&quot;</code></td><td>Base64-encoded value to expect in the response. This must be a submatch of the actual response</td></tr>
+</tbody></table>
 <h1><a class="header" href="#http-request" id="http-request">HTTP request</a></h1>
+<p>The HTTP handler will perform an HTTP GET request, with the specified parameter, and check a variety of elements from the response, namely, the status code, the string content and a digest of the response.</p>
+<h2><a class="header" href="#attributes-3" id="attributes-3">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;http&quot;</code></td><td>-</td></tr>
+<tr><td><code>url</code></td><td>string</td><td><code>&quot;https://example.com&quot;</code></td><td>Full URL to request</td></tr>
+<tr><td><code>headers</code></td><td>map&lt;string, string&gt;</td><td><code>{ &quot;authorization&quot;: &quot;me&quot; }</code></td><td>List of headers to add to the request</td></tr>
+<tr><td><code>timeout</code></td><td>int</td><td><code>2</code></td><td>Abort the request after this number of seconds</td></tr>
+<tr><td><code>code</code></td><td>int</td><td><code>201</code></td><td>Status code of the response</td></tr>
+<tr><td><code>content</code></td><td>string</td><td><code>&quot;ACME&quot;</code></td><td>Substring to find in the response body</td></tr>
+<tr><td><code>digest</code></td><td>string</td><td><code>&quot;...&quot;</code></td><td>Hex-encoded SHA-512 sum of the response body</td></tr>
+</tbody></table>
 <h1><a class="header" href="#dns" id="dns">DNS</a></h1>
+<p>The DNS handler will retrieve DNS records of a specific type, for a specific domain, and check if one of the values matches the specification. Only the following DNS record types are supported:</p>
+<ul>
+<li>NS</li>
+<li>MX</li>
+<li>A</li>
+<li>AAAA</li>
+<li>CNAME</li>
+<li>CAA</li>
+</ul>
+<h2><a class="header" href="#attributes-4" id="attributes-4">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;dns&quot;</code></td><td>-</td></tr>
+<tr><td><code>record</code></td><td>string</td><td><code>&quot;A&quot;</code></td><td>Type of DNS record to verify</td></tr>
+<tr><td><code>domain</code></td><td>string</td><td><code>&quot;example.com&quot;</code></td><td>Domain name for which the retrieve the records</td></tr>
+<tr><td><code>value</code></td><td>string</td><td><code>&quot;1.2.3.4&quot;</code></td><td>Value to compare to each retrieved record, must match exactly</td></tr>
+</tbody></table>
 <h1><a class="header" href="#domain-expiration" id="domain-expiration">Domain expiration</a></h1>
+<p>This handler will check Whois databases for the provided domain and will attempt to retrieve the domain's expiration date. The emitted event will be marked as failed if the expiration is within the configured window.</p>
+<blockquote>
+<p>Not all TLDs expose their domains' expiration date in the Whois response, this handler will only work for those that do.</p>
+</blockquote>
+<h2><a class="header" href="#attributes-5" id="attributes-5">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;domain&quot;</code></td><td>-</td></tr>
+<tr><td><code>domain</code></td><td>string</td><td><code>&quot;example.com&quot;</code></td><td>The base domain name to check for</td></tr>
+<tr><td><code>window</code></td><td>string</td><td><code>&quot;60d&quot;</code></td><td>Period of time within which the handler should fail</td></tr>
+<tr><td><code>attribute</code></td><td>string</td><td><code>&quot;expiry date&quot;</code></td><td>Whois attribute to use as the expiration date. Defaults to <code>registry expiry date</code></td></tr>
+</tbody></table>
 <h1><a class="header" href="#tls-expiration" id="tls-expiration">TLS expiration</a></h1>
-<h1><a class="header" href="#app-store-app" id="app-store-app">App Store app</a></h1>
-<h1><a class="header" href="#play-store-app" id="play-store-app">Play Store app</a></h1>
+<p>This handler can retrieve TLS certificates for a website and fail if its expiration date falls within a configurable window of time. This can help detect issues in your renewal processes and be used as a last resort reminder if you still do it manually.</p>
+<h2><a class="header" href="#attributes-6" id="attributes-6">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;tls&quot;</code></td><td>-</td></tr>
+<tr><td><code>domain</code></td><td>string</td><td><code>&quot;example.com&quot;</code></td><td>Domain to retrieve the certificate for</td></tr>
+<tr><td><code>window</code></td><td>string</td><td><code>&quot;15d&quot;</code></td><td>Period of time before the expiration date to trigger an alert</td></tr>
+</tbody></table>
+<h1><a class="header" href="#application-stores" id="application-stores">Application stores</a></h1>
+<p>Two handlers exist to verify the availability of Android and iOS application on, respectively, the Play Store and the App Store. These can be used to monitor for Google or Apple removing your apps, as well as human error or malice.</p>
+<h1><a class="header" href="#app-store" id="app-store">App Store</a></h1>
+<h2><a class="header" href="#attributes-7" id="attributes-7">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;app_store&quot;</code></td><td>-</td></tr>
+<tr><td><code>bundle_id</code></td><td>string</td><td><code>&quot;com.apple.Maps&quot;</code></td><td>Bundle ID for the iOS app to monitor</td></tr>
+</tbody></table>
+<h1><a class="header" href="#play-store" id="play-store">Play Store</a></h1>
+<h2><a class="header" href="#attributes-8" id="attributes-8">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;play_store&quot;</code></td><td>-</td></tr>
+<tr><td><code>app_id</code></td><td>string</td><td><code>&quot;com.google.android.apps.maps&quot;</code></td><td>Application ID for the Android app to monitor</td></tr>
+</tbody></table>
 <h1><a class="header" href="#alerters-1" id="alerters-1">Alerters</a></h1>
 
                     </main>
