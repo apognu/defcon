@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="04-runner.html" class="active"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="05-alerters.html"><strong aria-hidden="true">5.</strong> Alerters</a></li><li class="chapter-item expanded "><a href="06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="handlers/appstore.html"><strong aria-hidden="true">6.8.</strong> App Store app</a></li><li class="chapter-item expanded "><a href="handlers/playstore.html"><strong aria-hidden="true">6.9.</strong> Play Store app</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="04-runner.html" class="active"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="handlers/appstore.html"><strong aria-hidden="true">6.8.</strong> App Store app</a></li><li class="chapter-item expanded "><a href="handlers/playstore.html"><strong aria-hidden="true">6.9.</strong> Play Store app</a></li></ol></li><li class="chapter-item expanded "><a href="07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -164,6 +164,28 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#off-site-runner" id="off-site-runner">Off-site runner</a></h1>
+<p>By default, all checks are run on the controller node, and require only one site outage for an outage to be confirmed. Defcon allows to offload check handling to other nodes by the use of off-site runners.</p>
+<p>A runner is a stripped-down instance of Defcon that only knows how to run handlers and report their status back to the controller. Its workflow is the following:</p>
+<ul>
+<li>Regularly check with the controller for stale checks that are configured to run on this particular runner</li>
+<li>Call the handlers for each of those checks</li>
+<li>Report their status back to the controller</li>
+<li>Start over</li>
+</ul>
+<p>An off-site runner authenticates itself to the controller by possessing the private key matching the controller's public key.</p>
+<p>Whereas the controller is identified by the static <code>@controller</code> tag, each runner must be configured to have a unique tag, such as <code>eu-1</code> or <code>home-runner</code>. Site identifiers should only contain lowercase alphanumeric characters and dashes (<code>^[a-z0-9-]+$</code>)</p>
+<h2><a class="header" href="#download-the-binary" id="download-the-binary">Download the binary</a></h2>
+<pre><code class="language-shell">$ curl https://github.com/apognu/defcon/releases/download/tip/defcon-tip-x86_64 &gt; defcon
+$ chmod +x defcon
+</code></pre>
+<h2><a class="header" href="#start-a-runner" id="start-a-runner">Start a runner</a></h2>
+<pre><code class="language-shell">$ PRIVATE_KEY=./defcon-private.pem \
+  CONTROLLER_URL=http://127.0.0.1:8000 \
+  SITE=eu-1 \
+  ./defcon-runner
+INFO[2021-02-06T14:18:36.973+0000] starting runner process site=&quot;eu-1&quot; poll_interval=&quot;1s&quot;
+</code></pre>
+<p>This runner will start running any stale check configured to run on site <code>eu-1</code>.</p>
 
                     </main>
 
@@ -176,7 +198,7 @@
                         
 
                         
-                            <a rel="next" href="05-alerters.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="05-checks.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -194,7 +216,7 @@
                 
 
                 
-                    <a rel="next" href="05-alerters.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="05-checks.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
