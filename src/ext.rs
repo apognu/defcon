@@ -1,4 +1,8 @@
+use anyhow::Result;
+use std::time::Duration;
+
 use extend::ext;
+use humantime::parse_duration;
 
 pub trait Run<T> {
   type Target;
@@ -26,8 +30,18 @@ impl<E> Result<String, E>
 where
   E: std::error::Error,
 {
-  fn or_string(self, value: &str) -> String {
-    self.unwrap_or_else(|_| value.to_owned())
+  fn or_string(self, default: &str) -> String {
+    self.unwrap_or_else(|_| default.to_owned())
+  }
+
+  fn or_duration_min(self, default: &str, min: Duration) -> Result<Duration> {
+    let value = self.unwrap_or_else(|_| default.to_owned());
+
+    match parse_duration(&value) {
+      Ok(duration) if duration > min => Ok(duration),
+      Ok(_) => Ok(min),
+      Err(err) => Err(err.into()),
+    }
   }
 }
 

@@ -2,6 +2,8 @@
 
 Defcon is a tool allows you to define and periodically run monitoring checks (also called _uptime checks_) against external services.
 
+You can find more extensive documentation in the [user manual](https://apognu.github.io/defcon/).
+
 ## How to run
 
 ### Requirements
@@ -17,25 +19,13 @@ Until clearly stated, the database schema is subject to breaking changes, and mi
 
 Some of Defcon's default behavior can be customized through environment variables. You can find all supported configuration variables in the table below:
 
-| Environment variable | Required | Default value | Description                                            |
-| -------------------- | -------- | ------------- | ------------------------------------------------------ |
-| `RUST_LOG`           | false    | defcon=info   |                                                        |
-| `DSN`                | true     |               | Connection string to the MySQL database                |
-| `API_ENABLE`         | false    | 1             | Enable or disable the API process                      |
-| `API_PORT`           | false    | 8000          | Set the listen port of the API process                 |
-| `HANDLER_ENABLE`     | false    | 1             | Enable or disable the handler process                  |
-| `HANDLER_INTERVAL`   | false    | 1s            | Interval between handler loop iterations               |
-| `HANDLER_SPREAD`     | false    | 0s            | Maximum random delay applied when a check needs to run |
-| `CLEANER_ENABLE`     | false    | 0             | Enable or disable the cleaner process                  |
-| `CLEANER_INTERVAL`   | false    | 10m           | Interval between cleaner loop iterations               |
-| `CLEANER_THRESHOLD`  | false    | 1y            | Period of time after which to delete stale objects     |
-| `PUBLIC_KEY`         | true     |               | Headerless PEM-formatted ECDSA public key              |
+Configuration options for the controller can be found in the [user manual](https://apognu.github.io/defcon/03-configuration.html).
 
 ### Let's go!
 
 ```sh
 $ DSN=mysql://defcon:password@mysql.host/defcon?ssl-mode=DISABLED \
-  PUBLIC_KEY=MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMUdYFmfbi57NV7pTIht38+w8yPly7rmrD1MPXenlCOu8Mu5623/ztsGeTV9uatuMQeMS+a7NEFzPGjMIKiR3AA== \
+  PUBLIC_KEY=/path/to/public/key.pem \
   defcon
 INFO[2021-01-30T00:19:39.576+0000] started API server on port 8000
 INFO[2021-01-30T00:19:39.576+0000] started handler loop
@@ -105,7 +95,7 @@ A runner will periodically ask the controller for all checks that are due for ru
 In order to launch a runner, the following command can be performed:
 
 ```shell
-$ PRIVATE_KEY=MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgk4Y6hyXXUAE4BD/zjDTKo3ExdCcd/ddCDbiR1M8E+DChRANCAAQxR1gWZ9uLns1XulMiG3fz7DzI+XLuuasPUw9d6eUI67wy7nrbf/O2wZ5NX25q24xB4xL5rs0QXM8aMwgqJHcA \
+$ PRIVATE_KEY=./defcon-private.pem \
   CONTROLLER_URL=https://controller.example.com \
   SITE=eu-west-1 \
   POLL_INTERVAL=30s \

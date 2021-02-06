@@ -4,7 +4,7 @@
 - [Getting started](./02-getting-started.md)
 - [Configuration](./03-configuration.md)
 - [Off-site runner](./04-runner.md)
-- [Alerters](./05-alerters.md)
+- [Checks](./05-checks.md)
 - [Handlers](./06-handlers.md)
   - [Ping](./handlers/ping.md)
   - [TCP connection](./handlers/tcp.md)
@@ -15,3 +15,4 @@
   - [TLS expiration](./handlers/tls.md)
   - [App Store app](./handlers/appstore.md)
   - [Play Store app](./handlers/playstore.md)
+- [Alerters](./07-alerters.md)

@@ -6,7 +6,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use humantime::parse_duration;
 use kvlogger::KvLoggerBuilder;
 use lazy_static::lazy_static;
 
@@ -58,16 +57,23 @@ impl Config {
     let api_port = env::var("API_PORT").or_string("8000").parse::<u16>().unwrap_or(8000);
 
     let handler = env::var("HANDLER_ENABLE").or_string("1") == "1";
-    let handler_interval = parse_duration(&env::var("HANDLER_INTERVAL").or_string("1s")).context("HANDLER_INTERVAL is not a duration")?;
+    let handler_interval = env::var("HANDLER_INTERVAL")
+      .or_duration_min("1s", Duration::from_secs(1))
+      .context("HANDLER_INTERVAL is not a duration")?;
 
-    let handler_spread = match parse_duration(&env::var("HANDLER_SPREAD").or_string("0s")).context("HANDLER_SPREAD is not a duration")? {
+    let handler_spread = match env::var("HANDLER_SPREAD").or_duration_min("0s", Duration::from_secs(0)).context("HANDLER_SPREAD is not a duration")? {
       duration if duration == Duration::from_nanos(0) => None,
       duration => Some(duration),
     };
 
     let cleaner = env::var("CLEANER_ENABLE").unwrap_or_default() == "1";
-    let cleaner_interval = parse_duration(&env::var("CLEANER_INTERVAL").or_string("10m")).context("CLEANER_INTERVAL is not a duration")?;
-    let cleaner_threshold = parse_duration(&env::var("CLEANER_THRESHOLD").or_string("1y")).context("CLEANER_THRESHOLD is not a duration")?;
+    let cleaner_interval = env::var("CLEANER_INTERVAL")
+      .or_duration_min("10m", Duration::from_secs(1))
+      .context("CLEANER_INTERVAL is not a duration")?;
+
+    let cleaner_threshold = env::var("CLEANER_THRESHOLD")
+      .or_duration_min("1y", Duration::from_secs(1))
+      .context("CLEANER_THRESHOLD is not a duration")?;
 
     let dns_resolver = match env::var("DNS_RESOLVER") {
       Ok(resolver) => SocketAddr::new(resolver.parse().context("DNS_RESOLVER is not an IP address")?, 53),

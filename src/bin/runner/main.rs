@@ -3,6 +3,7 @@ mod config;
 use std::sync::Arc;
 
 use anyhow::Result;
+use humantime::format_duration;
 use kvlogger::*;
 
 use defcon::{
@@ -29,6 +30,11 @@ async fn main() -> Result<()> {
     ..Default::default()
   };
 
+  kvlog!(Info, "starting runner process", {
+    "site" => config.site,
+    "poll_interval" => format_duration(config.poll_interval)
+  });
+
   loop {
     let token = config.keys.generate(&claims)?.unwrap_or_default();
     let client = reqwest::Client::new();
@@ -54,7 +60,7 @@ async fn main() -> Result<()> {
       }
     }
 
-    tokio::time::delay_for(config.pull_interval).await;
+    tokio::time::delay_for(config.poll_interval).await;
   }
 }
 
