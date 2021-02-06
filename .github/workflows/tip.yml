@@ -84,12 +84,33 @@ jobs:
           args: --release --target=${{ matrix.arch.target }}
           use-cross: ${{ matrix.arch.cross }}
       - name: Rename artifact
-        run: mv target/${{ matrix.arch.target }}/release/defcon target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}
+        run: |
+          mv target/${{ matrix.arch.target }}/release/defcon target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}
+          mv target/${{ matrix.arch.target }}/release/defcon-runner target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: defcon-tip-${{ matrix.arch.name }}
-          path: target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}
+          path: |
+            target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}
+            target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}
+
+  doc:
+    runs-on: ubuntu-20.04
+    needs: [clippy, test, build]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install mdbook
+        uses: peaceiris/actions-mdbook@v1
+        with:
+          mdbook-version: '0.4.6'
+      - name: Build documentation
+        run: mdbook build docs/
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/book/
 
   package:
     runs-on: ubuntu-20.04

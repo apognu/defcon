@@ -10,9 +10,10 @@ mod handler;
 
 use std::{env, sync::Arc, time::Instant};
 
-use anyhow::{Context, Error, Result};
+use anyhow::{Context, Result};
 use futures::future;
-use lazy_static::lazy_static;
+use humantime::format_duration;
+use kvlogger::*;
 use rocket::config::Config as RocketConfig;
 use sqlx::{
   mysql::{MySql, MySqlPoolOptions},
@@ -21,29 +22,10 @@ use sqlx::{
 
 use defcon::{
   api::{self, auth::Keys, middlewares::ApiLogger},
-  config::Config,
+  config::{Config, PUBLIC_KEY},
   inhibitor::Inhibitor,
   model::migrations,
 };
-
-lazy_static! {
-  static ref PUBLIC_KEY: Vec<u8> = env::var("PUBLIC_KEY")
-    .map(|key| format!("-----BEGIN PUBLIC KEY-----{}-----END PUBLIC KEY-----", key))
-    .unwrap_or_default()
-    .as_bytes()
-    .to_vec();
-}
-
-pub fn log_error(err: &Error) {
-  let desc = err.to_string();
-  let cause = err.root_cause().to_string();
-
-  if desc == cause {
-    log::error!("{}", desc);
-  } else {
-    log::error!("{}: {}", desc, cause);
-  }
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -86,7 +68,7 @@ async fn main() -> Result<()> {
   match config.api {
     true => {
       if let Err(err) = run_api(pool, config, keys).await {
-        log_error(&err);
+        log::error!("{:#}", err);
       }
     }
 
@@ -97,7 +79,9 @@ async fn main() -> Result<()> {
 }
 
 async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Keys<'static>) -> Result<()> {
-  log::info!("started API process on port {}", config.api_port);
+  kvlog!(Info, "starting api process", {
+    "port" => config.api_port
+  });
 
   let mut provider = RocketConfig::release_default();
   provider.port = config.api_port;
@@ -108,7 +92,10 @@ async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Keys<'static>) ->
 }
 
 async fn run_defcon(pool: &Pool<MySql>, config: Arc<Config>) {
-  log::info!("started handler process");
+  kvlog!(Info, "starting handler process", {
+    "interval" => format_duration(config.handler_interval),
+    "spread" => config.handler_spread.map(format_duration).map(|s| s.to_string()).unwrap_or_default()
+  });
 
   let inhibitor = Inhibitor::new();
 
@@ -122,7 +109,7 @@ async fn run_defcon(pool: &Pool<MySql>, config: Arc<Config>) {
 
       async move {
         if let Err(err) = handler::tick(pool, config, inhibitor).await {
-          log_error(&err);
+          log::error!("{:#}", err);
         }
       }
     });
@@ -132,7 +119,10 @@ async fn run_defcon(pool: &Pool<MySql>, config: Arc<Config>) {
 }
 
 async fn run_cleaner(pool: &Pool<MySql>, config: Arc<Config>) {
-  log::info!("started cleaner process");
+  kvlog!(Info, "starting cleaner process", {
+    "interval" => format_duration(config.cleaner_interval),
+    "threshold" => format_duration(config.cleaner_threshold)
+  });
 
   loop {
     let config = config.clone();

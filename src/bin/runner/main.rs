@@ -1,10 +1,9 @@
 mod config;
 
-use std::{env, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::Result;
 use kvlogger::*;
-use lazy_static::lazy_static;
 
 use defcon::{
   api::{
@@ -17,14 +16,6 @@ use defcon::{
 };
 
 use crate::config::Config;
-
-lazy_static! {
-  static ref PRIVATE_KEY: Vec<u8> = env::var("PRIVATE_KEY")
-    .map(|key| format!("-----BEGIN PRIVATE KEY-----{}-----END PRIVATE KEY-----", key))
-    .unwrap_or_default()
-    .as_bytes()
-    .to_vec();
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {

@@ -8,8 +8,18 @@ use std::{
 use anyhow::{Context, Result};
 use humantime::parse_duration;
 use kvlogger::KvLoggerBuilder;
+use lazy_static::lazy_static;
 
 use crate::ext::EnvExt;
+
+lazy_static! {
+  pub static ref PUBLIC_KEY: Vec<u8> = env::var("PUBLIC_KEY")
+    .map(std::fs::read_to_string)
+    .expect("PUBLIC_KEY must be provided")
+    .expect("could not read public key")
+    .as_bytes()
+    .to_vec();
+}
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -26,7 +36,7 @@ pub struct Config {
 
   pub checks: ChecksConfig,
 
-  pub key: Vec<u8>,
+  pub key: &'static Vec<u8>,
 }
 
 #[derive(Debug, Clone)]
@@ -66,12 +76,6 @@ impl Config {
 
     let checks = ChecksConfig { dns_resolver };
 
-    let key = env::var("PUBLIC_KEY")
-      .map(|key| format!("-----BEGIN PUBLIC KEY-----{}-----END PUBLIC KEY-----", key))
-      .context("PUBLIC_KEY must be provided")?
-      .as_bytes()
-      .to_vec();
-
     let config = Config {
       api,
       api_port,
@@ -82,7 +86,7 @@ impl Config {
       cleaner_interval,
       cleaner_threshold,
       checks,
-      key,
+      key: &*PUBLIC_KEY,
     };
 
     Ok(Arc::new(config))
@@ -92,7 +96,7 @@ impl Config {
 #[cfg(test)]
 mod tests {
   use std::{
-    env,
+    env, fs,
     net::{IpAddr, Ipv4Addr, SocketAddr},
     time::Duration,
   };
@@ -103,17 +107,21 @@ mod tests {
 
   use super::Config;
 
-  fn add_public_key() {
-    env::set_var(
-      "PUBLIC_KEY",
-      "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMUdYFmfbi57NV7pTIht38+w8yPly7rmrD1MPXenlCOu8Mu5623/ztsGeTV9uatuMQeMS+a7NEFzPGjMIKiR3AA==",
-    );
+  fn write_keys() -> Result<()> {
+    fs::write(
+      "/tmp/defcon-test-public-valid.pem",
+      "-----BEGIN PUBLIC KEY-----MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMUdYFmfbi57NV7pTIht38+w8yPly7rmrD1MPXenlCOu8Mu5623/ztsGeTV9uatuMQeMS+a7NEFzPGjMIKiR3AA==-----END PUBLIC KEY-----",
+    )?;
+
+    env::set_var("PUBLIC_KEY", "/tmp/defcon-test-public-valid.pem");
+
+    Ok(())
   }
 
   #[test]
   #[serial]
   fn default_config() -> Result<()> {
-    add_public_key();
+    write_keys()?;
 
     let config = Config::parse()?;
 
@@ -136,30 +144,8 @@ mod tests {
 
   #[test]
   #[serial]
-  fn fails_without_public_key() -> Result<()> {
-    env::remove_var("PUBLIC_KEY");
-
-    assert!(matches!(Config::parse(), Err(_)));
-
-    Ok(())
-  }
-
-  #[test]
-  #[serial]
-  fn fails_with_invalid_public_key() -> Result<()> {
-    env::set_var("PUBLIC_KEY", "invalidkey");
-
-    let config = Config::parse()?;
-
-    assert!(matches!(DecodingKey::from_ec_pem(&config.key), Err(_)));
-
-    Ok(())
-  }
-
-  #[test]
-  #[serial]
   fn override_config() -> Result<()> {
-    add_public_key();
+    write_keys()?;
 
     env::set_var("API_ENABLE", "0");
     env::set_var("API_PORT", "10000");
