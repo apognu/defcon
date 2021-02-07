@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>DNS - Defcon - User manual</title>
+        <title>Domain expiration - Defcon - User manual</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="../03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="../05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="../06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="../handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="../handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="../handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="../handlers/dns.html" class="active"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="../handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="../handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="../handlers/appstores.html"><strong aria-hidden="true">6.8.</strong> App stores</a></li></ol></li><li class="chapter-item expanded "><a href="../07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="../03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="../05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="../06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../06-handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="../06-handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="../06-handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="../06-handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="../06-handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="../06-handlers/whois.html" class="active"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="../06-handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="../06-handlers/appstores.html"><strong aria-hidden="true">6.8.</strong> App stores</a></li></ol></li><li class="chapter-item expanded "><a href="../07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,22 +163,17 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#dns" id="dns">DNS</a></h1>
-<p>The DNS handler will retrieve DNS records of a specific type, for a specific domain, and check if one of the values matches the specification. Only the following DNS record types are supported:</p>
-<ul>
-<li>NS</li>
-<li>MX</li>
-<li>A</li>
-<li>AAAA</li>
-<li>CNAME</li>
-<li>CAA</li>
-</ul>
+                        <h1><a class="header" href="#domain-expiration" id="domain-expiration">Domain expiration</a></h1>
+<p>This handler will check Whois databases for the provided domain and will attempt to retrieve the domain's expiration date. The emitted event will be marked as failed if the expiration is within the configured window.</p>
+<blockquote>
+<p>Not all TLDs expose their domains' expiration date in the Whois response, this handler will only work for those that do.</p>
+</blockquote>
 <h2><a class="header" href="#attributes" id="attributes">Attributes</a></h2>
 <table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>kind</code></td><td>string</td><td><code>&quot;dns&quot;</code></td><td>-</td></tr>
-<tr><td><code>record</code></td><td>string</td><td><code>&quot;A&quot;</code></td><td>Type of DNS record to verify</td></tr>
-<tr><td><code>domain</code></td><td>string</td><td><code>&quot;example.com&quot;</code></td><td>Domain name for which the retrieve the records</td></tr>
-<tr><td><code>value</code></td><td>string</td><td><code>&quot;1.2.3.4&quot;</code></td><td>Value to compare to each retrieved record, must match exactly</td></tr>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;domain&quot;</code></td><td>-</td></tr>
+<tr><td><code>domain</code></td><td>string</td><td><code>&quot;example.com&quot;</code></td><td>The base domain name to check for</td></tr>
+<tr><td><code>window</code></td><td>string</td><td><code>&quot;60d&quot;</code></td><td>Period of time within which the handler should fail</td></tr>
+<tr><td><code>attribute</code></td><td>string</td><td><code>&quot;expiry date&quot;</code></td><td>Whois attribute to use as the expiration date. Defaults to <code>registry expiry date</code></td></tr>
 </tbody></table>
 
                     </main>
@@ -186,13 +181,13 @@
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../handlers/http.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../06-handlers/dns.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../handlers/whois.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../06-handlers/tls.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -204,13 +199,13 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../handlers/http.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../06-handlers/dns.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../handlers/whois.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../06-handlers/tls.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

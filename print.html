@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="handlers/appstores.html"><strong aria-hidden="true">6.8.</strong> App stores</a></li></ol></li><li class="chapter-item expanded "><a href="07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="06-handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="06-handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="06-handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="06-handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="06-handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="06-handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="06-handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="06-handlers/appstores.html"><strong aria-hidden="true">6.8.</strong> App stores</a></li></ol></li><li class="chapter-item expanded "><a href="07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -333,7 +333,7 @@ $ openssl ec -in defcon-private.pem -pubout -out defcon-public.pem
 <p>An off-site runner authenticates itself to the controller by possessing the private key matching the controller's public key.</p>
 <p>Whereas the controller is identified by the static <code>@controller</code> tag, each runner must be configured to have a unique tag, such as <code>eu-1</code> or <code>home-runner</code>. Site identifiers should only contain lowercase alphanumeric characters and dashes (<code>^[a-z0-9-]+$</code>)</p>
 <h2><a class="header" href="#download-the-binary" id="download-the-binary">Download the binary</a></h2>
-<pre><code class="language-shell">$ curl https://github.com/apognu/defcon/releases/download/tip/defcon-tip-x86_64 &gt; defcon
+<pre><code class="language-shell">$ curl https://github.com/apognu/defcon/releases/download/tip/defcon-runner-tip-x86_64 &gt; defcon
 $ chmod +x defcon
 </code></pre>
 <h2><a class="header" href="#start-a-runner" id="start-a-runner">Start a runner</a></h2>
@@ -454,6 +454,9 @@ INFO[2021-02-06T14:18:36.973+0000] starting runner process site=&quot;eu-1&quot;
 </tbody></table>
 <h1><a class="header" href="#tls-expiration" id="tls-expiration">TLS expiration</a></h1>
 <p>This handler can retrieve TLS certificates for a website and fail if its expiration date falls within a configurable window of time. This can help detect issues in your renewal processes and be used as a last resort reminder if you still do it manually.</p>
+<blockquote>
+<p>For now, only TLS certificates served on port 443 are supported.</p>
+</blockquote>
 <h2><a class="header" href="#attributes-6" id="attributes-6">Attributes</a></h2>
 <table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>kind</code></td><td>string</td><td><code>&quot;tls&quot;</code></td><td>-</td></tr>
@@ -475,6 +478,36 @@ INFO[2021-02-06T14:18:36.973+0000] starting runner process site=&quot;eu-1&quot;
 <tr><td><code>app_id</code></td><td>string</td><td><code>&quot;com.google.android.apps.maps&quot;</code></td><td>Application ID for the Android app to monitor</td></tr>
 </tbody></table>
 <h1><a class="header" href="#alerters-1" id="alerters-1">Alerters</a></h1>
+<p>An alerter defined what is to be done when an outage is confirmed. Generally, information about the outage is be sent through HTTP to a configurable URL, with different schemas depending on the alerting service chosen.</p>
+<p>As of now, only two alerters are supported: generic Webhook and Slack message.</p>
+<h2><a class="header" href="#wehook" id="wehook">Wehook</a></h2>
+<pre><code class="language-json">{
+  &quot;kind&quot;: &quot;webhook&quot;,
+  &quot;webhook&quot;: &quot;https://webhooks.example.com/b82225cf-7af2-494c-b570-7850546bf8a3&quot;
+}
+</code></pre>
+<p>When an outage is to be emitted to this kind of alerter, a payload is constructed containing all the information about the outage. It is the upstream alerting service's responsibility to handle our schema and act accordingly.</p>
+<p>The payload that will be sent to the webhook is akin to this schema:</p>
+<pre><code class="language-json">{
+  // Check definition
+  ...,
+  &quot;level&quot;: &quot;critical&quot;, // Or &quot;warning&quot;, &quot;ok&quot;
+  &quot;spec&quot;: {
+    // Handler definition
+  },
+  &quot;outage&quot;: {
+    // Outage definition
+  }
+}
+</code></pre>
+<h2><a class="header" href="#slack" id="slack">Slack</a></h2>
+<pre><code class="language-json">{
+  &quot;kind&quot;: &quot;slack&quot;,
+  &quot;webhook&quot;: &quot;https://hooks.slack.com/services/XXXXXXX/YYYYYYY/123456&quot;
+}
+</code></pre>
+<p>The Slack alerter is a variation of the Webhook alerter that formats the payload transmitted to the upstream server to be properly displayed as a Slack message. Here is an example of output in a Slack channel.</p>
+<p><img src="./00-assets/defcon-alerter-slack.png" alt="Defcon Slack alert" /></p>
 
                     </main>
 
