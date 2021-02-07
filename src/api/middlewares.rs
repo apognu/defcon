@@ -28,12 +28,22 @@ impl Fairing for ApiLogger {
     let ip = request.client_ip().map(|ip| ip.to_string()).unwrap_or_else(|| "-".to_string());
     let time = Local::now().format("%Y-%m-%dT%H:%M:%S%z");
 
-    kvlog!(Info, format!("{} {}", request.method(), request.uri()), {
-      "time" => time,
-      "remote" => ip,
-      "method" => request.method(),
-      "path" => request.uri(),
-      "status" => response.status().code
-    });
+    if request.uri().path().starts_with("/api/runner/") {
+      kvlog!(Debug, format!("{} {}", request.method(), request.uri()), {
+        "time" => time,
+        "remote" => ip,
+        "method" => request.method(),
+        "path" => request.uri(),
+        "status" => response.status().code
+      });
+    } else {
+      kvlog!(Info, format!("{} {}", request.method(), request.uri()), {
+        "time" => time,
+        "remote" => ip,
+        "method" => request.method(),
+        "path" => request.uri(),
+        "status" => response.status().code
+      });
+    }
   }
 }

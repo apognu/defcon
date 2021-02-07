@@ -42,6 +42,8 @@ async fn main() -> Result<()> {
 
     if let Ok(response) = request.send().await {
       if let Ok(checks) = response.json::<Vec<api::RunnerCheck>>().await {
+        log::debug!("got {} stale checks from the controller", checks.len());
+
         for stale in checks {
           if inhibitor.inhibited(&config.base, &stale.uuid) {
             continue;
