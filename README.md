@@ -102,27 +102,21 @@ $ PRIVATE_KEY=./defcon-private.pem \
   defcon-runner
 ```
 
-## Checks
+## Handlers
 
-| Check name          | Internal ID  | Description                                                                    |
-| ------------------- | ------------ | ------------------------------------------------------------------------------ |
-| iOS app             | `app_store`  | Verify if an iOS app can be found on the App Store                             |
-| DNS record          | `dns`        | Verify the value for a domain record (`NS`, `MX`, `A`, `AAAA`, `CNAME`, `CAA`) |
-| HTTP request        | `http`       | Verify the response to an HTTP GET request                                     |
-| ICMP echo request ¹ | `ping`       | Verify if a host can be pinged                                                 |
-| Android app         | `play_store` | Verify if an Android app can be found on the Play Store                        |
-| TCP connection      | `tcp`        | Verify if a host is reachable through a TCP port                               |
-| TLS expiration      | `tls`        | Verify the expiration date for a TLS certificate                               |
-| UDP datagram ²      | `udp`        | Verify the response from a host on a UDP port                                  |
-| Domain expiration ³ | `whois`      | Verify the expiration date for a domain registration                           |
+| Check name        | Internal ID  | Description                                                                    |
+| ----------------- | ------------ | ------------------------------------------------------------------------------ |
+| iOS app           | `app_store`  | Verify if an iOS app can be found on the App Store                             |
+| DNS record        | `dns`        | Verify the value for a domain record (`NS`, `MX`, `A`, `AAAA`, `CNAME`, `CAA`) |
+| HTTP request      | `http`       | Verify the response to an HTTP GET request                                     |
+| ICMP echo request | `ping`       | Verify if a host can be pinged                                                 |
+| Android app       | `play_store` | Verify if an Android app can be found on the Play Store                        |
+| TCP connection    | `tcp`        | Verify if a host is reachable through a TCP port                               |
+| TLS expiration    | `tls`        | Verify the expiration date for a TLS certificate                               |
+| UDP datagram      | `udp`        | Verify the response from a host on a UDP port                                  |
+| Domain expiration | `whois`      | Verify the expiration date for a domain registration                           |
 
-[¹]: Might require proper permission to open raw sockets. On Linux, for example, `CAP_NET_RAW`.
-
-[²]: Local port is chosen randomly, which might require firewall configuration. `message` and `content` should be given as base64-encoded strings.
-
-[³]: Domain registration expiration is not reported through Whois by all TLDs.
-
-You can find example schemas for all these specs (to be used in the API, described in the next section) in the `examples/schemas` directory.
+You can find detailed explanations about how to configure each of those handlers in the [user manual](https://apognu.github.io/defcon/).
 
 ## API
 

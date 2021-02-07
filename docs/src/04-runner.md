@@ -16,7 +16,7 @@ Whereas the controller is identified by the static `@controller` tag, each runne
 ## Download the binary
 
 ```shell
-$ curl https://github.com/apognu/defcon/releases/download/tip/defcon-tip-x86_64 > defcon
+$ curl https://github.com/apognu/defcon/releases/download/tip/defcon-runner-tip-x86_64 > defcon
 $ chmod +x defcon
 ```
 

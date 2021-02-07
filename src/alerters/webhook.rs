@@ -9,8 +9,8 @@ use crate::{
 
 #[derive(Debug, Serialize)]
 struct Payload<'p> {
-  #[serde(flatten)]
   pub level: Option<&'p str>,
+  #[serde(flatten)]
   pub check: &'p Check,
   pub spec: api::Spec,
   pub outage: &'p Outage,

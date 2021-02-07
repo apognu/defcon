@@ -2,6 +2,8 @@
 
 This handler can retrieve TLS certificates for a website and fail if its expiration date falls within a configurable window of time. This can help detect issues in your renewal processes and be used as a last resort reminder if you still do it manually.
 
+> For now, only TLS certificates served on port 443 are supported.
+
 ## Attributes
 
 | Attribute | Type   | Example         | Description                                                   |
