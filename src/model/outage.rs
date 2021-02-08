@@ -8,13 +8,15 @@ use crate::{api::error::Shortable, model::Check};
 
 #[derive(Debug, FromRow, Default, Serialize)]
 pub struct Outage {
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub id: u64,
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub check_id: u64,
   pub uuid: String,
   pub started_on: Option<DateTime<Utc>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub ended_on: Option<DateTime<Utc>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub comment: Option<String>,
 }
 

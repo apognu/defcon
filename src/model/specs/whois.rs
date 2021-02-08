@@ -5,12 +5,13 @@ use crate::model::{specs::SpecMeta, Check, Duration};
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Whois {
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub id: u64,
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub check_id: u64,
   pub domain: String,
   pub window: Duration,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub attribute: Option<String>,
 }
 

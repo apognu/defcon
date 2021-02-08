@@ -8,7 +8,7 @@ use crate::{
   model as db,
 };
 
-#[get("/api/outages/<uuid>/events")]
+#[get("/api/sites/outages/<uuid>/events")]
 pub async fn list(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::SiteOutage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
@@ -31,7 +31,7 @@ mod tests {
     pool.create_check(None, None, "list()", None, None).await?;
     pool.create_unresolved_site_outage(None, None).await?;
 
-    let response = client.get("/api/outages/dd9a531a-1b0b-4a12-bc09-e5637f916261/events").dispatch().await;
+    let response = client.get("/api/sites/outages/dd9a531a-1b0b-4a12-bc09-e5637f916261/events").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
 
     let events: Vec<Event> = serde_json::from_str(&response.into_string().await.unwrap())?;
@@ -48,7 +48,7 @@ mod tests {
   async fn list_not_found() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    let response = client.get("/api/outages/nonexistant/events").dispatch().await;
+    let response = client.get("/api/sites/outages/nonexistant/events").dispatch().await;
     assert_eq!(response.status(), Status::NotFound);
 
     pool.cleanup().await;

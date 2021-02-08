@@ -17,15 +17,16 @@ enum OutageRef {
 
 #[derive(Debug, Default, FromRow, Serialize, Deserialize)]
 pub struct SiteOutage {
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub id: u64,
   pub uuid: String,
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub check_id: u64,
   pub site: String,
   pub passing_strikes: u8,
   pub failing_strikes: u8,
   pub started_on: Option<DateTime<Utc>>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub ended_on: Option<DateTime<Utc>>,
 }
 

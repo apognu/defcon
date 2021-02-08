@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use anyhow::Result;
 use sqlx::{FromRow, MySqlConnection};
 
@@ -8,16 +10,21 @@ use crate::model::{
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Http {
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub id: u64,
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub check_id: u64,
   pub url: String,
   #[serde(default)]
+  #[serde(skip_serializing_if = "HashMap::is_empty")]
   pub headers: HttpHeaders,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub timeout: Option<Duration>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub code: Option<u16>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub content: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub digest: Option<String>,
 }
 

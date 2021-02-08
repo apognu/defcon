@@ -145,9 +145,13 @@ pub async fn patch(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<J
   payload.silent.run(|value| check.silent = value);
 
   if let Some(value) = payload.alerter {
-    let alerter = Alerter::by_uuid(&mut txn, &value).await.context("could not retrieve alerter").short()?;
+    if value.is_empty() {
+      check.alerter_id = None;
+    } else {
+      let alerter = Alerter::by_uuid(&mut txn, &value).await.context("could not retrieve alerter").short()?;
 
-    check.alerter_id = Some(alerter.id);
+      check.alerter_id = Some(alerter.id);
+    }
   }
 
   if let Some(value) = payload.sites {

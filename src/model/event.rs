@@ -12,9 +12,9 @@ pub mod status {
 
 #[derive(Debug, Default, FromRow, Serialize, Deserialize)]
 pub struct Event {
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub id: u64,
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub check_id: u64,
   #[serde(skip_serializing)]
   pub outage_id: Option<u64>,

@@ -20,11 +20,11 @@ pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<api::Sit
   Ok(Json(outages))
 }
 
-#[get("/api/sites/outages?<start>&<end>", rank = 5)]
-pub async fn list_between(pool: State<'_, Pool<MySql>>, start: api::DateTime, end: api::DateTime) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
+#[get("/api/sites/outages?<from>&<to>", rank = 5)]
+pub async fn list_between(pool: State<'_, Pool<MySql>>, from: api::DateTime, to: api::DateTime) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  let outages = SiteOutage::between(&mut conn, *start, *end)
+  let outages = SiteOutage::between(&mut conn, *from, *to)
     .await
     .context("could not retrieve outages")
     .short()?
@@ -77,7 +77,7 @@ mod tests {
     pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
     pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
-    let response = client.get("/api/sites/outages?start=2020-12-31T00:00:00&end=2021-12-31T00:00:00").dispatch().await;
+    let response = client.get("/api/sites/outages?from=2020-12-31T00:00:00&to=2021-12-31T00:00:00").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
 
     let outages: Vec<SiteOutage> = serde_json::from_str(&response.into_string().await.unwrap())?;

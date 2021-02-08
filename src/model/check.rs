@@ -13,16 +13,16 @@ use crate::{
 
 #[derive(Debug, Default, FromRow, Serialize, Deserialize)]
 pub struct Check {
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub id: u64,
   #[serde(skip_deserializing)]
   pub uuid: String,
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub alerter_id: Option<u64>,
   pub name: String,
   #[serde(default = "ext::to_true")]
   pub enabled: bool,
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub kind: CheckKind,
   pub interval: Duration,
   pub site_threshold: u8,

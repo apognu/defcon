@@ -35,6 +35,7 @@ pub struct Check {
   pub check: db::Check,
   pub spec: api::Spec,
 
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub alerter: Option<String>,
   pub sites: Option<api::Sites>,
 }

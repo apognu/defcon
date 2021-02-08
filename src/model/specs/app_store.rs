@@ -5,9 +5,9 @@ use crate::model::{specs::SpecMeta, Check};
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct AppStore {
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub id: u64,
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub check_id: u64,
   pub bundle_id: String,
 }

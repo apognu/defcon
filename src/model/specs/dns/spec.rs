@@ -7,9 +7,9 @@ pub use super::record::*;
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct Dns {
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub id: u64,
-  #[serde(skip_serializing, skip_deserializing)]
+  #[serde(skip)]
   pub check_id: u64,
   #[serde(default)]
   pub record: DnsRecord,
