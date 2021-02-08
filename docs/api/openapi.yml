@@ -1,0 +1,396 @@
+openapi: 3.0.0
+
+info:
+  title: Defcon API
+  description: Defcon control plane API documentation
+  version: 0.1.0
+
+tags:
+  - name: Checks
+  - name: Alerters
+  - name: Outages
+  - name: Site outages
+
+paths:
+  /api/checks:
+    get:
+      summary: List checks
+      description: By default, this endpoint lists all enabled checks defined in the system. If all is provided with a `1` value, list **all** checks (enabled or not).
+      tags: ['Checks']
+      parameters:
+        - name: all
+          description: Should we display all checks or enabled checks only
+          in: query
+          schema:
+            type: boolean
+            enum: [0, 1]
+            default: false
+      responses:
+        '200':
+          description: List of enabled checks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/specs/ReadSpec'
+
+    post:
+      summary: Create a new check
+      tags: ['Checks']
+      requestBody:
+        description: The definition of a check
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/specs/WriteSpec'
+      responses:
+        '201':
+          description: The check was created
+          headers:
+            Location:
+              description: The absolute path to the check, including the unique identifier
+              schema:
+                type: string
+                format: url
+        '400':
+          description: Invalid payload
+
+  /api/checks/{uuid}:
+    get:
+      summary: Retrieve a check
+      tags: ['Checks']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '200':
+          description: The definition of the check
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/specs/ReadSpec'
+        '404':
+          description: Provided UUID does not match a known check
+
+    put:
+      summary: Update a check
+      description: Update a check by providing a full valid definition. Note that the handler type (`spec.kind`) cannot be updated in-place.
+      tags: ['Checks']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        description: The definition of a check
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/specs/WriteSpec'
+      responses:
+        '200':
+          description: The check was updated
+        '400':
+          description: Invalid payload
+        '404':
+          description: Provided UUID does not match a known check
+
+    patch:
+      summary: Update check attributes
+      description: Update some of the attributes of a check through a partial definition. Note that the handler type (`spec.kind`) cannot be updated in-place and that you have to specify the full handler definition (`spec`) if you wish to update it.
+      tags: ['Checks']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        description: The partial definition of a check
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/specs/ReadSpec'
+      responses:
+        '200':
+          description: The check was updated
+        '400':
+          description: Invalid payload
+        '404':
+          description: Provided UUID does not match a known check
+
+    delete:
+      summary: Disable a check
+      description: Defcon does not allow to completely delete a check, only to disable it (prevent it from running).
+      tags: ['Checks']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '204':
+          description: Check was disabled successfully
+        '404':
+          description: Provided UUID does not match a known check
+
+  /api/alerters:
+    get:
+      summary: List all alerters
+      tags: ['Alerters']
+      responses:
+        '200':
+          description: List of alerters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/alerter/ReadAlerter'
+
+    post:
+      summary: Create an alerter
+      tags: ['Alerters']
+      requestBody:
+        description: The definition of an alerter
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/alerter/WriteAlerter'
+      responses:
+        '201':
+          description: The alerter was created
+          headers:
+            Location:
+              description: The absolute path to the alerter, including the unique identifier
+              schema:
+                type: string
+                format: url
+        '400':
+          description: Invalid payload
+
+  /api/alerters/{uuid}:
+    get:
+      summary: Get an alerter
+      tags: ['Alerters']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The definition of the alerter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/alerter/ReadAlerter'
+        '404':
+          description: Provided UUID does not match a known alerter
+
+    put:
+      summary: Update an alerter
+      tags: ['Alerters']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        description: The definition of an alerter
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/alerter/WriteAlerter'
+      responses:
+        '200':
+          description: The alerter was updated
+        '400':
+          description: Invalid payload
+        '404':
+          description: Provided UUID does not match a known alerter
+
+    patch:
+      summary: Update alerter attributes
+      tags: ['Alerters']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        description: The definition of an alerter
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/alerter/ReadAlerter'
+      responses:
+        '200':
+          description: The alerter was updated
+        '400':
+          description: Invalid payload
+        '404':
+          description: Provided UUID does not match a known alerter
+
+  /api/outages:
+    get:
+      summary: List current outages
+      tags: ['Outages']
+      parameters:
+        - name: from
+          description: Display resolved outages from this date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: all
+          description: Display resolved outages until this date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of outages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/outage/Outage'
+
+  /api/outages/{uuid}/comment:
+    put:
+      summary: Add a comment
+      tags: ['Outages']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        description: The comment to be added to the outage
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comment:
+                  description: The comment to be added
+                  type: string
+      responses:
+        '200':
+          description: The comment was recorded
+        '400':
+          description: Invalid payload
+        '404':
+          description: Provided UUID does not match a known alerter
+
+  /api/sites/outages:
+    get:
+      summary: List current site outages
+      tags: ['Site outages']
+      parameters:
+        - name: from
+          description: Display resolved outages from this date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: all
+          description: Display resolved outages until this date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of site outages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/site_outage/SiteOutage'
+
+  /api/sites/outages/{uuid}:
+    get:
+      summary: Get a site outage
+      tags: ['Site outages']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Definition of the site outage
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/site_outage/SiteOutage'
+
+  /api/sites/outages/{uuid}/events:
+    get:
+      summary: Get a site outage events
+      tags: ['Site outages']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of handler events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/site_outage/Event'
+
+components:
+  schemas:
+    check:
+      $ref: './models/check.yml'
+    specs:
+      $ref: './models/specs/_index.yml'
+    alerter:
+      $ref: './models/alerter.yml'
+    outage:
+      $ref: './models/outage.yml'
+    site_outage:
+      $ref: './models/site_outage.yml'

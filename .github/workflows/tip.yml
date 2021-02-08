@@ -104,8 +104,12 @@ jobs:
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: '0.4.6'
-      - name: Build documentation
+      - name: Build user manual
         run: mdbook build docs/
+      - name: Build API documentation
+        uses: seeebiii/redoc-cli-github-action@v10
+        with:
+          args: bundle -o docs/book/api.html docs/api/openapi.yml
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:

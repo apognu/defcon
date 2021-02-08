@@ -1,0 +1,40 @@
+SpecDns:
+  type: object
+  properties:
+    kind:
+      type: string
+      enum: ["dns"]
+    record:
+      type: string
+      enum: [ NS, MX, A, AAAA, CNAME, CAA ]
+    domain:
+      type: string
+    value:
+      type: string
+
+ReadSpecDns:
+  title: DNS
+  type: object
+  allOf:
+    - $ref: '../check.yml#/ReadCheck'
+    - type: object
+      properties:
+        spec:
+          $ref: '#/SpecDns'
+
+WriteSpecDns:
+  title: DNS
+  type: object
+  allOf:
+    - $ref: '../check.yml#/WriteCheck'
+    - type: object
+      properties:
+        spec:
+          allOf:
+            - $ref: '#/SpecDns'
+            - type: object
+              required:
+                - kind
+                - record
+                - domain
+                - value

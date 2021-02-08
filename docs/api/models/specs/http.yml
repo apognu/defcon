@@ -1,0 +1,47 @@
+SpecHttp:
+  type: object
+  properties:
+    kind:
+      type: string
+      enum: ["http"]
+    url:
+      type: string
+    headers:
+      type: object
+    timeout:
+      type: string
+      default: "5s"
+    code:
+      type: integer
+      default: 200
+    content:
+      type: string
+    digest:
+      type: string
+
+ReadSpecHttp:
+  title: HTTP
+  type: object
+  allOf:
+    - $ref: '../check.yml#/ReadCheck'
+    - type: object
+      properties:
+        spec:
+          $ref: '#/SpecHttp'
+
+WriteSpecHttp:
+  title: HTTP
+  type: object
+  allOf:
+    - $ref: '../check.yml#/WriteCheck'
+    - type: object
+      properties:
+        spec:
+          allOf:
+            - $ref: '#/SpecHttp'
+            - type: object
+              required:
+                - kind
+                - http
+                - url
+

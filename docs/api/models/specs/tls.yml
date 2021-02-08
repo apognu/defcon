@@ -1,0 +1,36 @@
+SpecTls:
+  type: object
+  properties:
+    kind:
+      type: string
+      enum: ["tls"]
+    domain:
+      type: string
+    window:
+      type: string
+
+ReadSpecTls:
+  title: TLS expiration
+  type: object
+  allOf:
+    - $ref: '../check.yml#/ReadCheck'
+    - type: object
+      properties:
+        spec:
+          $ref: '#/SpecTls'
+
+WriteSpecTls:
+  title: TLS expiration
+  type: object
+  allOf:
+    - $ref: '../check.yml#/WriteCheck'
+    - type: object
+      properties:
+        spec:
+          allOf:
+            - $ref: '#/SpecTls'
+            - type: object
+              required:
+                - kind
+                - domain
+                - window

@@ -1,0 +1,33 @@
+SpecPing:
+  type: object
+  properties:
+    kind:
+      type: string
+      enum: ["ping"]
+    host:
+      type: string
+
+ReadSpecPing:
+  title: Ping
+  type: object
+  allOf:
+    - $ref: '../check.yml#/ReadCheck'
+    - type: object
+      properties:
+        spec:
+          $ref: '#/SpecPing'
+
+WriteSpecPing:
+  title: Ping
+  type: object
+  allOf:
+    - $ref: '../check.yml#/WriteCheck'
+    - type: object
+      properties:
+        spec:
+          allOf:
+            - $ref: '#/SpecPing'
+            - type: object
+              required:
+                - kind
+                - host

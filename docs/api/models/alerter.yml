@@ -1,0 +1,30 @@
+ReadAlerter:
+  type: object
+  $ref: '#/components/schemas/Alerter'
+
+WriteAlerter:
+  allOf:
+    - $ref: "#/components/schemas/Alerter"
+    - type: object
+      required:
+        - kind
+        - webhook
+
+components:
+  schemas:
+    Alerter:
+      type: object
+      properties:
+        uuid:
+          readOnly: true
+          description: Unique identifier
+          type: string
+          format: uuid
+        kind:
+          description: Type of alerter
+          type: string
+          enum: ["webhook", "slack"]
+        webhook:
+          description: URL to the incoming webhook
+          type: string
+          format: url

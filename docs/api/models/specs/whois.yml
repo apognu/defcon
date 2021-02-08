@@ -1,0 +1,39 @@
+SpecWhois:
+  type: object
+  properties:
+    kind:
+      type: string
+      enum: ["whois"]
+    domain:
+      type: string
+    window:
+      type: string
+    attribute:
+      type: string
+      default: registry expiry date
+
+ReadSpecWhois:
+  title: Domain expiration
+  type: object
+  allOf:
+    - $ref: '../check.yml#/ReadCheck'
+    - type: object
+      properties:
+        spec:
+          $ref: '#/SpecWhois'
+
+WriteSpecWhois:
+  title: Domain expiration
+  type: object
+  allOf:
+    - $ref: '../check.yml#/WriteCheck'
+    - type: object
+      properties:
+        spec:
+          allOf:
+            - $ref: '#/SpecWhois'
+            - type: object
+              required:
+                - kind
+                - domain
+                - window

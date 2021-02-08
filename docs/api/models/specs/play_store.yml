@@ -1,0 +1,33 @@
+SpecPlayStore:
+  type: object
+  properties:
+    kind:
+      type: string
+      enum: ["play_store"]
+    app_id:
+      type: string
+
+ReadSpecPlayStore:
+  title: Play Store
+  type: object
+  allOf:
+    - $ref: '../check.yml#/ReadCheck'
+    - type: object
+      properties:
+        spec:
+          $ref: '#/SpecPlayStore'
+
+WriteSpecPlayStore:
+  title: Play Store
+  type: object
+  allOf:
+    - $ref: '../check.yml#/WriteCheck'
+    - type: object
+      properties:
+        spec:
+          allOf:
+            - $ref: '#/SpecPlayStore'
+            - type: object
+              required:
+                - kind
+                - app_id

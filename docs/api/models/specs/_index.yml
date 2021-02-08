@@ -1,0 +1,43 @@
+ReadSpec:
+  oneOf:
+    - $ref: '#/ping/ReadSpecPing'
+    - $ref: '#/tcp/ReadSpecTcp'
+    - $ref: '#/udp/ReadSpecUdp'
+    - $ref: '#/http/ReadSpecHttp'
+    - $ref: '#/dns/ReadSpecDns'
+    - $ref: '#/tls/ReadSpecTls'
+    - $ref: '#/whois/ReadSpecWhois'
+    - $ref: '#/app_store/ReadSpecAppStore'
+    - $ref: '#/play_store/ReadSpecPlayStore'
+
+WriteSpec:
+  oneOf:
+    - $ref: '#/ping/WriteSpecPing'
+    - $ref: '#/tcp/WriteSpecTcp'
+    - $ref: '#/udp/WriteSpecUdp'
+    - $ref: '#/http/WriteSpecHttp'
+    - $ref: '#/dns/WriteSpecDns'
+    - $ref: '#/tls/WriteSpecTls'
+    - $ref: '#/whois/WriteSpecWhois'
+    - $ref: '#/app_store/WriteSpecAppStore'
+    - $ref: '#/play_store/WriteSpecPlayStore'
+
+ping:
+  $ref: './ping.yml'
+tcp:
+  $ref: './tcp.yml'
+udp:
+  $ref: './udp.yml'
+dns:
+  $ref: './dns.yml'
+http:
+  $ref: './http.yml'
+tls:
+  $ref: './tls.yml'
+whois:
+  $ref: './whois.yml'
+app_store:
+  $ref: './app_store.yml'
+play_store:
+  $ref: './play_store.yml'
+

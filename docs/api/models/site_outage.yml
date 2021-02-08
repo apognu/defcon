@@ -1,0 +1,45 @@
+SiteOutage:
+  type: object
+  properties:
+    uuid:
+      description: Unique identifier
+      type: string
+      format: uuid
+    site:
+      description: Identifier of the originating site
+      type: string
+    passing_strikes:
+      description: Number of consecrutive passes after the outage was created
+      type: integer
+    failing_strikes:
+      description: Number of consecutive fails
+      type: integer
+    started_on:
+      description: Date and time when the outage was confirmed
+      type: string
+      format: date-time
+    ended_on:
+      description: Date and time when the outage was resolved, if it was
+      type: string
+      format: date-time
+    check:
+      description: Check definition that triggered the outage
+      $ref: './specs/_index.yml#/WriteSpec'
+
+Event:
+  type: object
+  properties:
+    site:
+      description: Identifier of the site the event originated from
+      type: string
+    status:
+      description: Status of the event
+      type: integer
+      enum: [0, 1, 2]
+    message:
+      description: Status message emitted from the handler
+      type: string
+    created_at:
+      description: Date when the event was emitted
+      type: string
+      format: date-time

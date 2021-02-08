@@ -1,0 +1,33 @@
+SpecAppStore:
+  type: object
+  properties:
+    kind:
+      type: string
+      enum: ["app_store"]
+    bundle_id:
+      type: string
+
+ReadSpecAppStore:
+  title: Ping
+  type: object
+  allOf:
+    - $ref: '../check.yml#/ReadCheck'
+    - type: object
+      properties:
+        spec:
+          $ref: '#/SpecAppStore'
+
+WriteSpecAppStore:
+  title: App Store
+  type: object
+  allOf:
+    - $ref: '../check.yml#/WriteCheck'
+    - type: object
+      properties:
+        spec:
+          allOf:
+            - $ref: '#/SpecAppStore'
+            - type: object
+              required:
+                - kind
+                - bundle_id

@@ -1,0 +1,60 @@
+ReadCheck:
+  type: object
+  $ref: '#/components/schemas/Check'
+
+WriteCheck:
+  allOf:
+    - $ref: '#/components/schemas/Check'
+    - type: object
+      required:
+        - name
+        - interval
+        - passing_threshold
+        - failing_threshold
+        - spec
+
+components:
+  schemas:
+    Check:
+      type: object
+      properties:
+        uuid:
+          readOnly: true
+          description: Unique identifier
+          type: string
+          format: uuid
+        alerter:
+          description: Unique identifier for the alerter linked to the check
+          type: string
+          format: uuid
+          default: null
+        name:
+          description: Human-friendly name
+          type: string
+        enabled:
+          description: Whether the check should run or not
+          type: boolean
+          default: true
+        sites:
+          description: List of site identifier where the check should run. If omitted, defaults to `@controller`.
+          type: array
+          items:
+            type: string
+          default: ["@controller"]
+        interval:
+          type: string
+          description: Period of time between two run of the check
+        site_threshold:
+          description: Number of site outages required to confirm an outage
+          type: integer
+          default: 1
+        passing_threshold:
+          description: Number of consecutive fails required to consider a site failed
+          type: integer
+        failing_threshold:
+          description: Number of consecutive passes required to consider a site recovered
+          type: integer
+        silent:
+          description: Should an outage for this check trigger an alert
+          type: boolean
+          default: false

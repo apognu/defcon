@@ -15,3 +15,4 @@
   - [TLS expiration](./06-handlers/tls.md)
   - [App stores](./06-handlers/appstores.md)
 - [Alerters](./07-alerters.md)
+- [REST API](./api.html)

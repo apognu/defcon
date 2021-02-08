@@ -1,0 +1,39 @@
+SpecTcp:
+  type: object
+  properties:
+    kind:
+      type: string
+      enum: ["tcp"]
+    host:
+      type: string
+    port:
+      type: integer
+    timeout:
+      type: string
+      default: "5s"
+
+ReadSpecTcp:
+  title: TCP
+  type: object
+  allOf:
+    - $ref: '../check.yml#/ReadCheck'
+    - type: object
+      properties:
+        spec:
+          $ref: '#/SpecTcp'
+
+WriteSpecTcp:
+  title: TCP
+  type: object
+  allOf:
+    - $ref: '../check.yml#/WriteCheck'
+    - type: object
+      properties:
+        spec:
+          allOf:
+            - $ref: '#/SpecTcp'
+            - type: object
+              required:
+                - kind
+                - host
+                - port
