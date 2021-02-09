@@ -177,17 +177,13 @@
 $ chmod +x defcon
 </code></pre>
 <h2><a class="header" href="#running-the-controller" id="running-the-controller">Running the controller</a></h2>
-<p>You first need to generate an ECDSA key pair that will be used when you add your first off-site runner (not covered in this guide). This key pair is still required, for now, when running only the controller.</p>
-<pre><code class="language-shell">$ openssl ecparam -genkey -name prime256v1 -noout | openssl pkcs8 -topk8 -nocrypt -out defcon-private.pem
-$ openssl ec -in defcon-private.pem -pubout -out defcon-public.pem
-</code></pre>
 <p>From here, you can start the controller:</p>
-<pre><code class="language-shell">$ PUBLIC_KEY=./defcon-public.pem \
-  RUST_LOG=defcon=debug \
-  DSN=mysql://root:sigipsr@172.17.0.2/defconcli_dev?ssl-mode=DISABLED \
+<pre><code class="language-shell">$ RUST_LOG=defcon=debug \
+  DSN=mysql://defcon:password@mysql.host/defcon?ssl-mode=DISABLED \
   ./defcon
 INFO[2021-02-06T11:48:51.801+0000] starting api process port=&quot;8000&quot;
 INFO[2021-02-06T11:48:51.801+0000] starting handler process interval=&quot;1s&quot;
+INFO[2021-02-06T11:48:51.801+0000] no public key found, disabling runner endpoints
 </code></pre>
 <h2><a class="header" href="#creating-your-first-check" id="creating-your-first-check">Creating your first check</a></h2>
 <p>In this guide, we will monitor two HTTP services, that will need to return a <code>200 OK</code> status code to pass. Each check will run every 10 seconds and will require three failures to be considered failed. We will use the Defcon API to create the checks.</p>
