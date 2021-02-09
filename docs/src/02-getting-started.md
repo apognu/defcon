@@ -20,22 +20,15 @@ $ chmod +x defcon
 
 ## Running the controller
 
-You first need to generate an ECDSA key pair that will be used when you add your first off-site runner (not covered in this guide). This key pair is still required, for now, when running only the controller.
-
-```shell
-$ openssl ecparam -genkey -name prime256v1 -noout | openssl pkcs8 -topk8 -nocrypt -out defcon-private.pem
-$ openssl ec -in defcon-private.pem -pubout -out defcon-public.pem
-```
-
 From here, you can start the controller:
 
 ```shell
-$ PUBLIC_KEY=./defcon-public.pem \
-  RUST_LOG=defcon=debug \
-  DSN=mysql://root:sigipsr@172.17.0.2/defconcli_dev?ssl-mode=DISABLED \
+$ RUST_LOG=defcon=debug \
+  DSN=mysql://defcon:password@mysql.host/defcon?ssl-mode=DISABLED \
   ./defcon
 INFO[2021-02-06T11:48:51.801+0000] starting api process port="8000"
 INFO[2021-02-06T11:48:51.801+0000] starting handler process interval="1s"
+INFO[2021-02-06T11:48:51.801+0000] no public key found, disabling runner endpoints
 ```
 
 ## Creating your first check

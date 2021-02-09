@@ -32,7 +32,10 @@ async fn main() -> Result<()> {
   Config::set_log_level()?;
 
   let config = Config::parse()?;
-  let keys = Keys::new_public(&PUBLIC_KEY).context("public key should be ECDSA in PEM format")?;
+  let keys = match &*PUBLIC_KEY {
+    Some(key) => Some(Keys::new_public(&key).context("public key should be ECDSA in PEM format")?),
+    None => None,
+  };
 
   let dsn = env::var("DSN")?;
   let pool = MySqlPoolOptions::new().max_connections(20).connect(&dsn).await?;
@@ -78,7 +81,7 @@ async fn main() -> Result<()> {
   Ok(())
 }
 
-async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Keys<'static>) -> Result<()> {
+async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Option<Keys<'static>>) -> Result<()> {
   kvlog!(Info, "starting api process", {
     "listen" => config.api_listen
   });

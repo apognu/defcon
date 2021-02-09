@@ -1,5 +1,5 @@
 use std::{
-  env,
+  env, fs,
   net::{IpAddr, Ipv4Addr, SocketAddr},
   sync::Arc,
   time::Duration,
@@ -14,12 +14,10 @@ use crate::ext::EnvExt;
 pub const CONTROLLER_ID: &str = "@controller";
 
 lazy_static! {
-  pub static ref PUBLIC_KEY: Vec<u8> = env::var("PUBLIC_KEY")
-    .map(std::fs::read_to_string)
-    .expect("PUBLIC_KEY must be provided")
-    .expect("could not read public key")
-    .as_bytes()
-    .to_vec();
+  pub static ref PUBLIC_KEY: Option<Vec<u8>> = env::var("PUBLIC_KEY")
+    .map(|key| fs::read_to_string(key).expect("could not read public key"))
+    .map(|key| key.as_bytes().to_vec())
+    .ok();
 }
 
 #[derive(Debug, Clone)]
@@ -37,7 +35,7 @@ pub struct Config {
 
   pub checks: ChecksConfig,
 
-  pub key: &'static Vec<u8>,
+  pub key: Option<&'static Vec<u8>>,
 }
 
 #[derive(Debug, Clone)]
@@ -94,7 +92,7 @@ impl Config {
       cleaner_interval,
       cleaner_threshold,
       checks,
-      key: &*PUBLIC_KEY,
+      key: PUBLIC_KEY.as_ref(),
     };
 
     Ok(Arc::new(config))
@@ -145,8 +143,8 @@ mod tests {
 
     assert_eq!(config.checks.dns_resolver, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 53));
 
-    assert_eq!(config.key.len(), 174);
-    assert!(matches!(DecodingKey::from_ec_pem(&config.key), Ok(_)));
+    assert!(matches!(config.key, Some(key) if key.len() == 174));
+    assert!(matches!(DecodingKey::from_ec_pem(&(config.key.unwrap())), Ok(_)));
 
     Ok(())
   }

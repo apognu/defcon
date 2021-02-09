@@ -20,6 +20,26 @@ $ curl https://github.com/apognu/defcon/releases/download/tip/defcon-runner-tip-
 $ chmod +x defcon
 ```
 
+## Generate keys
+
+You first need to generate an ECDSA key pair that will be used when you add your first off-site runner (not covered in this guide). Without this key pair, the API endpoint used by the runners will be disabled.
+
+```shell
+$ openssl ecparam -genkey -name prime256v1 -noout | openssl pkcs8 -topk8 -nocrypt -out defcon-private.pem
+$ openssl ec -in defcon-private.pem -pubout -out defcon-public.pem
+```
+
+## Start the controller with runner support
+
+```shell
+$ PUBLIC_KEY=./defcon-public.pem \
+  RUST_LOG=defcon=debug \
+  DSN=mysql://defcon:password@mysql.host/defcon?ssl-mode=DISABLED \
+  ./defcon
+INFO[2021-02-06T11:48:51.801+0000] starting api process port="8000"
+INFO[2021-02-06T11:48:51.801+0000] starting handler process interval="1s"
+```
+
 ## Start a runner
 
 ```shell
