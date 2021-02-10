@@ -40,6 +40,12 @@ impl From<Vec<u8>> for Binary {
   }
 }
 
+impl From<&[u8]> for Binary {
+  fn from(bytes: &[u8]) -> Binary {
+    Binary(bytes.to_vec())
+  }
+}
+
 impl Type<MySql> for Binary {
   fn type_info() -> MySqlTypeInfo {
     <Vec<u8> as Type<MySql>>::type_info()
