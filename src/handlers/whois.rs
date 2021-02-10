@@ -60,8 +60,6 @@ impl<'h> Handler for WhoisHandler<'h> {
 mod tests {
   use std::convert::TryFrom;
 
-  use tokio_test::*;
-
   use super::{Handler, WhoisHandler};
   use crate::{
     config::CONTROLLER_ID,
@@ -80,7 +78,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, OK);
@@ -98,7 +96,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, WARNING);
@@ -116,7 +114,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, WARNING);
@@ -134,7 +132,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_err!(&result);
+    assert!(matches!(&result, Err(_)));
   }
 
   #[tokio::test]
@@ -149,6 +147,6 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_err!(&result);
+    assert!(matches!(&result, Err(_)));
   }
 }

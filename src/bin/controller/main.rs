@@ -120,7 +120,7 @@ async fn run_defcon(pool: &Pool<MySql>, config: Arc<Config>) {
       }
     });
 
-    tokio::time::delay_until(next_tick_at.into()).await;
+    tokio::time::sleep_until(next_tick_at.into()).await;
   }
 }
 
@@ -142,6 +142,6 @@ async fn run_cleaner(pool: &Pool<MySql>, config: Arc<Config>) {
       }
     });
 
-    tokio::time::delay_until(next_tick_at.into()).await;
+    tokio::time::sleep_until(next_tick_at.into()).await;
   }
 }

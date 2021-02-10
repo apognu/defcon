@@ -60,8 +60,6 @@ impl<'h> Handler for AppStoreHandler<'h> {
 
 #[cfg(test)]
 mod tests {
-  use tokio_test::*;
-
   use super::{AppStoreHandler, Handler};
   use crate::{
     config::CONTROLLER_ID,
@@ -78,7 +76,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, OK);
@@ -94,7 +92,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, CRITICAL);

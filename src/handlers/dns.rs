@@ -7,13 +7,14 @@ use std::{
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use sqlx::MySqlConnection;
+use tokio::net::UdpSocket;
 use trust_dns_client::{
-  client::{Client, SyncClient},
+  client::{AsyncClient, ClientHandle},
   rr::{
     rdata::{caa::Value as CaaValue, CAA},
     DNSClass, Name, RData,
   },
-  udp::UdpClientConnection,
+  udp::UdpClientStream,
 };
 
 use crate::{
@@ -37,11 +38,13 @@ impl<'h> Handler for DnsHandler<'h> {
   }
 
   async fn run(&self, spec: &Dns, site: &str) -> Result<Event> {
-    let conn = UdpClientConnection::new("8.8.8.8:53".parse()?)?;
-    let client = SyncClient::new(conn);
+    let conn = UdpClientStream::<UdpSocket>::new("8.8.8.8:53".parse()?);
+    let (mut client, task) = AsyncClient::connect(conn).await?;
+
+    tokio::spawn(task);
 
     let name = Name::from_str(&spec.domain).context("invalid domain")?;
-    let response = client.query(&name, DNSClass::IN, spec.record.clone().into()).context("query failed")?;
+    let response = client.query(name, DNSClass::IN, spec.record.clone().into()).await.context("query failed")?;
     let records = response.answers();
 
     let found = records.iter().fold(Ok(false), |acc: Result<bool, anyhow::Error>, record| match acc {
@@ -83,8 +86,6 @@ impl<'h> Handler for DnsHandler<'h> {
 
 #[cfg(test)]
 mod tests {
-  use tokio_test::*;
-
   use super::{DnsHandler, Handler};
   use crate::{
     config::CONTROLLER_ID,
@@ -107,7 +108,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, OK);
@@ -125,7 +126,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, OK);
@@ -143,7 +144,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, OK);
@@ -161,7 +162,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, OK);
@@ -179,7 +180,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, OK);
@@ -197,7 +198,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, OK);
@@ -215,7 +216,7 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
     assert_eq!(result.status, CRITICAL);
@@ -233,6 +234,6 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-    assert_err!(&result);
+    assert!(matches!(&result, Err(_)));
   }
 }

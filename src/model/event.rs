@@ -1,6 +1,6 @@
 use anyhow::Result;
 use chrono::{DateTime, NaiveDateTime, Utc};
-use sqlx::{Done, FromRow, MySqlConnection};
+use sqlx::{FromRow, MySqlConnection};
 
 use crate::{api::error::Shortable, model::SiteOutage};
 

@@ -31,7 +31,7 @@ impl<'h> Handler for UdpHandler<'h> {
     let addr = format!("{}:{}", spec.host, spec.port);
     let addr = addr.to_socket_addrs().context("could not parse host")?.next().ok_or_else(|| anyhow!("could not parse host"))?;
 
-    let mut socket = UdpSocket::bind("0.0.0.0:0").await.context("could not open socket")?;
+    let socket = UdpSocket::bind("0.0.0.0:0").await.context("could not open socket")?;
     let mut buf = [0; 1024];
 
     socket.connect(addr).await.context("could not connect socket")?;

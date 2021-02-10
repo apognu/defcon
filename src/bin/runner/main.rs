@@ -62,7 +62,7 @@ async fn main() -> Result<()> {
       }
     }
 
-    tokio::time::delay_for(config.poll_interval).await;
+    tokio::time::sleep(config.poll_interval).await;
   }
 }
 

@@ -39,7 +39,7 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, inhibitor: Inhibitor) 
             inhibitor.inhibit(CONTROLLER_ID, &check.uuid);
 
             if let Some(spread) = spread {
-              tokio::time::delay_for(Duration::from_millis(spread)).await
+              tokio::time::sleep(Duration::from_millis(spread)).await
             }
 
             run(pool, config, check, inhibitor).await?;

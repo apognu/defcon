@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::{net::ToSocketAddrs, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
 use capabilities::{Capabilities, Capability, Flag};
-use ekko::{Ekko, EkkoResponse};
 use sqlx::MySqlConnection;
+use surge_ping::Pinger;
 
 use crate::{
   config::Config,
@@ -34,24 +34,69 @@ impl<'h> Handler for PingHandler<'h> {
       }
     }
 
-    let mut ping = Ekko::with_target(&spec.host).context("ping: could not send echo request")?;
+    let host = format!("{}:{}", spec.host, 0)
+      .to_socket_addrs()
+      .context("could not parse host")?
+      .next()
+      .ok_or_else(|| anyhow!("could not parse host"))?;
 
-    let (status, message) = match ping.send(std::u8::MAX)? {
-      EkkoResponse::DestinationResponse(data) => (OK, format!("ping successful in {}ms", data.elapsed.as_millis())),
-      EkkoResponse::UnreachableResponse(_) => (CRITICAL, "host unreachable".to_string()),
-      EkkoResponse::UnexpectedResponse(_) => (CRITICAL, "unexpected response".to_string()),
-      EkkoResponse::ExceededResponse(_) => (CRITICAL, "timed out".to_string()),
-      EkkoResponse::LackingResponse(_) => (CRITICAL, "no response".to_string()),
+    let mut pinger = Pinger::new(host.ip())?;
+    pinger.timeout(Duration::from_secs(5));
+
+    let (status, message) = match pinger.ping(0).await {
+      Ok(_) => (OK, String::new()),
+      Err(err) => (CRITICAL, format!("could not ping {}: {}", spec.host, err)),
     };
 
     let event = Event {
       check_id: self.check.id,
       site: site.to_string(),
       status,
-      message: format!("{}: {}", spec.host, message),
+      message,
       ..Default::default()
     };
 
     Ok(event)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::{Handler, PingHandler};
+  use crate::{
+    config::CONTROLLER_ID,
+    model::{specs::Ping, status::*, Check},
+  };
+
+  #[tokio::test]
+  async fn handler_ping_ok() {
+    let handler = PingHandler { check: &Check::default() };
+    let spec = Ping {
+      id: 0,
+      check_id: 0,
+      host: "127.0.0.1".to_string(),
+    };
+
+    let result = handler.run(&spec, CONTROLLER_ID).await;
+    assert!(matches!(&result, Ok(_)));
+
+    let result = result.unwrap();
+    assert_eq!(result.status, OK);
+  }
+
+  #[tokio::test]
+  async fn handler_ping_unreachable() {
+    let handler = PingHandler { check: &Check::default() };
+    let spec = Ping {
+      id: 0,
+      check_id: 0,
+      host: "1.2.3.4".to_string(),
+    };
+
+    let result = handler.run(&spec, CONTROLLER_ID).await;
+    assert!(matches!(&result, Ok(_)));
+
+    let result = result.unwrap();
+    assert_eq!(result.status, CRITICAL);
   }
 }

@@ -539,7 +539,7 @@ mod tests {
 
     event.insert(&mut *conn, None).await?;
 
-    tokio::time::delay_for(StdDuration::from_secs(1)).await;
+    tokio::time::sleep(StdDuration::from_secs(1)).await;
 
     event.message = "Last event".to_string();
     event.insert(&mut *conn, None).await?;

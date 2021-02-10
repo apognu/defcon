@@ -50,8 +50,6 @@ impl<'h> Handler for TcpHandler<'h> {
 
 #[cfg(test)]
 mod tests {
-  use tokio_test::*;
-
   use super::{Handler, TcpHandler};
   use crate::{
     config::CONTROLLER_ID,
@@ -70,11 +68,9 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
-
     assert_eq!(result.status, OK);
   }
 
@@ -90,11 +86,9 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-
-    assert_ok!(&result);
+    assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
-
     assert_eq!(result.status, CRITICAL);
     assert_eq!(result.message, "deadline has elapsed".to_string());
   }
@@ -111,7 +105,6 @@ mod tests {
     };
 
     let result = handler.run(&spec, CONTROLLER_ID).await;
-
-    assert_err!(&result);
+    assert!(matches!(&result, Err(_)));
   }
 }

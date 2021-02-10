@@ -124,6 +124,19 @@ Defcon exposes an **unauthenticated** API used to manipulate and retrieve the da
 
 Did you pay attention to the fact that this API is **NOT AUTHENTICATED** and should therefore be used behind some kind of reverse proxy that will add some semblance of security to it?
 
+## Running tests
+
+Some tests in the suite require elevated privileges. On Linux, you can run the test suite with all capababilities added with the following command:
+
+```shell
+$ sudo capsh \
+  --caps='cap_net_raw+eip cap_setpcap,cap_setuid,cap_setgid+ep' \
+  --keep=1 \
+  --user="$(whoami)" \
+  --addamb=cap_net_raw -- -c \
+  'DSN=mysql://defcon:password@mysql.host/information_schema?ssl-mode=DISABLED cargo test'
+```
+
 ## What's next?
 
  * More check types (ideas and PRs are welcome)?

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use kvlogger::*;
-use sqlx::{Done, FromRow, MySqlConnection};
+use sqlx::{FromRow, MySqlConnection};
 use uuid::Uuid;
 
 use crate::{api::error::Shortable, model::Check};
