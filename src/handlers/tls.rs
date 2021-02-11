@@ -88,7 +88,7 @@ mod tests {
 
     let result = result.unwrap();
     assert_eq!(result.status, CRITICAL);
-    assert_eq!(result.message.starts_with("TLS certificate for letsencrypt.org"), true);
+    assert_eq!(result.message.starts_with("Certificate expires in"), true);
   }
 
   #[tokio::test]
@@ -106,7 +106,7 @@ mod tests {
 
     let result = result.unwrap();
     assert_eq!(result.status, CRITICAL);
-    assert_eq!(result.message.starts_with("TLS certificate for expired.badssl.com expires in"), true);
+    assert_eq!(result.message.starts_with("Certificate expires in"), true);
   }
 
   #[tokio::test]
