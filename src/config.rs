@@ -40,7 +40,18 @@ pub struct Config {
 
 #[derive(Debug, Clone)]
 pub struct ChecksConfig {
-  pub dns_resolver: SocketAddr,
+  pub dns_resolver: IpAddr,
+}
+
+impl ChecksConfig {
+  pub fn new() -> Result<ChecksConfig> {
+    let resolver = match env::var("DNS_RESOLVER") {
+      Ok(resolver) => SocketAddr::new(resolver.parse().context("DNS_RESOLVER is not an IP address")?, 53),
+      Err(_) => SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 53),
+    };
+
+    Ok(ChecksConfig { dns_resolver: resolver.ip() })
+  }
 }
 
 impl Config {
@@ -75,12 +86,7 @@ impl Config {
       .or_duration_min("1y", Duration::from_secs(1))
       .context("CLEANER_THRESHOLD is not a duration")?;
 
-    let dns_resolver = match env::var("DNS_RESOLVER") {
-      Ok(resolver) => SocketAddr::new(resolver.parse().context("DNS_RESOLVER is not an IP address")?, 53),
-      Err(_) => SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 53),
-    };
-
-    let checks = ChecksConfig { dns_resolver };
+    let checks = ChecksConfig::new()?;
 
     let config = Config {
       api,
@@ -101,11 +107,7 @@ impl Config {
 
 #[cfg(test)]
 mod tests {
-  use std::{
-    env, fs,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    time::Duration,
-  };
+  use std::{env, fs, net::Ipv4Addr, time::Duration};
 
   use anyhow::Result;
   use jsonwebtoken::DecodingKey;
@@ -141,7 +143,7 @@ mod tests {
     assert_eq!(config.cleaner_interval, Duration::from_secs(600));
     assert_eq!(config.cleaner_threshold, Duration::from_secs(31557600));
 
-    assert_eq!(config.checks.dns_resolver, SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 53));
+    assert_eq!(config.checks.dns_resolver, Ipv4Addr::new(1, 1, 1, 1));
 
     assert!(matches!(config.key, Some(key) if key.len() == 174));
     assert!(matches!(DecodingKey::from_ec_pem(&(config.key.unwrap())), Ok(_)));

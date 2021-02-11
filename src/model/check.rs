@@ -276,7 +276,16 @@ impl Check {
 
     match self.kind {
       Ping => PingHandler { check: &self }.check(conn, config, site).await,
-      Dns => DnsHandler { check: &self }.check(conn, config, site).await,
+
+      Dns => {
+        DnsHandler {
+          check: &self,
+          resolver: config.checks.dns_resolver,
+        }
+        .check(conn, config, site)
+        .await
+      }
+
       Http => HttpHandler { check: &self }.check(conn, config, site).await,
       Tcp => TcpHandler { check: &self }.check(conn, config, site).await,
       Udp => UdpHandler { check: &self }.check(conn, config, site).await,

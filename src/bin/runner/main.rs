@@ -73,7 +73,16 @@ async fn run_check(config: Arc<Config<'_>>, mut inhibitor: Inhibitor, claims: &C
 
   let result = match check.spec {
     Spec::Ping(ref spec) => PingHandler { check: &dummy }.run(spec, &config.site).await,
-    Spec::Dns(ref spec) => DnsHandler { check: &dummy }.run(spec, &config.site).await,
+
+    Spec::Dns(ref spec) => {
+      DnsHandler {
+        check: &dummy,
+        resolver: config.checks.dns_resolver,
+      }
+      .run(spec, &config.site)
+      .await
+    }
+
     Spec::Http(ref spec) => HttpHandler { check: &dummy }.run(spec, &config.site).await,
     Spec::Tcp(ref spec) => TcpHandler { check: &dummy }.run(spec, &config.site).await,
     Spec::Udp(ref spec) => UdpHandler { check: &dummy }.run(spec, &config.site).await,

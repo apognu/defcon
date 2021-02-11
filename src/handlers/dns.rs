@@ -1,5 +1,5 @@
 use std::{
-  net::{Ipv4Addr, Ipv6Addr},
+  net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr},
   str::FromStr,
   sync::Arc,
 };
@@ -25,6 +25,7 @@ use crate::{
 
 pub struct DnsHandler<'h> {
   pub check: &'h Check,
+  pub resolver: IpAddr,
 }
 
 #[async_trait]
@@ -38,7 +39,8 @@ impl<'h> Handler for DnsHandler<'h> {
   }
 
   async fn run(&self, spec: &Dns, site: &str) -> Result<Event> {
-    let conn = UdpClientStream::<UdpSocket>::new("8.8.8.8:53".parse()?);
+    let resolver = SocketAddr::new(self.resolver, 53);
+    let conn = UdpClientStream::<UdpSocket>::new(resolver);
     let (mut client, task) = AsyncClient::connect(conn).await?;
 
     tokio::spawn(task);
@@ -86,6 +88,8 @@ impl<'h> Handler for DnsHandler<'h> {
 
 #[cfg(test)]
 mod tests {
+  use std::net::{IpAddr, Ipv4Addr};
+
   use super::{DnsHandler, Handler};
   use crate::{
     config::CONTROLLER_ID,
@@ -98,7 +102,11 @@ mod tests {
 
   #[tokio::test]
   async fn handler_dns_ns_ok() {
-    let handler = DnsHandler { check: &Check::default() };
+    let handler = DnsHandler {
+      check: &Check::default(),
+      resolver: IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
+    };
+
     let spec = Dns {
       id: 0,
       check_id: 0,
@@ -116,7 +124,11 @@ mod tests {
 
   #[tokio::test]
   async fn handler_dns_mx_ok() {
-    let handler = DnsHandler { check: &Check::default() };
+    let handler = DnsHandler {
+      check: &Check::default(),
+      resolver: IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
+    };
+
     let spec = Dns {
       id: 0,
       check_id: 0,
@@ -134,7 +146,11 @@ mod tests {
 
   #[tokio::test]
   async fn handler_dns_a_ok() {
-    let handler = DnsHandler { check: &Check::default() };
+    let handler = DnsHandler {
+      check: &Check::default(),
+      resolver: IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
+    };
+
     let spec = Dns {
       id: 0,
       check_id: 0,
@@ -152,7 +168,11 @@ mod tests {
 
   #[tokio::test]
   async fn handler_dns_aaaa_ok() {
-    let handler = DnsHandler { check: &Check::default() };
+    let handler = DnsHandler {
+      check: &Check::default(),
+      resolver: IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
+    };
+
     let spec = Dns {
       id: 0,
       check_id: 0,
@@ -170,7 +190,11 @@ mod tests {
 
   #[tokio::test]
   async fn handler_dns_cname_ok() {
-    let handler = DnsHandler { check: &Check::default() };
+    let handler = DnsHandler {
+      check: &Check::default(),
+      resolver: IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
+    };
+
     let spec = Dns {
       id: 0,
       check_id: 0,
@@ -188,7 +212,11 @@ mod tests {
 
   #[tokio::test]
   async fn handler_dns_caa_ok() {
-    let handler = DnsHandler { check: &Check::default() };
+    let handler = DnsHandler {
+      check: &Check::default(),
+      resolver: IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
+    };
+
     let spec = Dns {
       id: 0,
       check_id: 0,
@@ -206,7 +234,10 @@ mod tests {
 
   #[tokio::test]
   async fn handler_dns_ns_critical() {
-    let handler = DnsHandler { check: &Check::default() };
+    let handler = DnsHandler {
+      check: &Check::default(),
+      resolver: IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
+    };
     let spec = Dns {
       id: 0,
       check_id: 0,
@@ -224,7 +255,11 @@ mod tests {
 
   #[tokio::test]
   async fn handler_dns_ns_invalid() {
-    let handler = DnsHandler { check: &Check::default() };
+    let handler = DnsHandler {
+      check: &Check::default(),
+      resolver: IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
+    };
+
     let spec = Dns {
       id: 0,
       check_id: 0,

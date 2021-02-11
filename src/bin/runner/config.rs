@@ -5,7 +5,7 @@ use kvlogger::KvLoggerBuilder;
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use defcon::{api::auth::Keys, ext::EnvExt};
+use defcon::{api::auth::Keys, config::ChecksConfig, ext::EnvExt};
 
 lazy_static! {
   static ref PRIVATE_KEY: Vec<u8> = env::var("PRIVATE_KEY")
@@ -18,13 +18,15 @@ lazy_static! {
     .to_vec();
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Config<'k> {
   pub base: String,
   pub site: String,
   pub keys: Keys<'k>,
 
   pub poll_interval: Duration,
+
+  pub checks: ChecksConfig,
 }
 
 impl<'k> Config<'k> {
@@ -47,7 +49,15 @@ impl<'k> Config<'k> {
       return Err(anyhow!("SITE should only contain lowercase alphanumeric characters and dashes"));
     }
 
-    let config = Config { base, site, keys, poll_interval };
+    let checks = ChecksConfig::new()?;
+
+    let config = Config {
+      base,
+      site,
+      keys,
+      poll_interval,
+      checks,
+    };
 
     Ok(Arc::new(config))
   }
