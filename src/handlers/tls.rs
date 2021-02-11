@@ -29,9 +29,9 @@ impl<'h> Handler for TlsHandler<'h> {
     let expiration = SslExpiration::from_domain_name(&spec.domain).map_err(|err| anyhow!("{}", err)).context("could not fetch certificate")?;
 
     let (status, message) = if expiration.secs() > 0 && expiration.secs() as u64 > spec.window.as_secs() {
-      (OK, format!("Expires in {} {} / Window is {}", expiration.secs(), expiration.days(), spec.window.as_secs()))
+      (OK, format!("Certificate expires in {} days", expiration.days()))
     } else {
-      (CRITICAL, format!("TLS certificate for {} expires in {} days", spec.domain, expiration.days()))
+      (CRITICAL, format!("Certificate expires in {} days", expiration.days()))
     };
 
     let event = Event {

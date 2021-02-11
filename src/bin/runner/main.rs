@@ -1,10 +1,11 @@
 mod config;
 
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Result;
 use humantime::format_duration;
 use kvlogger::*;
+use rand::Rng;
 
 use defcon::{
   api::{
@@ -23,7 +24,7 @@ async fn main() -> Result<()> {
   Config::set_log_level()?;
 
   let config = Config::parse()?;
-  let inhibitor = Inhibitor::new();
+  let mut inhibitor = Inhibitor::new();
 
   let claims = Claims {
     site: config.site.clone(),
@@ -32,7 +33,8 @@ async fn main() -> Result<()> {
 
   kvlog!(Info, "starting runner process", {
     "site" => config.site,
-    "poll_interval" => format_duration(config.poll_interval)
+    "poll_interval" => format_duration(config.poll_interval),
+    "spread" => config.handler_spread.map(format_duration).map(|s| s.to_string()).unwrap_or_default()
   });
 
   loop {
@@ -44,10 +46,16 @@ async fn main() -> Result<()> {
       if let Ok(checks) = response.json::<Vec<api::RunnerCheck>>().await {
         log::debug!("got {} stale checks from the controller", checks.len());
 
-        for stale in checks {
-          if inhibitor.inhibited(&config.base, &stale.uuid) {
+        let mut rng = rand::thread_rng();
+
+        for check in checks {
+          if inhibitor.inhibited(&config.site, &check.uuid) {
             continue;
           }
+
+          inhibitor.inhibit(&config.site, &check.uuid);
+
+          let spread = config.handler_spread.map(|duration| rng.gen_range(0..duration.as_millis() as u64));
 
           tokio::spawn({
             let config = config.clone();
@@ -55,7 +63,11 @@ async fn main() -> Result<()> {
             let inhibitor = inhibitor.clone();
 
             async move {
-              let _ = run_check(config, inhibitor, &claims.clone(), stale).await;
+              if let Some(spread) = spread {
+                tokio::time::sleep(Duration::from_millis(spread)).await
+              }
+
+              let _ = run_check(config, inhibitor, &claims.clone(), check).await;
             }
           });
         }
@@ -67,8 +79,6 @@ async fn main() -> Result<()> {
 }
 
 async fn run_check(config: Arc<Config<'_>>, mut inhibitor: Inhibitor, claims: &Claims, check: api::RunnerCheck) -> Result<()> {
-  inhibitor.inhibit(&config.site, &check.uuid);
-
   let dummy = Check { id: check.id, ..Default::default() };
 
   let result = match check.spec {

@@ -20,7 +20,10 @@ type ApiResponse<T> = Result<T, ErrorResponse>;
 pub fn server(provider: RocketConfig, pool: Pool<MySql>, keys: Option<Keys<'static>>) -> Rocket {
   let routes: Vec<Route> = routes().into_iter().chain(runner_routes(&keys).into_iter()).collect();
 
-  rocket::custom(provider).manage(pool).manage(keys).mount("/", routes).register(catchers![not_found, unprocessable])
+  match keys {
+    Some(keys) => rocket::custom(provider).manage(pool).manage(keys).mount("/", routes).register(catchers![not_found, unprocessable]),
+    None => rocket::custom(provider).manage(pool).mount("/", routes).register(catchers![not_found, unprocessable]),
+  }
 }
 
 pub fn routes() -> Vec<Route> {

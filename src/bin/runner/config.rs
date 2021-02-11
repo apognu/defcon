@@ -25,6 +25,7 @@ pub struct Config<'k> {
   pub keys: Keys<'k>,
 
   pub poll_interval: Duration,
+  pub handler_spread: Option<Duration>,
 
   pub checks: ChecksConfig,
 }
@@ -44,6 +45,11 @@ impl<'k> Config<'k> {
     let keys = Keys::new_private(&PRIVATE_KEY).context("PRIVATE_KEY should be provided and be en ECDSA key in PEM format")?;
     let poll_interval = env::var("POLL_INTERVAL").or_duration_min("1s", Duration::from_secs(1)).context("POLL_INTERVAL is not a duration")?;
 
+    let handler_spread = match env::var("HANDLER_SPREAD").or_duration_min("0s", Duration::from_secs(0)).context("HANDLER_SPREAD is not a duration")? {
+      duration if duration == Duration::from_nanos(0) => None,
+      duration => Some(duration),
+    };
+
     let rgx = Regex::new(r"^[a-z0-9-]+$").unwrap();
     if !rgx.is_match(&site) {
       return Err(anyhow!("SITE should only contain lowercase alphanumeric characters and dashes"));
@@ -56,6 +62,7 @@ impl<'k> Config<'k> {
       site,
       keys,
       poll_interval,
+      handler_spread,
       checks,
     };
 
