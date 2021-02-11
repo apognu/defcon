@@ -9,6 +9,7 @@ use crate::{
   config::Config,
   handlers::Handler,
   model::{specs::Tls, status::*, Check, Event},
+  stash::Stash,
 };
 
 pub struct TlsHandler<'h> {
@@ -19,13 +20,13 @@ pub struct TlsHandler<'h> {
 impl<'h> Handler for TlsHandler<'h> {
   type Spec = Tls;
 
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
     let spec = Tls::for_check(conn, self.check).await.context("no spec found")?;
 
-    self.run(&spec, site).await
+    self.run(&spec, site, stash).await
   }
 
-  async fn run(&self, spec: &Tls, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &Tls, site: &str, _stash: Stash) -> Result<Event> {
     let expiration = SslExpiration::from_domain_name(&spec.domain).map_err(|err| anyhow!("{}", err)).context("could not fetch certificate")?;
 
     let (status, message) = if expiration.secs() > 0 && expiration.secs() as u64 > spec.window.as_secs() {
@@ -54,6 +55,7 @@ mod tests {
   use crate::{
     config::CONTROLLER_ID,
     model::{specs::Tls, status::*, Check, Duration},
+    stash::Stash,
   };
 
   #[tokio::test]
@@ -66,7 +68,7 @@ mod tests {
       window: Duration::try_from("0 days").unwrap(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -83,7 +85,7 @@ mod tests {
       window: Duration::try_from("91 days").unwrap(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -101,7 +103,7 @@ mod tests {
       window: Duration::from(1),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -119,7 +121,7 @@ mod tests {
       window: Duration::from(1),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Err(_)));
   }
 }

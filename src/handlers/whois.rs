@@ -10,6 +10,7 @@ use crate::{
   config::Config,
   handlers::Handler,
   model::{specs::Whois, status::*, Check, Event},
+  stash::Stash,
 };
 
 pub struct WhoisHandler<'h> {
@@ -20,13 +21,13 @@ pub struct WhoisHandler<'h> {
 impl<'h> Handler for WhoisHandler<'h> {
   type Spec = Whois;
 
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
     let spec = Whois::for_check(conn, self.check).await?;
 
-    self.run(&spec, site).await
+    self.run(&spec, site, stash).await
   }
 
-  async fn run(&self, spec: &Whois, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &Whois, site: &str, _stash: Stash) -> Result<Event> {
     let attribute = spec.attribute.clone().unwrap_or_else(|| "registry expiry date".to_string());
 
     let mut whois = WhoisClient::new();
@@ -64,6 +65,7 @@ mod tests {
   use crate::{
     config::CONTROLLER_ID,
     model::{specs::Whois, status::*, Check, Duration},
+    stash::Stash,
   };
 
   #[tokio::test]
@@ -77,7 +79,7 @@ mod tests {
       window: Duration::try_from("90 days").unwrap(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -95,7 +97,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -113,7 +115,7 @@ mod tests {
       window: Duration::try_from("100 years").unwrap(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -131,7 +133,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Err(_)));
   }
 
@@ -146,7 +148,7 @@ mod tests {
       window: Duration::try_from("10 years").unwrap(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Err(_)));
   }
 }

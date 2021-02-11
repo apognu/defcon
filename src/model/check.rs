@@ -9,6 +9,7 @@ use crate::{
   ext,
   handlers::*,
   model::{specs, Alerter, CheckKind, Duration, Event, Outage, Site},
+  stash::Stash,
 };
 
 #[derive(Debug, Default, FromRow, Serialize, Deserialize)]
@@ -271,28 +272,28 @@ impl Check {
     }
   }
 
-  pub async fn run(&self, conn: &mut MySqlConnection, config: Arc<Config>, site: &str) -> Result<Event> {
+  pub async fn run(&self, conn: &mut MySqlConnection, config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
     use CheckKind::*;
 
     match self.kind {
-      Ping => PingHandler { check: &self }.check(conn, config, site).await,
+      Ping => PingHandler { check: &self }.check(conn, config, site, stash).await,
 
       Dns => {
         DnsHandler {
           check: &self,
           resolver: config.checks.dns_resolver,
         }
-        .check(conn, config, site)
+        .check(conn, config, site, stash)
         .await
       }
 
-      Http => HttpHandler { check: &self }.check(conn, config, site).await,
-      Tcp => TcpHandler { check: &self }.check(conn, config, site).await,
-      Udp => UdpHandler { check: &self }.check(conn, config, site).await,
-      Tls => TlsHandler { check: &self }.check(conn, config, site).await,
-      PlayStore => PlayStoreHandler { check: &self }.check(conn, config, site).await,
-      AppStore => AppStoreHandler { check: &self }.check(conn, config, site).await,
-      Whois => WhoisHandler { check: &self }.check(conn, config, site).await,
+      Http => HttpHandler { check: &self }.check(conn, config, site, stash).await,
+      Tcp => TcpHandler { check: &self }.check(conn, config, site, stash).await,
+      Udp => UdpHandler { check: &self }.check(conn, config, site, stash).await,
+      Tls => TlsHandler { check: &self }.check(conn, config, site, stash).await,
+      PlayStore => PlayStoreHandler { check: &self }.check(conn, config, site, stash).await,
+      AppStore => AppStoreHandler { check: &self }.check(conn, config, site, stash).await,
+      Whois => WhoisHandler { check: &self }.check(conn, config, site, stash).await,
     }
   }
 

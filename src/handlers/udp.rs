@@ -9,6 +9,7 @@ use crate::{
   config::Config,
   handlers::Handler,
   model::{specs::Udp, status::*, Check, Duration, Event},
+  stash::Stash,
 };
 
 pub struct UdpHandler<'h> {
@@ -19,13 +20,13 @@ pub struct UdpHandler<'h> {
 impl<'h> Handler for UdpHandler<'h> {
   type Spec = Udp;
 
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
     let spec = Udp::for_check(conn, self.check).await?;
 
-    self.run(&spec, site).await
+    self.run(&spec, site, stash).await
   }
 
-  async fn run(&self, spec: &Udp, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &Udp, site: &str, _stash: Stash) -> Result<Event> {
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
 
     let addr = format!("{}:{}", spec.host, spec.port);
@@ -73,6 +74,7 @@ mod tests {
   use crate::{
     config::CONTROLLER_ID,
     model::{specs::Udp, status::*, Check},
+    stash::Stash,
   };
 
   async fn server(response: &[u8], timeout: bool) -> Result<SocketAddr> {
@@ -112,7 +114,7 @@ mod tests {
       content: "hello".as_bytes().into(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -136,7 +138,7 @@ mod tests {
       content: "hello".as_bytes().into(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -160,7 +162,7 @@ mod tests {
       content: "hello".as_bytes().into(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -184,7 +186,7 @@ mod tests {
       content: "hello".as_bytes().into(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();

@@ -9,6 +9,7 @@ use crate::{
   config::Config,
   handlers::Handler,
   model::{specs::Tcp, status::*, Check, Duration, Event},
+  stash::Stash,
 };
 
 pub struct TcpHandler<'h> {
@@ -19,13 +20,13 @@ pub struct TcpHandler<'h> {
 impl<'h> Handler for TcpHandler<'h> {
   type Spec = Tcp;
 
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
     let spec = Tcp::for_check(conn, self.check).await.context("no spec found")?;
 
-    self.run(&spec, site).await
+    self.run(&spec, site, stash).await
   }
 
-  async fn run(&self, spec: &Tcp, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &Tcp, site: &str, _stash: Stash) -> Result<Event> {
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
 
     let addr = format!("{}:{}", spec.host, spec.port);
@@ -54,6 +55,7 @@ mod tests {
   use crate::{
     config::CONTROLLER_ID,
     model::{specs::Tcp, status::*, Check, Duration},
+    stash::Stash,
   };
 
   #[tokio::test]
@@ -67,7 +69,7 @@ mod tests {
       timeout: None,
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -85,7 +87,7 @@ mod tests {
       timeout: Some(Duration::from(1)),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -104,7 +106,7 @@ mod tests {
       timeout: None,
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Err(_)));
   }
 }

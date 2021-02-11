@@ -15,6 +15,7 @@ use defcon::{
   handlers::*,
   inhibitor::Inhibitor,
   model::Check,
+  stash::Stash,
 };
 
 use crate::config::Config;
@@ -24,6 +25,7 @@ async fn main() -> Result<()> {
   Config::set_log_level()?;
 
   let config = Config::parse()?;
+  let stash = Stash::new();
   let mut inhibitor = Inhibitor::new();
 
   let claims = Claims {
@@ -49,17 +51,18 @@ async fn main() -> Result<()> {
         let mut rng = rand::thread_rng();
 
         for check in checks {
-          if inhibitor.inhibited(&config.site, &check.uuid) {
+          if inhibitor.inhibited(&config.site, &check.uuid).await {
             continue;
           }
 
-          inhibitor.inhibit(&config.site, &check.uuid);
+          inhibitor.inhibit(&config.site, &check.uuid).await;
 
           let spread = config.handler_spread.map(|duration| rng.gen_range(0..duration.as_millis() as u64));
 
           tokio::spawn({
             let config = config.clone();
             let claims = claims.clone();
+            let stash = stash.clone();
             let inhibitor = inhibitor.clone();
 
             async move {
@@ -67,7 +70,7 @@ async fn main() -> Result<()> {
                 tokio::time::sleep(Duration::from_millis(spread)).await
               }
 
-              let _ = run_check(config, inhibitor, &claims.clone(), check).await;
+              let _ = run_check(config, stash, inhibitor, &claims.clone(), check).await;
             }
           });
         }
@@ -78,28 +81,28 @@ async fn main() -> Result<()> {
   }
 }
 
-async fn run_check(config: Arc<Config<'_>>, mut inhibitor: Inhibitor, claims: &Claims, check: api::RunnerCheck) -> Result<()> {
+async fn run_check(config: Arc<Config<'_>>, stash: Stash, mut inhibitor: Inhibitor, claims: &Claims, check: api::RunnerCheck) -> Result<()> {
   let dummy = Check { id: check.id, ..Default::default() };
 
   let result = match check.spec {
-    Spec::Ping(ref spec) => PingHandler { check: &dummy }.run(spec, &config.site).await,
+    Spec::Ping(ref spec) => PingHandler { check: &dummy }.run(spec, &config.site, stash).await,
 
     Spec::Dns(ref spec) => {
       DnsHandler {
         check: &dummy,
         resolver: config.checks.dns_resolver,
       }
-      .run(spec, &config.site)
+      .run(spec, &config.site, stash)
       .await
     }
 
-    Spec::Http(ref spec) => HttpHandler { check: &dummy }.run(spec, &config.site).await,
-    Spec::Tcp(ref spec) => TcpHandler { check: &dummy }.run(spec, &config.site).await,
-    Spec::Udp(ref spec) => UdpHandler { check: &dummy }.run(spec, &config.site).await,
-    Spec::Tls(ref spec) => TlsHandler { check: &dummy }.run(spec, &config.site).await,
-    Spec::PlayStore(ref spec) => PlayStoreHandler { check: &dummy }.run(spec, &config.site).await,
-    Spec::AppStore(ref spec) => AppStoreHandler { check: &dummy }.run(spec, &config.site).await,
-    Spec::Whois(ref spec) => WhoisHandler { check: &dummy }.run(spec, &config.site).await,
+    Spec::Http(ref spec) => HttpHandler { check: &dummy }.run(spec, &config.site, stash).await,
+    Spec::Tcp(ref spec) => TcpHandler { check: &dummy }.run(spec, &config.site, stash).await,
+    Spec::Udp(ref spec) => UdpHandler { check: &dummy }.run(spec, &config.site, stash).await,
+    Spec::Tls(ref spec) => TlsHandler { check: &dummy }.run(spec, &config.site, stash).await,
+    Spec::PlayStore(ref spec) => PlayStoreHandler { check: &dummy }.run(spec, &config.site, stash).await,
+    Spec::AppStore(ref spec) => AppStoreHandler { check: &dummy }.run(spec, &config.site, stash).await,
+    Spec::Whois(ref spec) => WhoisHandler { check: &dummy }.run(spec, &config.site, stash).await,
   };
 
   match result {
@@ -136,10 +139,10 @@ async fn run_check(config: Arc<Config<'_>>, mut inhibitor: Inhibitor, claims: &C
         .json(&report);
       let _ = request.send().await;
 
-      inhibitor.release(&config.site, &check.uuid);
+      inhibitor.release(&config.site, &check.uuid).await;
     }
 
-    Err(_) => inhibitor.inhibit_for(&config.site, &check.uuid, *check.interval),
+    Err(_) => inhibitor.inhibit_for(&config.site, &check.uuid, *check.interval).await,
   }
 
   Ok(())

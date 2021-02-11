@@ -25,6 +25,7 @@ use defcon::{
   config::{Config, PUBLIC_KEY},
   inhibitor::Inhibitor,
   model::migrations,
+  stash::Stash,
 };
 
 #[tokio::main]
@@ -103,6 +104,7 @@ async fn run_defcon(pool: &Pool<MySql>, config: Arc<Config>) {
     "spread" => config.handler_spread.map(format_duration).map(|s| s.to_string()).unwrap_or_default()
   });
 
+  let stash = Stash::new();
   let inhibitor = Inhibitor::new();
 
   loop {
@@ -111,10 +113,11 @@ async fn run_defcon(pool: &Pool<MySql>, config: Arc<Config>) {
     tokio::spawn({
       let pool = pool.clone();
       let config = config.clone();
+      let stash = stash.clone();
       let inhibitor = inhibitor.clone();
 
       async move {
-        if let Err(err) = handler::tick(pool, config, inhibitor).await {
+        if let Err(err) = handler::tick(pool, config, stash, inhibitor).await {
           log::error!("{:#}", err);
         }
       }

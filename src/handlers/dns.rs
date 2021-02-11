@@ -21,6 +21,7 @@ use crate::{
   config::Config,
   handlers::Handler,
   model::{specs::Dns, status::*, Check, Event},
+  stash::Stash,
 };
 
 pub struct DnsHandler<'h> {
@@ -32,13 +33,13 @@ pub struct DnsHandler<'h> {
 impl<'h> Handler for DnsHandler<'h> {
   type Spec = Dns;
 
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
     let spec = Dns::for_check(conn, self.check).await.context("no spec found for check")?;
 
-    self.run(&spec, site).await
+    self.run(&spec, site, stash).await
   }
 
-  async fn run(&self, spec: &Dns, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &Dns, site: &str, _stash: Stash) -> Result<Event> {
     let resolver = SocketAddr::new(self.resolver, 53);
     let conn = UdpClientStream::<UdpSocket>::new(resolver);
     let (mut client, task) = AsyncClient::connect(conn).await?;
@@ -98,6 +99,7 @@ mod tests {
       status::*,
       Check,
     },
+    stash::Stash,
   };
 
   #[tokio::test]
@@ -115,7 +117,7 @@ mod tests {
       value: "a.iana-servers.net".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -137,7 +139,7 @@ mod tests {
       value: "aspmx.l.google.com".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -159,7 +161,7 @@ mod tests {
       value: "93.184.216.34".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -181,7 +183,7 @@ mod tests {
       value: "2606:2800:220:1:248:1893:25c8:1946".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -203,7 +205,7 @@ mod tests {
       value: "github.com".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -225,7 +227,7 @@ mod tests {
       value: "pki.goog".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -246,7 +248,7 @@ mod tests {
       value: "1.2.3.4".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -268,7 +270,7 @@ mod tests {
       value: "example.com".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Err(_)));
   }
 }

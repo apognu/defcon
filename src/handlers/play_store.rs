@@ -8,6 +8,7 @@ use crate::{
   config::Config,
   handlers::Handler,
   model::{specs::PlayStore, status::*, Check, Event},
+  stash::Stash,
 };
 
 pub struct PlayStoreHandler<'h> {
@@ -18,13 +19,13 @@ pub struct PlayStoreHandler<'h> {
 impl<'h> Handler for PlayStoreHandler<'h> {
   type Spec = PlayStore;
 
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
     let spec = PlayStore::for_check(conn, self.check).await.context("no spec found")?;
 
-    self.run(&spec, site).await
+    self.run(&spec, site, stash).await
   }
 
-  async fn run(&self, spec: &PlayStore, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &PlayStore, site: &str, _stash: Stash) -> Result<Event> {
     let url = format!("https://play.google.com/store/apps/details?id={}", spec.app_id);
 
     let response = reqwest::get(&url).await.context("did not receive a valid response")?;
@@ -53,6 +54,7 @@ mod tests {
   use crate::{
     config::CONTROLLER_ID,
     model::{specs::PlayStore, status::*, Check},
+    stash::Stash,
   };
 
   #[tokio::test]
@@ -64,7 +66,7 @@ mod tests {
       app_id: "com.google.android.apps.maps".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -80,7 +82,7 @@ mod tests {
       app_id: "29c4e9c3-c6f8-47d7-a64c-004e463d3aa8".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();

@@ -8,6 +8,7 @@ use crate::{
   config::Config,
   handlers::Handler,
   model::{specs::AppStore, status::*, Check, Event},
+  stash::Stash,
 };
 
 pub struct AppStoreHandler<'h> {
@@ -24,13 +25,13 @@ struct AppStoreResponse {
 impl<'h> Handler for AppStoreHandler<'h> {
   type Spec = AppStore;
 
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
     let spec = AppStore::for_check(conn, self.check).await.context("no spec found for check {}")?;
 
-    self.run(&spec, site).await
+    self.run(&spec, site, stash).await
   }
 
-  async fn run(&self, spec: &AppStore, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &AppStore, site: &str, _stash: Stash) -> Result<Event> {
     let url = format!("https://itunes.apple.com/lookup?bundleId={}", spec.bundle_id);
     let response = reqwest::get(&url).await.context("did not receive a valid response")?;
 
@@ -64,6 +65,7 @@ mod tests {
   use crate::{
     config::CONTROLLER_ID,
     model::{specs::AppStore, status::*, Check},
+    stash::Stash,
   };
 
   #[tokio::test]
@@ -75,7 +77,7 @@ mod tests {
       bundle_id: "com.apple.Maps".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -91,7 +93,7 @@ mod tests {
       bundle_id: "2e0a5188-7220-41bf-b684-82d6a54b868a".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();

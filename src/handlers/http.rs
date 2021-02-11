@@ -13,6 +13,7 @@ use crate::{
   config::Config,
   handlers::Handler,
   model::{specs::Http, status::*, Check, Duration, Event},
+  stash::Stash,
 };
 
 pub struct HttpHandler<'h> {
@@ -23,13 +24,13 @@ pub struct HttpHandler<'h> {
 impl<'h> Handler for HttpHandler<'h> {
   type Spec = Http;
 
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
     let spec = Http::for_check(conn, self.check).await.context("no spec found for check {}")?;
 
-    self.run(&spec, site).await
+    self.run(&spec, site, stash).await
   }
 
-  async fn run(&self, spec: &Http, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &Http, site: &str, _stash: Stash) -> Result<Event> {
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
     let headers: HeaderMap = spec
       .headers
@@ -107,6 +108,7 @@ mod tests {
       status::*,
       Check, Duration,
     },
+    stash::Stash,
   };
 
   #[tokio::test]
@@ -126,7 +128,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -148,7 +150,7 @@ mod tests {
       digest: Some("d06b93c883f8126a04589937a884032df031b05518eed9d433efb6447834df2596aebd500d69b8283e5702d988ed49655ae654c1683c7a4ae58bfa6b92f2b73a".to_string()),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -170,7 +172,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -192,7 +194,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -214,7 +216,7 @@ mod tests {
       digest: Some("INVALIDDIGEST".to_string()),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -236,7 +238,7 @@ mod tests {
       digest: None,
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();

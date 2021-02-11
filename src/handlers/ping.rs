@@ -10,6 +10,7 @@ use crate::{
   config::Config,
   handlers::Handler,
   model::{specs::Ping, status::*, Check, Event},
+  stash::Stash,
 };
 
 pub struct PingHandler<'h> {
@@ -20,13 +21,13 @@ pub struct PingHandler<'h> {
 impl<'h> Handler for PingHandler<'h> {
   type Spec = Ping;
 
-  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str) -> Result<Event> {
+  async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
     let spec = Ping::for_check(conn, self.check).await.context("no spec found")?;
 
-    self.run(&spec, site).await
+    self.run(&spec, site, stash).await
   }
 
-  async fn run(&self, spec: &Ping, site: &str) -> Result<Event> {
+  async fn run(&self, spec: &Ping, site: &str, _stash: Stash) -> Result<Event> {
     #[cfg(target_os = "linux")]
     if let Ok(caps) = Capabilities::from_current_proc() {
       if !caps.check(Capability::CAP_NET_RAW, Flag::Effective) {
@@ -66,6 +67,7 @@ mod tests {
   use crate::{
     config::CONTROLLER_ID,
     model::{specs::Ping, status::*, Check},
+    stash::Stash,
   };
 
   #[tokio::test]
@@ -77,7 +79,7 @@ mod tests {
       host: "127.0.0.1".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();
@@ -93,7 +95,7 @@ mod tests {
       host: "1.2.3.4".to_string(),
     };
 
-    let result = handler.run(&spec, CONTROLLER_ID).await;
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
     assert!(matches!(&result, Ok(_)));
 
     let result = result.unwrap();

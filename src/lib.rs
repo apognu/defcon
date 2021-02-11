@@ -16,6 +16,7 @@ pub mod ext;
 pub mod handlers;
 pub mod inhibitor;
 pub mod model;
+pub mod stash;
 
 #[cfg(test)]
 mod tests;

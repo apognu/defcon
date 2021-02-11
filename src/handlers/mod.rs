@@ -20,14 +20,15 @@ pub use crate::{
   handlers::{app_store::AppStoreHandler, dns::DnsHandler, http::HttpHandler, ping::PingHandler, play_store::PlayStoreHandler, tcp::TcpHandler, tls::TlsHandler, udp::UdpHandler, whois::WhoisHandler},
   inhibitor::Inhibitor,
   model::{Check, Event, Outage, SiteOutage},
+  stash::Stash,
 };
 
 #[async_trait]
 pub trait Handler: Send {
   type Spec: crate::model::specs::SpecMeta;
 
-  async fn check(&self, conn: &mut MySqlConnection, config: Arc<Config>, site: &str) -> Result<Event>;
-  async fn run(&self, spec: &Self::Spec, site: &str) -> Result<Event>;
+  async fn check(&self, conn: &mut MySqlConnection, config: Arc<Config>, site: &str, stash: Stash) -> Result<Event>;
+  async fn run(&self, spec: &Self::Spec, site: &str, stash: Stash) -> Result<Event>;
 }
 
 pub async fn handle_event(conn: &mut MySqlConnection, event: &Event, check: &Check, inhibitor: Option<Inhibitor>) -> Result<()> {
@@ -54,7 +55,7 @@ pub async fn handle_event(conn: &mut MySqlConnection, event: &Event, check: &Che
   event.insert(&mut *conn, outage.as_ref()).await?;
 
   if let Some(mut inhibitor) = inhibitor {
-    inhibitor.release(&event.site, &check.uuid);
+    inhibitor.release(&event.site, &check.uuid).await;
   }
 
   if let Some(outage) = outage {
