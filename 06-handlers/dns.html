@@ -180,6 +180,8 @@
 <tr><td><code>domain</code></td><td>string</td><td><code>&quot;example.com&quot;</code></td><td>Domain name for which the retrieve the records</td></tr>
 <tr><td><code>value</code></td><td>string</td><td><code>&quot;1.2.3.4&quot;</code></td><td>Value to compare to each retrieved record, must match exactly</td></tr>
 </tbody></table>
+<h2><a class="header" href="#configuration" id="configuration">Configuration</a></h2>
+<p>You can change the DNS resolver used to resolve DNS records by using the <code>DNS_RESOLVER</code> environment variable when starting the controller and the runners, like so: <code>DNS_RESOLVER=1.2.3.4</code>. By default, <code>1.1.1.1</code> is used.</p>
 
                     </main>
 

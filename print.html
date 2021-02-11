@@ -449,6 +449,8 @@ INFO[2021-02-06T14:18:36.973+0000] starting runner process site=&quot;eu-1&quot;
 <tr><td><code>domain</code></td><td>string</td><td><code>&quot;example.com&quot;</code></td><td>Domain name for which the retrieve the records</td></tr>
 <tr><td><code>value</code></td><td>string</td><td><code>&quot;1.2.3.4&quot;</code></td><td>Value to compare to each retrieved record, must match exactly</td></tr>
 </tbody></table>
+<h2><a class="header" href="#configuration-1" id="configuration-1">Configuration</a></h2>
+<p>You can change the DNS resolver used to resolve DNS records by using the <code>DNS_RESOLVER</code> environment variable when starting the controller and the runners, like so: <code>DNS_RESOLVER=1.2.3.4</code>. By default, <code>1.1.1.1</code> is used.</p>
 <h1><a class="header" href="#domain-expiration" id="domain-expiration">Domain expiration</a></h1>
 <p>This handler will check Whois databases for the provided domain and will attempt to retrieve the domain's expiration date. The emitted event will be marked as failed if the expiration is within the configured window.</p>
 <blockquote>
