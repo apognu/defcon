@@ -26,11 +26,16 @@ pub struct Check {
   #[serde(skip)]
   pub kind: CheckKind,
   pub interval: Duration,
+  #[serde(default = "default_site_threshold")]
   pub site_threshold: u8,
   pub passing_threshold: u8,
   pub failing_threshold: u8,
   #[serde(default = "ext::to_false")]
   pub silent: bool,
+}
+
+const fn default_site_threshold() -> u8 {
+  1
 }
 
 impl Check {
