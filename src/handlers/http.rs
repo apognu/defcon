@@ -55,6 +55,25 @@ impl<'h> Handler for HttpHandler<'h> {
           Some(ref content) => body.contains(content),
           None => true,
         };
+
+        let json_ok = {
+          match spec.json_query {
+            #[allow(unused_variables)]
+            Some(ref query) => {
+              #[cfg(not(feature = "jq"))]
+              {
+                log::warn!("http handler `json_query` is used but Defcon was compiled without `jq` feature");
+                true
+              }
+
+              #[cfg(feature = "jq")]
+              jq_rs::run(query, &body).map_or_else(|_| false, |result| result.trim() == "true")
+            }
+
+            None => true,
+          }
+        };
+
         let digest_ok = match spec.digest {
           Some(ref digest) => {
             let mut hasher = Sha512::new();
@@ -67,11 +86,12 @@ impl<'h> Handler for HttpHandler<'h> {
           None => true,
         };
 
-        let (status, message) = match (code_ok, content_ok, digest_ok) {
-          (false, _, _) => (CRITICAL, format!("status code was {}", code)),
-          (_, false, _) => (CRITICAL, "content mismatch".to_string()),
-          (_, _, false) => (CRITICAL, "digest mismatch".to_string()),
-          (true, true, true) => (OK, String::new()),
+        let (status, message) = match (code_ok, content_ok, digest_ok, json_ok) {
+          (false, _, _, _) => (CRITICAL, format!("status code was {}", code)),
+          (_, false, _, _) => (CRITICAL, "content mismatch".to_string()),
+          (_, _, false, _) => (CRITICAL, "digest mismatch".to_string()),
+          (_, _, _, false) => (CRITICAL, "JSON query failed".to_string()),
+          (true, true, true, true) => (OK, String::new()),
         };
 
         Event {
@@ -126,6 +146,7 @@ mod tests {
       code: None,
       content: Some(r#""Lorem": "ipsum""#.to_string()),
       digest: None,
+      json_query: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -148,6 +169,7 @@ mod tests {
       code: Some(200),
       content: Some("Example Domain".to_string()),
       digest: Some("d06b93c883f8126a04589937a884032df031b05518eed9d433efb6447834df2596aebd500d69b8283e5702d988ed49655ae654c1683c7a4ae58bfa6b92f2b73a".to_string()),
+      json_query: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -170,6 +192,7 @@ mod tests {
       code: Some(201),
       content: None,
       digest: None,
+      json_query: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -192,6 +215,7 @@ mod tests {
       timeout: None,
       content: Some("INVALIDCONTENT".to_string()),
       digest: None,
+      json_query: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -214,6 +238,7 @@ mod tests {
       timeout: None,
       content: None,
       digest: Some("INVALIDDIGEST".to_string()),
+      json_query: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -222,6 +247,52 @@ mod tests {
     let result = result.unwrap();
     assert_eq!(result.status, CRITICAL);
     assert_eq!(result.message, "digest mismatch".to_string());
+  }
+
+  #[cfg(feature = "jq")]
+  #[tokio::test]
+  async fn handler_http_valid_json_query() {
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration".to_string(),
+      headers: Default::default(),
+      timeout: Some(Duration::from(1)),
+      code: Some(200),
+      content: None,
+      digest: None,
+      json_query: Some(r#".claims_supported | contains(["email"])"#.to_string()),
+    };
+
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
+    assert!(matches!(&result, Ok(_)));
+
+    let result = result.unwrap();
+    assert_eq!(result.status, OK);
+  }
+
+  #[cfg(feature = "jq")]
+  #[tokio::test]
+  async fn handler_http_invalid_json_query() {
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "https://login.microsoftonline.com/common/v2.0/.well-known/openid-configuration".to_string(),
+      headers: Default::default(),
+      timeout: Some(Duration::from(1)),
+      code: Some(200),
+      content: None,
+      digest: None,
+      json_query: Some(r#".issuer == "github.com""#.to_string()),
+    };
+
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
+    assert!(matches!(&result, Ok(_)));
+
+    let result = result.unwrap();
+    assert_eq!(result.status, CRITICAL);
   }
 
   #[tokio::test]
@@ -236,6 +307,7 @@ mod tests {
       code: Some(200),
       content: None,
       digest: None,
+      json_query: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;

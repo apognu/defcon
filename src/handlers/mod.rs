@@ -1,6 +1,7 @@
 mod app_store;
 mod dns;
 mod http;
+#[cfg(feature = "ping")]
 mod ping;
 mod play_store;
 mod tcp;
@@ -15,9 +16,11 @@ use anyhow::Result;
 use async_trait::async_trait;
 use sqlx::MySqlConnection;
 
+#[cfg(feature = "ping")]
+pub use crate::handlers::ping::PingHandler;
 pub use crate::{
   config::Config,
-  handlers::{app_store::AppStoreHandler, dns::DnsHandler, http::HttpHandler, ping::PingHandler, play_store::PlayStoreHandler, tcp::TcpHandler, tls::TlsHandler, udp::UdpHandler, whois::WhoisHandler},
+  handlers::{app_store::AppStoreHandler, dns::DnsHandler, http::HttpHandler, play_store::PlayStoreHandler, tcp::TcpHandler, tls::TlsHandler, udp::UdpHandler, whois::WhoisHandler},
   inhibitor::Inhibitor,
   model::{Check, Event, Outage, SiteOutage},
   stash::Stash,

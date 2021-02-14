@@ -11,8 +11,9 @@ use sqlx::{
   Decode, Encode, MySql,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum CheckKind {
+  #[cfg(feature = "ping")]
   Ping,
   Dns,
   Http,
@@ -22,11 +23,12 @@ pub enum CheckKind {
   PlayStore,
   AppStore,
   Whois,
+  Unsupported,
 }
 
 impl Default for CheckKind {
   fn default() -> CheckKind {
-    CheckKind::Ping
+    CheckKind::Unsupported
   }
 }
 
@@ -35,6 +37,7 @@ impl Display for CheckKind {
     use CheckKind::*;
 
     let name = match self {
+      #[cfg(feature = "ping")]
       Ping => "ping",
       Dns => "dns",
       Http => "http",
@@ -44,6 +47,7 @@ impl Display for CheckKind {
       PlayStore => "play_store",
       AppStore => "app_store",
       Whois => "domain",
+      Unsupported => "unsupported",
     };
 
     write!(formatter, "{}", name.to_string())
@@ -57,7 +61,11 @@ impl TryFrom<String> for CheckKind {
     use CheckKind::*;
 
     match kind.as_str() {
+      #[cfg(feature = "ping")]
       "ping" => Ok(Ping),
+      #[cfg(not(feature = "ping"))]
+      "ping" => Ok(Unsupported),
+
       "dns" => Ok(Dns),
       "http" => Ok(Http),
       "tcp" => Ok(Tcp),

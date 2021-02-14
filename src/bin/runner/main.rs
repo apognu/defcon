@@ -2,7 +2,7 @@ mod config;
 
 use std::{sync::Arc, time::Duration};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use humantime::format_duration;
 use kvlogger::*;
 use rand::Rng;
@@ -85,6 +85,7 @@ async fn run_check(config: Arc<Config<'_>>, stash: Stash, mut inhibitor: Inhibit
   let dummy = Check { id: check.id, ..Default::default() };
 
   let result = match check.spec {
+    #[cfg(feature = "ping")]
     Spec::Ping(ref spec) => PingHandler { check: &dummy }.run(spec, &config.site, stash).await,
 
     Spec::Dns(ref spec) => {
@@ -103,6 +104,7 @@ async fn run_check(config: Arc<Config<'_>>, stash: Stash, mut inhibitor: Inhibit
     Spec::PlayStore(ref spec) => PlayStoreHandler { check: &dummy }.run(spec, &config.site, stash).await,
     Spec::AppStore(ref spec) => AppStoreHandler { check: &dummy }.run(spec, &config.site, stash).await,
     Spec::Whois(ref spec) => WhoisHandler { check: &dummy }.run(spec, &config.site, stash).await,
+    Spec::Unsupported => Err(anyhow!("cannot run check")),
   };
 
   match result {

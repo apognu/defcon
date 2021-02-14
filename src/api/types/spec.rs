@@ -12,6 +12,7 @@ use crate::{
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "kind")]
 pub enum Spec {
+  #[cfg(feature = "ping")]
   #[serde(rename = "ping")]
   Ping(db::Ping),
   #[serde(rename = "dns")]
@@ -30,6 +31,8 @@ pub enum Spec {
   AppStore(db::AppStore),
   #[serde(rename = "domain")]
   Whois(db::Whois),
+  #[serde(rename = "unsupported")]
+  Unsupported,
 }
 
 impl Spec {
@@ -37,6 +40,7 @@ impl Spec {
     use CheckKind::*;
 
     match self {
+      #[cfg(feature = "ping")]
       api::Ping(_) => Ping,
       api::Dns(_) => Dns,
       api::Http(_) => Http,
@@ -46,11 +50,13 @@ impl Spec {
       api::PlayStore(_) => PlayStore,
       api::AppStore(_) => AppStore,
       api::Whois(_) => Whois,
+      api::Unsupported => Unsupported,
     }
   }
 
   pub fn meta(&'_ self) -> &'_ dyn SpecMeta {
     match self {
+      #[cfg(feature = "ping")]
       api::Ping(spec) => spec,
       api::Dns(spec) => spec,
       api::Http(spec) => spec,
@@ -60,11 +66,13 @@ impl Spec {
       api::PlayStore(spec) => spec,
       api::AppStore(spec) => spec,
       api::Whois(spec) => spec,
+      api::Unsupported => &db::Unsupported,
     }
   }
 
   pub async fn insert(self, pool: &mut MySqlConnection, check: &DbCheck) -> Result<()> {
     match self {
+      #[cfg(feature = "ping")]
       api::Ping(spec) => db::Ping::insert(pool, &check, spec).await,
       api::Dns(spec) => db::Dns::insert(pool, &check, spec).await,
       api::Http(spec) => db::Http::insert(pool, &check, spec).await,
@@ -74,11 +82,13 @@ impl Spec {
       api::PlayStore(spec) => db::PlayStore::insert(pool, &check, spec).await,
       api::AppStore(spec) => db::AppStore::insert(pool, &check, spec).await,
       api::Whois(spec) => db::Whois::insert(pool, &check, spec).await,
+      api::Unsupported => Err(anyhow!("cannot insert check with unsupported spec")),
     }
   }
 
   pub async fn update(self, conn: &mut MySqlConnection, check: &DbCheck) -> Result<()> {
     match self {
+      #[cfg(feature = "ping")]
       api::Ping(spec) => db::Ping::update(conn, check, spec).await,
       api::Dns(spec) => db::Dns::update(conn, check, spec).await,
       api::Http(spec) => db::Http::update(conn, check, spec).await,
@@ -88,6 +98,7 @@ impl Spec {
       api::PlayStore(spec) => db::PlayStore::update(conn, check, spec).await,
       api::AppStore(spec) => db::AppStore::update(conn, check, spec).await,
       api::Whois(spec) => db::Whois::update(conn, check, spec).await,
+      api::Unsupported => Err(anyhow!("cannot update check with unsupported spec")),
     }
   }
 }

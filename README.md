@@ -12,6 +12,11 @@ Defcon requires the following infrastructure to be run:
 
  * At least one Linux server to run it on
  * A MySQL database
+ * Libraries we're dynamically linked to:
+   * `libcap` (when compiled with the `ping` feature)
+   * `libjq1` and `libonig5` (when compiled with the `jq` feature)
+
+Provided binaries in the [Releases](https://github.com/apognu/defcon/releases) section are compiled with all optional features.
 
 Until clearly stated, the database schema is subject to breaking changes, and migrations will not be used.
 
@@ -123,6 +128,19 @@ You can find detailed explanations about how to configure each of those handlers
 Defcon exposes an **unauthenticated** API used to manipulate and retrieve the data it uses internally. The available endpoints are documented in the [API documentation](https://apognu.github.io/defcon/api.html).
 
 Did you pay attention to the fact that this API is **NOT AUTHENTICATED** and should therefore be used behind some kind of reverse proxy that will add some semblance of security to it?
+
+## Building from source
+
+You can check the continuous integration suite for more information on how to build Defcon (for example, right now, this uses _nightly Rust_). You will need a standard build environment, the following dependencies and run (while adapting `JQ_LIB_DIR`):
+
+ * `libssl-dev`
+ * `libcap-dev` (for the ping handler, with the `ping` feature)
+ * `libjq-dev` and `libonig-dev` (for JQ bindings, with the `jq` feature)
+
+```shell
+$ rustup override set nightly-2021-01-21
+$ JQ_LIB_DIR=/usr/lib cargo build --release
+```
 
 ## Running tests
 

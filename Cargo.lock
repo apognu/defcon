@@ -522,6 +522,7 @@ dependencies = [
  "extend",
  "futures 0.3.12",
  "humantime",
+ "jq-rs",
  "jsonwebtoken",
  "kvlogger",
  "lazy_static",
@@ -1334,6 +1335,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c71313ebb9439f74b00d9d2dcec36440beaf57a6aa0623068441dd7cd81a7f2"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "jq-rs"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9cfaeae42ef96b227ab787558cc7bbd5f1dfe96b4df7c63f92853017751b0e4"
+dependencies = [
+ "jq-sys",
+]
+
+[[package]]
+name = "jq-sys"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81b65b7e54bd2fffc8cb20cbcf19f40d3158dab5cf5b5adb1f65f9b35eba4c48"
+dependencies = [
+ "pkg-config",
 ]
 
 [[package]]

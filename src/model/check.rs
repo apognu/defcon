@@ -265,6 +265,7 @@ impl Check {
     use CheckKind::*;
 
     match self.kind {
+      #[cfg(feature = "ping")]
       Ping => specs::Ping::for_check(conn, self).await.map(Spec::Ping),
       Dns => specs::Dns::for_check(conn, self).await.map(Spec::Dns),
       Http => specs::Http::for_check(conn, self).await.map(Spec::Http),
@@ -274,6 +275,7 @@ impl Check {
       PlayStore => specs::PlayStore::for_check(conn, self).await.map(Spec::PlayStore),
       AppStore => specs::AppStore::for_check(conn, self).await.map(Spec::AppStore),
       Whois => specs::Whois::for_check(conn, self).await.map(Spec::Whois),
+      Unsupported => Ok(Spec::Unsupported),
     }
   }
 
@@ -281,6 +283,7 @@ impl Check {
     use CheckKind::*;
 
     match self.kind {
+      #[cfg(feature = "ping")]
       Ping => PingHandler { check: &self }.check(conn, config, site, stash).await,
 
       Dns => {
@@ -299,6 +302,7 @@ impl Check {
       PlayStore => PlayStoreHandler { check: &self }.check(conn, config, site, stash).await,
       AppStore => AppStoreHandler { check: &self }.check(conn, config, site, stash).await,
       Whois => WhoisHandler { check: &self }.check(conn, config, site, stash).await,
+      Unsupported => Err(anyhow!("unsupported check kind")),
     }
   }
 

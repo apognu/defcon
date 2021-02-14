@@ -14,6 +14,10 @@ path = "src/bin/controller/main.rs"
 name = "defcon-runner"
 path = "src/bin/runner/main.rs"
 
+[features]
+ping = ["surge-ping"]
+jq = ["jq-rs"]
+
 [dependencies]
 anyhow = "^1.0"
 async-trait = "0.1"
@@ -24,6 +28,7 @@ dns-lookup = "^1.0"
 extend = "1.0"
 futures = "0.3"
 humantime = "^2.1"
+jq-rs = { version = "0.4", optional = true }
 jsonwebtoken = "7.2"
 kvlogger = { version = "0.5", features = ["datetime"] }
 lazy_static = "1.4"
@@ -40,7 +45,7 @@ sha2 = "0.9"
 slack-hook = "0.8"
 sqlx = { version = "0.5", default_features = false, features = ["macros", "mysql", "runtime-tokio-rustls", "chrono", "all-types"] }
 ssl-expiration2 = "0.3"
-surge-ping = "0.1"
+surge-ping = { version = "0.1", optional = true }
 thiserror = "^1.0"
 tokio = { version = "1.2", default_features = false, features = ["time", "net"] }
 trust-dns-client = { version = "0.20", default_features = false }

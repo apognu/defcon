@@ -40,7 +40,7 @@ jobs:
           - 3306:3306
     steps:
       - name: Install dependencies
-        run: sudo apt install -y libcap-dev
+        run: sudo apt install -y libcap-dev libjq-dev libonig-dev
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
         with:
@@ -51,7 +51,7 @@ jobs:
           toolchain: nightly-2021-01-21
           override: true
       - name: Test suite
-        run: sudo capsh --caps='cap_net_raw+eip cap_setpcap,cap_setuid,cap_setgid+ep' --keep=1 --user=runner --addamb=cap_net_raw -- -c "PATH=$PATH HOME=/home/runner DSN=mysql://root:${{ secrets.MYSQL_ROOT_PASSWORD }}@127.0.0.1/information_schema?ssl-mode=DISABLED cargo test"
+        run: sudo capsh --caps='cap_net_raw+eip cap_setpcap,cap_setuid,cap_setgid+ep' --keep=1 --user=runner --addamb=cap_net_raw -- -c "PATH=$PATH HOME=/home/runner JQ_LIB_DIR=/usr/lib/x86_64-linux-gnu DSN=mysql://root:${{ secrets.MYSQL_ROOT_PASSWORD }}@127.0.0.1/information_schema?ssl-mode=DISABLED cargo test --all-features"
 
   build:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
@@ -62,7 +62,7 @@ jobs:
     runs-on: ${{ matrix.arch.os }}
     steps:
       - name: Install dependencies
-        run: sudo apt install -y libcap-dev
+        run: sudo apt install -y libcap-dev libjq-dev libonig-dev
       - uses: actions/checkout@v2
       - uses: actions/cache@v2
         with:
@@ -76,8 +76,10 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target=${{ matrix.arch.target }}
+          args: --release --all-features --target=${{ matrix.arch.target }}
           use-cross: ${{ matrix.arch.cross }}
+        env:
+          JQ_LIB_DIR: /usr/lib/x86_64-linux-gnu
       - name: Rename artifact
         run: |
           mv target/${{ matrix.arch.target }}/release/defcon target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}
