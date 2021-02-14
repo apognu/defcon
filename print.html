@@ -431,6 +431,7 @@ INFO[2021-02-06T14:18:36.973+0000] starting runner process site=&quot;eu-1&quot;
 <tr><td><code>code</code></td><td>int</td><td><code>201</code></td><td>Status code of the response</td></tr>
 <tr><td><code>content</code></td><td>string</td><td><code>&quot;ACME&quot;</code></td><td>Substring to find in the response body</td></tr>
 <tr><td><code>digest</code></td><td>string</td><td><code>&quot;...&quot;</code></td><td>Hex-encoded SHA-512 sum of the response body</td></tr>
+<tr><td><code>json_query</code></td><td>string</td><td><code>&quot;.status == \&quot;ok\&quot;&quot;</code></td><td>JQ-compatible JSON query returning a boolean</td></tr>
 </tbody></table>
 <h1><a class="header" href="#dns" id="dns">DNS</a></h1>
 <p>The DNS handler will retrieve DNS records of a specific type, for a specific domain, and check if one of the values matches the specification. Only the following DNS record types are supported:</p>
