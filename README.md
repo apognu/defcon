@@ -135,7 +135,7 @@ You can check the continuous integration suite for more information on how to bu
 
  * `libssl-dev`
  * `libcap-dev` (for the ping handler, with the `ping` feature)
- * `libjq-dev` and `libonig-dev` (for JQ bindings, with the `jq` feature)
+ * `libjq-dev` and `libonig-dev` (for JQ bindings, with the `jq` feature, `jq` 1.6 is required)
 
 ```shell
 $ rustup override set nightly-2021-01-21
