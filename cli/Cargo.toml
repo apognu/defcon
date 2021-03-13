@@ -1,0 +1,17 @@
+[package]
+name = "defcon-cli"
+version = "0.1.0"
+authors = ["Antoine POPINEAU <antoine@popineau.eu>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "^1.0"
+clap = "3.0.0-beta.2"
+colored = "^1.9"
+defcon = { path = "../defcon" }
+humantime = "^2.1"
+prettytable-rs = "^0.8"
+reqwest = { version = "0.11", features = ["json"] }
+serde = "1.0"
+serde_json = "1.0"
+tokio = { version = "1.2", default_features = false }
