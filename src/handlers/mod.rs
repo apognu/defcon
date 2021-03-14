@@ -1,4 +1,5 @@
 mod app_store;
+mod deadmanswitch;
 mod dns;
 mod http;
 #[cfg(feature = "ping")]
@@ -20,7 +21,10 @@ use sqlx::MySqlConnection;
 pub use crate::handlers::ping::PingHandler;
 pub use crate::{
   config::Config,
-  handlers::{app_store::AppStoreHandler, dns::DnsHandler, http::HttpHandler, play_store::PlayStoreHandler, tcp::TcpHandler, tls::TlsHandler, udp::UdpHandler, whois::WhoisHandler},
+  handlers::{
+    app_store::AppStoreHandler, deadmanswitch::DeadManSwitchHandler, dns::DnsHandler, http::HttpHandler, play_store::PlayStoreHandler, tcp::TcpHandler, tls::TlsHandler, udp::UdpHandler,
+    whois::WhoisHandler,
+  },
   inhibitor::Inhibitor,
   model::{Check, Event, Outage, SiteOutage},
   stash::Stash,

@@ -6,6 +6,7 @@
 extern crate anyhow;
 
 mod cleaner;
+mod deadmanswitch;
 mod handler;
 
 use std::{env, sync::Arc, time::Instant};
@@ -65,6 +66,17 @@ async fn main() -> Result<()> {
 
       async move {
         run_cleaner(&pool, config).await;
+      }
+    });
+  }
+
+  if config.dms {
+    tokio::spawn({
+      let config = config.clone();
+      let pool = pool.clone();
+
+      async move {
+        deadmanswitch::run(pool, config).await;
       }
     });
   }

@@ -23,6 +23,7 @@ pub enum CheckKind {
   PlayStore,
   AppStore,
   Whois,
+  DeadManSwitch,
   Unsupported,
 }
 
@@ -47,6 +48,7 @@ impl Display for CheckKind {
       PlayStore => "play_store",
       AppStore => "app_store",
       Whois => "domain",
+      DeadManSwitch => "deadmanswitch",
       Unsupported => "unsupported",
     };
 
@@ -74,6 +76,7 @@ impl TryFrom<String> for CheckKind {
       "play_store" => Ok(PlayStore),
       "app_store" => Ok(AppStore),
       "domain" => Ok(Whois),
+      "deadmanswitch" => Ok(DeadManSwitch),
       _ => Err(anyhow!("invalid value for kind")),
     }
   }

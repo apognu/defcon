@@ -109,17 +109,18 @@ $ PRIVATE_KEY=./defcon-private.pem \
 
 ## Handlers
 
-| Check name        | Internal ID  | Description                                                                    |
-| ----------------- | ------------ | ------------------------------------------------------------------------------ |
-| iOS app           | `app_store`  | Verify if an iOS app can be found on the App Store                             |
-| DNS record        | `dns`        | Verify the value for a domain record (`NS`, `MX`, `A`, `AAAA`, `CNAME`, `CAA`) |
-| HTTP request      | `http`       | Verify the response to an HTTP GET request                                     |
-| ICMP echo request | `ping`       | Verify if a host can be pinged                                                 |
-| Android app       | `play_store` | Verify if an Android app can be found on the Play Store                        |
-| TCP connection    | `tcp`        | Verify if a host is reachable through a TCP port                               |
-| TLS expiration    | `tls`        | Verify the expiration date for a TLS certificate                               |
-| UDP datagram      | `udp`        | Verify the response from a host on a UDP port                                  |
-| Domain expiration | `whois`      | Verify the expiration date for a domain registration                           |
+| Check name        | Internal ID     | Description                                                                    |
+| ----------------- | --------------- | ------------------------------------------------------------------------------ |
+| iOS app           | `app_store`     | Verify if an iOS app can be found on the App Store                             |
+| DNS record        | `dns`           | Verify the value for a domain record (`NS`, `MX`, `A`, `AAAA`, `CNAME`, `CAA`) |
+| HTTP request      | `http`          | Verify the response to an HTTP GET request                                     |
+| ICMP echo request | `ping`          | Verify if a host can be pinged                                                 |
+| Android app       | `play_store`    | Verify if an Android app can be found on the Play Store                        |
+| TCP connection    | `tcp`           | Verify if a host is reachable through a TCP port                               |
+| TLS expiration    | `tls`           | Verify the expiration date for a TLS certificate                               |
+| UDP datagram      | `udp`           | Verify the response from a host on a UDP port                                  |
+| Domain expiration | `whois`         | Verify the expiration date for a domain registration                           |
+| Dead man switch   | `deadmanswitch` | Trigger an alert if a provided HTTP endpoint is not check in on in some time   |
 
 You can find detailed explanations about how to configure each of those handlers in the [user manual](https://apognu.github.io/defcon/).
 
@@ -159,5 +160,4 @@ $ sudo capsh \
 
  * More check types (ideas and PRs are welcome)?
  * Statistics API
- * More extensive, step-by-step documentation
  * Site registration and specific runner authentication

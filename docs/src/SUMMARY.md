@@ -14,5 +14,6 @@
   - [Domain expiration](./06-handlers/whois.md)
   - [TLS expiration](./06-handlers/tls.md)
   - [App stores](./06-handlers/appstores.md)
+  - [Dead Man Switch](./06-handlers/deadmanswitch.md)
 - [Alerters](./07-alerters.md)
 - [REST API](./api.html)

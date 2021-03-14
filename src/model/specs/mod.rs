@@ -1,4 +1,5 @@
 mod app_store;
+mod deadmanswitch;
 mod dns;
 mod http;
 #[cfg(feature = "ping")]
@@ -14,6 +15,7 @@ mod whois;
 pub use self::ping::Ping;
 pub use self::{
   app_store::AppStore,
+  deadmanswitch::DeadManSwitch,
   dns::{Dns, DnsRecord},
   http::{Http, HttpHeaders},
   play_store::PlayStore,

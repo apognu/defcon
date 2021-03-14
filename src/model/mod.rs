@@ -5,6 +5,7 @@ mod alerter_kind;
 mod binary;
 mod check;
 mod check_kind;
+mod deadmanswitch_log;
 mod duration;
 mod event;
 mod outage;
@@ -19,6 +20,7 @@ pub use self::{
   binary::Binary,
   check::Check,
   check_kind::CheckKind,
+  deadmanswitch_log::DeadManSwitchLog,
   duration::Duration,
   event::{status, Event},
   outage::Outage,

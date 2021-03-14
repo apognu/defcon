@@ -33,6 +33,9 @@ pub struct Config {
   pub cleaner_interval: Duration,
   pub cleaner_threshold: Duration,
 
+  pub dms: bool,
+  pub dms_listen: SocketAddr,
+
   pub checks: ChecksConfig,
 
   pub key: Option<&'static Vec<u8>>,
@@ -86,6 +89,9 @@ impl Config {
       .or_duration_min("1y", Duration::from_secs(1))
       .context("CLEANER_THRESHOLD is not a duration")?;
 
+    let dms= env::var("DMS_ENABLE").or_string("1") == "1";
+    let dms_listen = env::var("DMS_LISTEN").or_string("127.0.0.1:8080").parse::<SocketAddr>().context("could not parse Dead Man Switch listen address")?;
+
     let checks = ChecksConfig::new()?;
 
     let config = Config {
@@ -97,6 +103,8 @@ impl Config {
       cleaner,
       cleaner_interval,
       cleaner_threshold,
+      dms,
+      dms_listen,
       checks,
       key: PUBLIC_KEY.as_ref(),
     };

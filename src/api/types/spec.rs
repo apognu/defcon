@@ -31,6 +31,8 @@ pub enum Spec {
   AppStore(db::AppStore),
   #[serde(rename = "domain")]
   Whois(db::Whois),
+  #[serde(rename = "deadmanswitch")]
+  DeadManSwitch(db::DeadManSwitch),
   #[serde(rename = "unsupported")]
   Unsupported,
 }
@@ -50,6 +52,7 @@ impl Spec {
       api::PlayStore(_) => PlayStore,
       api::AppStore(_) => AppStore,
       api::Whois(_) => Whois,
+      api::DeadManSwitch(_) => DeadManSwitch,
       api::Unsupported => Unsupported,
     }
   }
@@ -66,6 +69,7 @@ impl Spec {
       api::PlayStore(spec) => spec,
       api::AppStore(spec) => spec,
       api::Whois(spec) => spec,
+      api::DeadManSwitch(spec) => spec,
       api::Unsupported => &db::Unsupported,
     }
   }
@@ -82,6 +86,7 @@ impl Spec {
       api::PlayStore(spec) => db::PlayStore::insert(pool, &check, spec).await,
       api::AppStore(spec) => db::AppStore::insert(pool, &check, spec).await,
       api::Whois(spec) => db::Whois::insert(pool, &check, spec).await,
+      api::DeadManSwitch(spec) => db::DeadManSwitch::insert(pool, &check, spec).await,
       api::Unsupported => Err(anyhow!("cannot insert check with unsupported spec")),
     }
   }
@@ -98,6 +103,7 @@ impl Spec {
       api::PlayStore(spec) => db::PlayStore::update(conn, check, spec).await,
       api::AppStore(spec) => db::AppStore::update(conn, check, spec).await,
       api::Whois(spec) => db::Whois::update(conn, check, spec).await,
+      api::DeadManSwitch(spec) => db::DeadManSwitch::update(conn, check, spec).await,
       api::Unsupported => Err(anyhow!("cannot update check with unsupported spec")),
     }
   }

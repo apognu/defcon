@@ -8,7 +8,7 @@ use crate::{
   api::{error::Shortable, types as api},
   ext,
   handlers::*,
-  model::{specs, Alerter, CheckKind, Duration, Event, Outage, Site},
+  model::{specs, Alerter, CheckKind, DeadManSwitchLog, Duration, Event, Outage, Site},
   stash::Stash,
 };
 
@@ -275,6 +275,7 @@ impl Check {
       PlayStore => specs::PlayStore::for_check(conn, self).await.map(Spec::PlayStore),
       AppStore => specs::AppStore::for_check(conn, self).await.map(Spec::AppStore),
       Whois => specs::Whois::for_check(conn, self).await.map(Spec::Whois),
+      DeadManSwitch => specs::DeadManSwitch::for_check(conn, self).await.map(Spec::DeadManSwitch),
       Unsupported => Ok(Spec::Unsupported),
     }
   }
@@ -302,6 +303,11 @@ impl Check {
       PlayStore => PlayStoreHandler { check: &self }.check(conn, config, site, stash).await,
       AppStore => AppStoreHandler { check: &self }.check(conn, config, site, stash).await,
       Whois => WhoisHandler { check: &self }.check(conn, config, site, stash).await,
+      DeadManSwitch => {
+        let last = DeadManSwitchLog::last(conn, self.id).await.unwrap_or_default();
+
+        DeadManSwitchHandler { check: &self, last }.check(conn, config, site, stash).await
+      }
       Unsupported => Err(anyhow!("unsupported check kind")),
     }
   }
