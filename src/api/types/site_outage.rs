@@ -3,7 +3,7 @@ use futures::{stream, StreamExt};
 use sqlx::{MySql, Pool};
 
 use crate::{
-  api::types::{self as api, ApiMapper},
+  api::types::{self as api, ApiMapper, CheckGroup},
   model as db,
 };
 
@@ -22,6 +22,7 @@ impl ApiMapper for db::SiteOutage {
     let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
     let check = db::Check::by_id(&mut *conn, self.check_id).await?;
     let spec = check.spec(&mut *conn).await?;
+    let group = check.group(&mut *conn).await;
     let alerter = check.alerter(&mut *conn).await;
     let sites = check.sites(&mut *conn).await?;
 
@@ -30,6 +31,7 @@ impl ApiMapper for db::SiteOutage {
       check: api::Check {
         check,
         spec,
+        group: CheckGroup::from(group),
         alerter: alerter.map(|alerter| alerter.uuid),
         sites: Some(sites.into()),
       },
@@ -50,6 +52,7 @@ impl ApiMapper for Vec<db::SiteOutage> {
           match db::Check::by_id(&mut *conn, outage.check_id).await {
             Ok(check) => match check.spec(&mut *conn).await {
               Ok(spec) => {
+                let group = check.group(&mut *conn).await;
                 let alerter = check.alerter(&mut *conn).await;
                 let sites = check.sites(&mut *conn).await.unwrap_or_default();
 
@@ -58,6 +61,7 @@ impl ApiMapper for Vec<db::SiteOutage> {
                   check: api::Check {
                     check,
                     spec,
+                    group: CheckGroup::from(group),
                     alerter: alerter.map(|alerter| alerter.uuid),
                     sites: Some(sites.into()),
                   },

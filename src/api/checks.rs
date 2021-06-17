@@ -15,7 +15,7 @@ use crate::{
   },
   config::CONTROLLER_ID,
   ext::Run,
-  model::{Alerter, Check},
+  model::{Alerter, Check, Group},
 };
 
 #[get("/api/checks?<all>")]
@@ -55,6 +55,11 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
 
   let mut txn = pool.begin().await.context("could not start transaction").short()?;
 
+  let group = match payload.group {
+    Some(group) => Some(Group::by_uuid(&mut txn, &group.uuid).await.context("could not retrieve group").short()?),
+    None => None,
+  };
+
   let alerter = match payload.alerter {
     Some(uuid) => Some(Alerter::by_uuid(&mut txn, &uuid).await.context("could not retrieve alerter").short()?),
     None => None,
@@ -62,6 +67,7 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
 
   let check = Check {
     uuid: uuid.clone(),
+    group_id: group.map(|group| group.id),
     alerter_id: alerter.map(|alerter| alerter.id),
     name: payload.check.name,
     enabled: payload.check.enabled,
@@ -103,6 +109,11 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
     Err(anyhow!("cannot change the resource `kind`").context(AppError::BadRequest)).short()?;
   }
 
+  let group = match payload.group {
+    Some(group) => Some(Group::by_uuid(&mut txn, &group.uuid).await.context("could not retrieve group").short()?),
+    None => None,
+  };
+
   let alerter = match payload.alerter {
     Some(uuid) => Some(Alerter::by_uuid(&mut txn, &uuid).await.context("could not retrieve alerter").short()?),
     None => None,
@@ -110,6 +121,7 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
 
   let check = Check {
     name: payload.check.name,
+    group_id: group.map(|group| group.id),
     alerter_id: alerter.map(|alerter| alerter.id),
     enabled: payload.check.enabled,
     interval: payload.check.interval,
@@ -143,6 +155,14 @@ pub async fn patch(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<J
   payload.passing_threshold.run(|value| check.passing_threshold = value);
   payload.failing_threshold.run(|value| check.failing_threshold = value);
   payload.silent.run(|value| check.silent = value);
+
+  if let Some(value) = payload.group {
+    let group = Group::by_uuid(&mut txn, &value.uuid).await.context("could not retrieve group").short()?;
+
+    check.group_id = Some(group.id);
+  } else {
+    check.group_id = None;
+  }
 
   if let Some(value) = payload.alerter {
     if value.is_empty() {

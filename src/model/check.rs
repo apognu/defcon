@@ -8,7 +8,7 @@ use crate::{
   api::{error::Shortable, types as api},
   ext,
   handlers::*,
-  model::{specs, Alerter, CheckKind, DeadManSwitchLog, Duration, Event, Outage, Site},
+  model::{specs, Alerter, CheckKind, DeadManSwitchLog, Duration, Event, Group, Outage, Site},
   stash::Stash,
 };
 
@@ -18,6 +18,8 @@ pub struct Check {
   pub id: u64,
   #[serde(skip_deserializing)]
   pub uuid: String,
+  #[serde(skip)]
+  pub group_id: Option<u64>,
   #[serde(skip)]
   pub alerter_id: Option<u64>,
   pub name: String,
@@ -42,7 +44,7 @@ impl Check {
   pub async fn all(conn: &mut MySqlConnection) -> Result<Vec<Check>> {
     let checks = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
       ",
     )
@@ -56,7 +58,7 @@ impl Check {
   pub async fn enabled(conn: &mut MySqlConnection) -> Result<Vec<Check>> {
     let checks = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE enabled = 1
       ",
@@ -71,7 +73,7 @@ impl Check {
   pub async fn by_id(conn: &mut MySqlConnection, id: u64) -> Result<Check> {
     let check = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE id = ?
       ",
@@ -93,7 +95,7 @@ impl Check {
 
     let checks = sqlx::query_as::<_, Check>(&format!(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE id IN ( {} )
       ",
@@ -109,7 +111,7 @@ impl Check {
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Check> {
     let check = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE uuid = ?
       ",
@@ -126,11 +128,12 @@ impl Check {
     {
       sqlx::query(
         "
-        INSERT INTO checks ( uuid, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent )
-        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+        INSERT INTO checks ( uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent )
+        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
       ",
       )
       .bind(&self.uuid)
+      .bind(self.group_id)
       .bind(self.alerter_id)
       .bind(self.name)
       .bind(self.enabled)
@@ -154,10 +157,11 @@ impl Check {
     sqlx::query(
       "
         UPDATE checks
-        SET alerter_id = ?, name = ?, enabled = ?, kind = ?, `interval` = ?, site_threshold = ?, passing_threshold = ?, failing_threshold = ?, silent = ?
+        SET group_id = ?, alerter_id = ?, name = ?, enabled = ?, kind = ?, `interval` = ?, site_threshold = ?, passing_threshold = ?, failing_threshold = ?, silent = ?
         WHERE id = ?
       ",
     )
+    .bind(self.group_id)
     .bind(self.alerter_id)
     .bind(self.name)
     .bind(self.enabled)
@@ -312,6 +316,13 @@ impl Check {
     }
   }
 
+  pub async fn group(&self, conn: &mut MySqlConnection) -> Option<Group> {
+    match self.group_id {
+      Some(id) => Group::by_id(conn, id).await.ok(),
+      None => None,
+    }
+  }
+
   pub async fn alerter(&self, conn: &mut MySqlConnection) -> Option<Alerter> {
     match self.alerter_id {
       Some(id) => Alerter::by_id(conn, id).await.ok(),
@@ -406,17 +417,16 @@ mod tests {
   #[tokio::test]
   async fn by_uuid() -> Result<()> {
     let pool = tests::db_client().await?;
+    let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "by_uuid()", None, None).await?;
 
-    let check = sqlx::query_as::<_, (String, String, bool, u64)>(r#"SELECT name, kind, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
-      .fetch_one(&*pool)
-      .await?;
+    let check = Check::by_uuid(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
 
-    assert_eq!(&check.0, "by_uuid()");
-    assert_eq!(&check.1, "tcp");
-    assert_eq!(check.2, true);
-    assert_eq!(check.3, 10);
+    assert_eq!(check.name, "by_uuid()");
+    assert_eq!(check.kind, CheckKind::Tcp);
+    assert_eq!(check.enabled, true);
+    assert_eq!(check.interval.as_secs(), 10);
 
     pool.cleanup().await;
 
@@ -426,17 +436,16 @@ mod tests {
   #[tokio::test]
   async fn by_id() -> Result<()> {
     let pool = tests::db_client().await?;
+    let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "by_id()", None, None).await?;
 
-    let check = sqlx::query_as::<_, (String, String, bool, u64)>(r#"SELECT name, kind, enabled, `interval` FROM checks WHERE id = 1"#)
-      .fetch_one(&*pool)
-      .await?;
+    let check = Check::by_id(&mut *conn, 1).await?;
 
-    assert_eq!(&check.0, "by_id()");
-    assert_eq!(&check.1, "tcp");
-    assert_eq!(check.2, true);
-    assert_eq!(check.3, 10);
+    assert_eq!(check.name, "by_id()");
+    assert_eq!(check.kind, CheckKind::Tcp);
+    assert_eq!(check.enabled, true);
+    assert_eq!(check.interval.as_secs(), 10);
 
     pool.cleanup().await;
 
@@ -450,6 +459,7 @@ mod tests {
 
     let check = Check {
       id: 1,
+      group_id: None,
       alerter_id: None,
       uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
       name: "create()".to_string(),
@@ -486,6 +496,7 @@ mod tests {
 
     let update = Check {
       id: 1,
+      group_id: None,
       alerter_id: None,
       uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
       name: "new_update()".to_string(),

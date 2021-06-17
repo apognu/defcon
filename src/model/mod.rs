@@ -8,6 +8,7 @@ mod check_kind;
 mod deadmanswitch_log;
 mod duration;
 mod event;
+mod group;
 mod outage;
 mod site;
 mod site_outage;
@@ -23,6 +24,7 @@ pub use self::{
   deadmanswitch_log::DeadManSwitchLog,
   duration::Duration,
   event::{status, Event},
+  group::Group,
   outage::Outage,
   site::Site,
   site_outage::SiteOutage,

@@ -1,6 +1,7 @@
 mod alerters;
 mod checks;
 mod db;
+mod groups;
 mod outages;
 
 use std::env;

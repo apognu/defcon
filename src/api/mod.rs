@@ -3,6 +3,7 @@ pub mod auth;
 mod checks;
 pub mod error;
 mod events;
+mod groups;
 pub mod middlewares;
 mod outages;
 mod runner;
@@ -35,6 +36,11 @@ pub fn routes() -> Vec<Route> {
     checks::update,
     checks::patch,
     checks::delete,
+    groups::list,
+    groups::get,
+    groups::create,
+    groups::update,
+    groups::delete,
     site_outages::list,
     site_outages::list_between,
     site_outages::get,
