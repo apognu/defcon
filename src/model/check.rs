@@ -41,31 +41,32 @@ const fn default_site_threshold() -> u8 {
 }
 
 impl Check {
-  pub async fn all(conn: &mut MySqlConnection) -> Result<Vec<Check>> {
-    let checks = sqlx::query_as::<_, Check>(
-      "
-        SELECT id, uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
-        FROM checks
-      ",
-    )
-    .fetch_all(&mut *conn)
-    .await
-    .short()?;
+  pub async fn list(conn: &mut MySqlConnection, all: bool, group: Option<Group>) -> Result<Vec<Check>> {
+    let conditions = match (all, &group) {
+      (true, None) => "",
+      (false, None) => "WHERE enabled = 1",
+      (true, Some(_)) => "WHERE groups.uuid = ?",
+      (false, Some(_)) => "WHERE enabled = 1 AND groups.uuid = ?",
+    };
 
-    Ok(checks)
-  }
-
-  pub async fn enabled(conn: &mut MySqlConnection) -> Result<Vec<Check>> {
-    let checks = sqlx::query_as::<_, Check>(
+    let query = format!(
       "
-        SELECT id, uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
-        FROM checks
-        WHERE enabled = 1
-      ",
-    )
-    .fetch_all(&mut *conn)
-    .await
-    .short()?;
+      SELECT checks.id, checks.uuid, group_id, alerter_id, checks.name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+      FROM checks
+      LEFT JOIN groups
+      ON groups.id = checks.group_id
+      {}
+    ",
+      conditions
+    );
+
+    let checks = sqlx::query_as::<_, Check>(&query);
+    let checks = match group {
+      None => checks,
+      Some(group) => checks.bind(group.uuid),
+    };
+
+    let checks = checks.fetch_all(&mut *conn).await.short()?;
 
     Ok(checks)
   }
@@ -381,7 +382,7 @@ mod tests {
 
     pool.create_check(None, None, "all()", None, None).await?;
 
-    let checks = Check::all(&mut *conn).await?;
+    let checks = Check::list(&mut *conn, true, None).await?;
 
     assert_eq!(checks.len(), 1);
     assert_eq!(&checks[0].name, "all()");
@@ -405,7 +406,7 @@ mod tests {
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "enabled()", Some(true), None).await?;
     pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "enabled()", Some(false), None).await?;
 
-    let checks = Check::enabled(&mut *conn).await?;
+    let checks = Check::list(&mut *conn, false, None).await?;
 
     assert_eq!(checks.len(), 1);
 

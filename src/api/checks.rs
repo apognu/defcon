@@ -18,15 +18,22 @@ use crate::{
   model::{Alerter, Check, Group},
 };
 
-#[get("/api/checks?<all>")]
-pub async fn list(pool: State<'_, Pool<MySql>>, all: Option<bool>) -> ApiResponse<Json<Vec<api::Check>>> {
+#[get("/api/checks?<all>&<group>")]
+pub async fn list(pool: State<'_, Pool<MySql>>, all: Option<bool>, group: Option<String>) -> ApiResponse<Json<Vec<api::Check>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  let checks = if all.is_some() {
-    Check::all(&mut conn).await.short()?.map(&*pool).await.context("could not retrieve checks").short()?
-  } else {
-    Check::enabled(&mut conn).await.short()?.map(&*pool).await.context("could not retrieve enabled checks").short()?
+  let group = match group {
+    None => None,
+    Some(uuid) => Some(Group::by_uuid(&mut *conn, &uuid).await.context("could not retrieve group").short()?),
   };
+
+  let checks = Check::list(&mut conn, all.unwrap_or(false), group)
+    .await
+    .short()?
+    .map(&*pool)
+    .await
+    .context("could not retrieve checks")
+    .short()?;
 
   Ok(Json(checks))
 }
