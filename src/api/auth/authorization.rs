@@ -60,7 +60,7 @@ impl<'k> Keys<'k> {
           ..Default::default()
         };
 
-        Ok(Some(jsonwebtoken::encode(&header, &claims, &key)?))
+        Ok(Some(jsonwebtoken::encode(&header, &claims, key)?))
       }
     }
   }
@@ -68,7 +68,7 @@ impl<'k> Keys<'k> {
   pub fn verify(&self, token: Option<&str>) -> Result<TokenData<Claims>, Error> {
     match &self.public {
       None => Err(anyhow!("no public key found for runners").context(AppError::ServerError)),
-      Some(key) => Ok(jsonwebtoken::decode::<Claims>(token.unwrap_or_default(), &key, &Validation::new(Algorithm::ES256))?),
+      Some(key) => Ok(jsonwebtoken::decode::<Claims>(token.unwrap_or_default(), key, &Validation::new(Algorithm::ES256))?),
     }
   }
 }
@@ -78,15 +78,15 @@ pub struct RunnerCredentials {
 }
 
 #[async_trait]
-impl<'a, 'r> FromRequest<'a, 'r> for RunnerCredentials {
+impl<'r> FromRequest<'r> for RunnerCredentials {
   type Error = Error;
 
-  async fn from_request(request: &'a Request<'r>) -> request::Outcome<RunnerCredentials, Error> {
+  async fn from_request(request: &'r Request<'_>) -> request::Outcome<RunnerCredentials, Error> {
     let headers: Vec<_> = request.headers().get("authorization").collect();
     let token = headers.get(0).map(|value| value.strip_prefix("Bearer ")).flatten();
     let rgx = Regex::new(r"^[a-z0-9-]+$").unwrap();
 
-    if let Outcome::Success(guard) = request.guard::<State<Keys>>().await {
+    if let Outcome::Success(guard) = request.guard::<&State<Keys>>().await {
       if let Ok(payload) = guard.verify(token) {
         if rgx.is_match(&payload.claims.site) {
           return Outcome::Success(RunnerCredentials { site: payload.claims.site });

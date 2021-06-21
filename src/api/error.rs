@@ -3,8 +3,8 @@ use rocket::{
   http::Status,
   request::Request,
   response::{self, status::Custom, Responder, Response},
+  serde::json::{json, Error as JsonError},
 };
-use rocket_contrib::{json, json::JsonError};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {

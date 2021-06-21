@@ -1,6 +1,5 @@
 use anyhow::Context;
-use rocket::State;
-use rocket_contrib::json::Json;
+use rocket::{serde::json::Json, State};
 use sqlx::{MySql, Pool};
 
 use crate::{
@@ -15,7 +14,7 @@ use crate::{
 };
 
 #[get("/api/runner/checks")]
-pub async fn list_stale(pool: State<'_, Pool<MySql>>, credentials: RunnerCredentials) -> ApiResponse<Json<Vec<api::RunnerCheck>>> {
+pub async fn list_stale(pool: &State<Pool<MySql>>, credentials: RunnerCredentials) -> ApiResponse<Json<Vec<api::RunnerCheck>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let checks: Vec<api::RunnerCheck> = Check::stale(&mut conn, &credentials.site)
@@ -33,7 +32,7 @@ pub async fn list_stale(pool: State<'_, Pool<MySql>>, credentials: RunnerCredent
 }
 
 #[post("/api/runner/report", data = "<payload>")]
-pub async fn report(pool: State<'_, Pool<MySql>>, credentials: RunnerCredentials, payload: Json<api::ReportEvent>) -> ApiResponse<()> {
+pub async fn report(pool: &State<Pool<MySql>>, credentials: RunnerCredentials, payload: Json<api::ReportEvent>) -> ApiResponse<()> {
   let report = payload.0;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = Check::by_uuid(&mut *conn, &report.check).await.short()?;

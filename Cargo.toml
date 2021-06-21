@@ -19,7 +19,7 @@ ping = ["surge-ping"]
 jq = ["jq-rs"]
 
 [dependencies]
-anyhow = "^1.0"
+anyhow = "=1.0.39"
 async-trait = "0.1"
 base64 = "0.13"
 capabilities = "0.3"
@@ -37,15 +37,15 @@ rand = "0.8"
 refinery = { version = "0.5", features = ["mysql"] }
 regex = "1.0"
 reqwest = { version = "0.11", features = ["json"] }
-rocket = { git = "https://github.com/SergioBenitez/Rocket", rev = "2a493683135ebcc34df34a4ed1eea532fac1895f" }
-rocket_contrib = { git = "https://github.com/SergioBenitez/Rocket", rev = "2a493683135ebcc34df34a4ed1eea532fac1895f", features = ["json"] }
+rocket = { version = "0.5.0-rc.1", features = ["json"] }
+# rocket_contrib = "0.5.0-rc.1"
 serde = "1.0"
 serde_json = "1.0"
 sha2 = "0.9"
 slack-hook = "0.8"
 sqlx = { version = "0.5", default_features = false, features = ["macros", "mysql", "runtime-tokio-rustls", "chrono", "all-types"] }
-ssl-expiration2 = "0.3"
-surge-ping = { version = "0.1", optional = true }
+ssl-expiration2 = "^0.4"
+surge-ping = { version = "^0.2", optional = true }
 thiserror = "^1.0"
 tokio = { version = "1.2", default_features = false, features = ["time", "net"] }
 trust-dns-client = { version = "0.20", default_features = false }

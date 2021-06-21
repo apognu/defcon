@@ -1,6 +1,8 @@
 use anyhow::Context;
-use rocket::State;
-use rocket_contrib::json::{Json, JsonError};
+use rocket::{
+  serde::json::{Error as JsonError, Json},
+  State,
+};
 use sqlx::{MySql, Pool};
 
 use crate::{
@@ -13,7 +15,7 @@ use crate::{
 };
 
 #[get("/api/outages", rank = 10)]
-pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<api::Outage>>> {
+pub async fn list(pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outages = Outage::current(&mut conn).await.context("could not retrieve outages").short()?.map(&*pool).await.short()?;
 
@@ -21,7 +23,7 @@ pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<api::Out
 }
 
 #[get("/api/outages?<from>&<to>", rank = 5)]
-pub async fn list_between(pool: State<'_, Pool<MySql>>, from: api::DateTime, to: api::DateTime) -> ApiResponse<Json<Vec<api::Outage>>> {
+pub async fn list_between(pool: &State<Pool<MySql>>, from: api::DateTime, to: api::DateTime) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let outages = Outage::between(&mut conn, *from, *to).await.context("could not retrieve outages").short()?.map(&*pool).await.short()?;
@@ -30,7 +32,7 @@ pub async fn list_between(pool: State<'_, Pool<MySql>>, from: api::DateTime, to:
 }
 
 #[put("/api/outages/<uuid>/comment", data = "<payload>")]
-pub async fn comment(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<api::OutageComment>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn comment(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::OutageComment>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
@@ -44,7 +46,6 @@ pub async fn comment(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result
 mod tests {
   use anyhow::Result;
   use rocket::http::Status;
-  use rocket_contrib::json;
 
   use crate::tests;
 

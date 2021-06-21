@@ -39,25 +39,17 @@ pub trait Handler: Send {
 }
 
 pub async fn handle_event(conn: &mut MySqlConnection, event: &Event, check: &Check, inhibitor: Option<Inhibitor>) -> Result<()> {
-  if event.status == 0 {
-    kvlog!(Debug, "check passed", {
-      "site" => event.site,
-      "kind" => check.kind,
-      "check" => check.uuid,
-      "name" => check.name,
-      "message" => event.message
-    });
-  } else {
-    kvlog!(Debug, "check failed", {
-      "site" => event.site,
-      "kind" => check.kind,
-      "check" => check.uuid,
-      "name" => check.name,
-      "message" => event.message
-    });
-  }
+  let title = if event.status == 0 { "check passed" } else { "check failed" };
 
-  let outage = SiteOutage::insert(&mut *conn, &check, &event).await.ok().flatten();
+  kvlog!(Debug, title, {
+    "site" => event.site,
+    "kind" => check.kind,
+    "check" => check.uuid,
+    "name" => check.name,
+    "message" => event.message
+  });
+
+  let outage = SiteOutage::insert(&mut *conn, check, event).await.ok().flatten();
 
   event.insert(&mut *conn, outage.as_ref()).await?;
 
@@ -68,13 +60,13 @@ pub async fn handle_event(conn: &mut MySqlConnection, event: &Event, check: &Che
   if let Some(outage) = outage {
     match outage.ended_on {
       None => {
-        if SiteOutage::count(conn, &check).await? >= check.site_threshold as i64 {
-          Outage::confirm(conn, &check).await?;
+        if SiteOutage::count(conn, check).await? >= check.site_threshold as i64 {
+          Outage::confirm(conn, check).await?;
         }
       }
 
       Some(_) => {
-        if SiteOutage::count(conn, &check).await? < check.site_threshold as i64 {
+        if SiteOutage::count(conn, check).await? < check.site_threshold as i64 {
           Outage::resolve(conn, check).await?;
         }
       }

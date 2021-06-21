@@ -10,20 +10,22 @@ mod runner;
 mod site_outages;
 pub mod types;
 
-use rocket::{Config as RocketConfig, Rocket, Route};
-use rocket_contrib::{json, json::JsonValue};
+use rocket::{
+  serde::json::{json, Value as JsonValue},
+  Build, Config as RocketConfig, Rocket, Route,
+};
 use sqlx::{MySql, Pool};
 
 use crate::api::{auth::Keys, error::ErrorResponse};
 
 type ApiResponse<T> = Result<T, ErrorResponse>;
 
-pub fn server(provider: RocketConfig, pool: Pool<MySql>, keys: Option<Keys<'static>>) -> Rocket {
+pub fn server(provider: RocketConfig, pool: Pool<MySql>, keys: Option<Keys<'static>>) -> Rocket<Build> {
   let routes: Vec<Route> = routes().into_iter().chain(runner_routes(&keys).into_iter()).collect();
 
   match keys {
-    Some(keys) => rocket::custom(provider).manage(pool).manage(keys).mount("/", routes).register(catchers![not_found, unprocessable]),
-    None => rocket::custom(provider).manage(pool).mount("/", routes).register(catchers![not_found, unprocessable]),
+    Some(keys) => rocket::custom(provider).manage(pool).manage(keys).mount("/", routes).register("/", catchers![not_found, unprocessable]),
+    None => rocket::custom(provider).manage(pool).mount("/", routes).register("/", catchers![not_found, unprocessable]),
   }
 }
 

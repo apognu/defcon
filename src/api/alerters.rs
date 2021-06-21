@@ -1,6 +1,9 @@
 use anyhow::Context;
-use rocket::{response::status::Created, State};
-use rocket_contrib::json::{Json, JsonError};
+use rocket::{
+  response::status::Created,
+  serde::json::{Error as JsonError, Json},
+  State,
+};
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
 
@@ -13,7 +16,7 @@ use crate::{
 };
 
 #[get("/api/alerters")]
-pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<db::Alerter>>> {
+pub async fn list(pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<db::Alerter>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerters = db::Alerter::all(&mut conn).await.context("could not retrieve alerters").short()?;
 
@@ -21,7 +24,7 @@ pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<db::Aler
 }
 
 #[get("/api/alerters/<uuid>")]
-pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json<db::Alerter>> {
+pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<db::Alerter>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.context("could not find alerter").short()?;
 
@@ -29,7 +32,7 @@ pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json
 }
 
 #[post("/api/alerters", data = "<payload>")]
-pub async fn add(pool: State<'_, Pool<MySql>>, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<Created<String>> {
+pub async fn add(pool: &State<Pool<MySql>>, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<Created<String>> {
   let payload = check_json(payload).short()?.0;
   let uuid = Uuid::new_v4().to_string();
 
@@ -43,11 +46,11 @@ pub async fn add(pool: State<'_, Pool<MySql>>, payload: Result<Json<db::Alerter>
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerter = alerter.insert(&mut conn).await.context("could not create alerter").short()?;
 
-  Ok(Created::new(uri!(get: alerter.uuid).to_string()))
+  Ok(Created::new(uri!(get(uuid = alerter.uuid)).to_string()))
 }
 
 #[put("/api/alerters/<uuid>", data = "<payload>")]
-pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?.0;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.context("could not find alerter").short()?;
@@ -67,7 +70,6 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
 mod tests {
   use anyhow::Result;
   use rocket::http::Status;
-  use rocket_contrib::json;
 
   use crate::{
     model::{Alerter, AlerterKind},

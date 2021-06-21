@@ -1,6 +1,5 @@
 use anyhow::Context;
-use rocket::State;
-use rocket_contrib::json::Json;
+use rocket::{serde::json::Json, State};
 use sqlx::{MySql, Pool};
 
 use crate::{
@@ -9,7 +8,7 @@ use crate::{
 };
 
 #[get("/api/sites/outages/<uuid>/events")]
-pub async fn list(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json<Vec<db::Event>>> {
+pub async fn list(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::SiteOutage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
   let events = db::Event::for_outage(&mut conn, &outage).await.context("could not retrieve events").short()?;

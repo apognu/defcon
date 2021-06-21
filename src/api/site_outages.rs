@@ -1,6 +1,5 @@
 use anyhow::Context;
-use rocket::State;
-use rocket_contrib::json::Json;
+use rocket::{serde::json::Json, State};
 use sqlx::{MySql, Pool};
 
 use crate::{
@@ -13,7 +12,7 @@ use crate::{
 };
 
 #[get("/api/sites/outages", rank = 10)]
-pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
+pub async fn list(pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outages = SiteOutage::current(&mut conn).await.context("could not retrieve outages").short()?.map(&*pool).await.short()?;
 
@@ -21,7 +20,7 @@ pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<api::Sit
 }
 
 #[get("/api/sites/outages?<from>&<to>", rank = 5)]
-pub async fn list_between(pool: State<'_, Pool<MySql>>, from: api::DateTime, to: api::DateTime) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
+pub async fn list_between(pool: &State<Pool<MySql>>, from: api::DateTime, to: api::DateTime) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let outages = SiteOutage::between(&mut conn, *from, *to)
@@ -36,7 +35,7 @@ pub async fn list_between(pool: State<'_, Pool<MySql>>, from: api::DateTime, to:
 }
 
 #[get("/api/sites/outages/<uuid>")]
-pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::SiteOutage>> {
+pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::SiteOutage>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = SiteOutage::by_uuid(&mut conn, &uuid).await.context("could not find outage").short()?.map(&*pool).await.short()?;
 

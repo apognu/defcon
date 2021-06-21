@@ -290,28 +290,28 @@ impl Check {
 
     match self.kind {
       #[cfg(feature = "ping")]
-      Ping => PingHandler { check: &self }.check(conn, config, site, stash).await,
+      Ping => PingHandler { check: self }.check(conn, config, site, stash).await,
 
       Dns => {
         DnsHandler {
-          check: &self,
+          check: self,
           resolver: config.checks.dns_resolver,
         }
         .check(conn, config, site, stash)
         .await
       }
 
-      Http => HttpHandler { check: &self }.check(conn, config, site, stash).await,
-      Tcp => TcpHandler { check: &self }.check(conn, config, site, stash).await,
-      Udp => UdpHandler { check: &self }.check(conn, config, site, stash).await,
-      Tls => TlsHandler { check: &self }.check(conn, config, site, stash).await,
-      PlayStore => PlayStoreHandler { check: &self }.check(conn, config, site, stash).await,
-      AppStore => AppStoreHandler { check: &self }.check(conn, config, site, stash).await,
-      Whois => WhoisHandler { check: &self }.check(conn, config, site, stash).await,
+      Http => HttpHandler { check: self }.check(conn, config, site, stash).await,
+      Tcp => TcpHandler { check: self }.check(conn, config, site, stash).await,
+      Udp => UdpHandler { check: self }.check(conn, config, site, stash).await,
+      Tls => TlsHandler { check: self }.check(conn, config, site, stash).await,
+      PlayStore => PlayStoreHandler { check: self }.check(conn, config, site, stash).await,
+      AppStore => AppStoreHandler { check: self }.check(conn, config, site, stash).await,
+      Whois => WhoisHandler { check: self }.check(conn, config, site, stash).await,
       DeadManSwitch => {
         let last = DeadManSwitchLog::last(conn, self.id).await.unwrap_or_default();
 
-        DeadManSwitchHandler { check: &self, last }.check(conn, config, site, stash).await
+        DeadManSwitchHandler { check: self, last }.check(conn, config, site, stash).await
       }
       Unsupported => Err(anyhow!("unsupported check kind")),
     }
@@ -334,10 +334,10 @@ impl Check {
   pub async fn alert(&self, conn: &mut MySqlConnection, outage: &str) {
     if !self.silent {
       let inner = async move || -> Result<()> {
-        let outage = Outage::by_uuid(&mut *conn, &outage).await?;
+        let outage = Outage::by_uuid(&mut *conn, outage).await?;
 
         if let Some(alerter) = self.alerter(&mut *conn).await {
-          alerter.webhook().alert(&mut *conn, &self, &outage).await?;
+          alerter.webhook().alert(&mut *conn, self, &outage).await?;
         }
 
         Ok(())

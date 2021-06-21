@@ -35,7 +35,7 @@ async fn main() -> Result<()> {
 
   let config = Config::parse()?;
   let keys = match &*PUBLIC_KEY {
-    Some(key) => Some(Keys::new_public(&key).context("public key should be ECDSA in PEM format")?),
+    Some(key) => Some(Keys::new_public(key).context("public key should be ECDSA in PEM format")?),
     None => None,
   };
 

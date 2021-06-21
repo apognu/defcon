@@ -110,23 +110,15 @@ async fn run_check(config: Arc<Config<'_>>, stash: Stash, mut inhibitor: Inhibit
 
   match result {
     Ok(event) => {
-      if event.status == 0 {
-        kvlog!(Debug, "check passed", {
-          "site" => config.site,
-          "kind" => check.spec.kind(),
-          "check" => check.uuid,
-          "name" => check.name,
-          "message" => event.message
-        });
-      } else {
-        kvlog!(Debug, "check failed", {
-          "site" => config.site,
-          "kind" => check.spec.kind(),
-          "check" => check.spec.kind(),
-          "name" => check.name,
-          "message" => event.message
-        });
-      }
+      let title = if event.status == 0 { "check passed" } else { "check failed" };
+
+      kvlog!(Debug, title, {
+        "site" => config.site,
+        "kind" => check.spec.kind(),
+        "check" => check.uuid,
+        "name" => check.name,
+        "message" => event.message
+      });
 
       let report = api::ReportEvent {
         check: check.uuid.clone(),

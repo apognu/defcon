@@ -24,7 +24,7 @@ fn routes() -> Vec<Route> {
 }
 
 #[get("/checkin/<uuid>")]
-async fn checkin(pool: State<'_, Pool<MySql>>, uuid: String) -> Result<(), Custom<()>> {
+async fn checkin(pool: &State<Pool<MySql>>, uuid: String) -> Result<(), Custom<()>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").map_err(|_| Custom(Status::NotFound, ()))?;
   let check = Check::by_uuid(&mut conn, &uuid).await.map_err(|_| Custom(Status::NotFound, ()))?;
 

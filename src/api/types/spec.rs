@@ -77,16 +77,16 @@ impl Spec {
   pub async fn insert(self, pool: &mut MySqlConnection, check: &DbCheck) -> Result<()> {
     match self {
       #[cfg(feature = "ping")]
-      api::Ping(spec) => db::Ping::insert(pool, &check, spec).await,
-      api::Dns(spec) => db::Dns::insert(pool, &check, spec).await,
-      api::Http(spec) => db::Http::insert(pool, &check, spec).await,
-      api::Tcp(spec) => db::Tcp::insert(pool, &check, spec).await,
-      api::Udp(spec) => db::Udp::insert(pool, &check, spec).await,
-      api::Tls(spec) => db::Tls::insert(pool, &check, spec).await,
-      api::PlayStore(spec) => db::PlayStore::insert(pool, &check, spec).await,
-      api::AppStore(spec) => db::AppStore::insert(pool, &check, spec).await,
-      api::Whois(spec) => db::Whois::insert(pool, &check, spec).await,
-      api::DeadManSwitch(spec) => db::DeadManSwitch::insert(pool, &check, spec).await,
+      api::Ping(spec) => db::Ping::insert(pool, check, spec).await,
+      api::Dns(spec) => db::Dns::insert(pool, check, spec).await,
+      api::Http(spec) => db::Http::insert(pool, check, spec).await,
+      api::Tcp(spec) => db::Tcp::insert(pool, check, spec).await,
+      api::Udp(spec) => db::Udp::insert(pool, check, spec).await,
+      api::Tls(spec) => db::Tls::insert(pool, check, spec).await,
+      api::PlayStore(spec) => db::PlayStore::insert(pool, check, spec).await,
+      api::AppStore(spec) => db::AppStore::insert(pool, check, spec).await,
+      api::Whois(spec) => db::Whois::insert(pool, check, spec).await,
+      api::DeadManSwitch(spec) => db::DeadManSwitch::insert(pool, check, spec).await,
       api::Unsupported => Err(anyhow!("cannot insert check with unsupported spec")),
     }
   }

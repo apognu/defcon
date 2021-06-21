@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use chrono::NaiveDateTime;
-use rocket::{http::RawStr, request::FromFormValue};
+use rocket::form::{error::ErrorKind, FromFormField, Result as FormResult, ValueField};
 
 pub struct DateTime(NaiveDateTime);
 
@@ -13,12 +13,9 @@ impl Deref for DateTime {
   }
 }
 
-impl<'v> FromFormValue<'v> for DateTime {
-  type Error = &'v RawStr;
-
-  fn from_form_value(value: &'v RawStr) -> Result<DateTime, Self::Error> {
-    let decoded = value.url_decode().map_err(|_| value)?;
-    let datetime = NaiveDateTime::parse_from_str(&decoded, "%Y-%m-%dT%H:%M:%S").map_err(|_| value)?;
+impl<'v> FromFormField<'v> for DateTime {
+  fn from_value(field: ValueField<'v>) -> FormResult<'v, DateTime> {
+    let datetime = NaiveDateTime::parse_from_str(field.value, "%Y-%m-%dT%H:%M:%S").map_err(|_| ErrorKind::Unknown)?;
 
     Ok(DateTime(datetime))
   }

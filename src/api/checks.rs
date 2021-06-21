@@ -1,9 +1,9 @@
 use anyhow::Context;
 use rocket::{
   response::status::{Created, NoContent},
+  serde::json::{Error as JsonError, Json},
   State,
 };
-use rocket_contrib::json::{Json, JsonError};
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
 
@@ -19,7 +19,7 @@ use crate::{
 };
 
 #[get("/api/checks?<all>&<group>")]
-pub async fn list(pool: State<'_, Pool<MySql>>, all: Option<bool>, group: Option<String>) -> ApiResponse<Json<Vec<api::Check>>> {
+pub async fn list(pool: &State<Pool<MySql>>, all: Option<bool>, group: Option<String>) -> ApiResponse<Json<Vec<api::Check>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let group = match group {
@@ -39,7 +39,7 @@ pub async fn list(pool: State<'_, Pool<MySql>>, all: Option<bool>, group: Option
 }
 
 #[get("/api/checks/<uuid>")]
-pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Check>> {
+pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Check>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?.map(&*pool).await.short()?;
 
@@ -47,7 +47,7 @@ pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json
 }
 
 #[post("/api/checks", data = "<payload>")]
-pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<Created<String>> {
+pub async fn create(pool: &State<Pool<MySql>>, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<Created<String>> {
   let payload = check_json(payload).short()?.0;
   let uuid = Uuid::new_v4().to_string();
 
@@ -93,11 +93,11 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<api::Chec
 
   txn.commit().await.context("could not commit transaction").short()?;
 
-  Ok(Created::new(uri!(get: check.uuid).to_string()))
+  Ok(Created::new(uri!(get(uuid = check.uuid)).to_string()))
 }
 
 #[put("/api/checks/<uuid>", data = "<payload>")]
-pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?.0;
 
   let sites = match payload.sites {
@@ -149,7 +149,7 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
 }
 
 #[patch("/api/checks/<uuid>", data = "<payload>")]
-pub async fn patch(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<api::CheckPatch>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn patch(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::CheckPatch>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?.0;
 
   let mut txn = pool.begin().await.context("could not start transaction").short()?;
@@ -204,7 +204,7 @@ pub async fn patch(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<J
 }
 
 #[delete("/api/checks/<uuid>")]
-pub async fn delete(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
+pub async fn delete(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   Check::delete(&mut conn, &uuid).await.context("could not delete check").short()?;
 
@@ -215,7 +215,6 @@ pub async fn delete(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<N
 mod tests {
   use anyhow::Result;
   use rocket::http::Status;
-  use rocket_contrib::json;
   use uuid::Uuid;
 
   use crate::{api::types as api, config::CONTROLLER_ID, tests};

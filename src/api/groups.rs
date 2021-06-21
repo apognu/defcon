@@ -1,9 +1,9 @@
 use anyhow::Context;
 use rocket::{
   response::status::{Created, NoContent},
+  serde::json::{Error as JsonError, Json},
   State,
 };
-use rocket_contrib::json::{Json, JsonError};
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
 
@@ -16,7 +16,7 @@ use crate::{
 };
 
 #[get("/api/groups")]
-pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<Group>>> {
+pub async fn list(pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<Group>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let groups = Group::all(&mut conn).await.short()?;
 
@@ -24,7 +24,7 @@ pub async fn list(pool: State<'_, Pool<MySql>>) -> ApiResponse<Json<Vec<Group>>>
 }
 
 #[get("/api/groups/<uuid>")]
-pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json<Group>> {
+pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<Group>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let group = Group::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
 
@@ -32,7 +32,7 @@ pub async fn get(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<Json
 }
 
 #[post("/api/groups", data = "<payload>")]
-pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<Group>, JsonError<'_>>) -> ApiResponse<Created<String>> {
+pub async fn create(pool: &State<Pool<MySql>>, payload: Result<Json<Group>, JsonError<'_>>) -> ApiResponse<Created<String>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let payload = check_json(payload).short()?.0;
   let uuid = Uuid::new_v4().to_string();
@@ -45,11 +45,11 @@ pub async fn create(pool: State<'_, Pool<MySql>>, payload: Result<Json<Group>, J
 
   let group = group.insert(&mut *conn).await.context("could not create group").short()?;
 
-  Ok(Created::new(uri!(get: group.uuid).to_string()))
+  Ok(Created::new(uri!(get(uuid = group.uuid)).to_string()))
 }
 
 #[put("/api/groups/<uuid>", data = "<payload>")]
-pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<Json<Group>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<Group>, JsonError<'_>>) -> ApiResponse<()> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let payload = check_json(payload).short()?.0;
 
@@ -62,7 +62,7 @@ pub async fn update(pool: State<'_, Pool<MySql>>, uuid: String, payload: Result<
 }
 
 #[delete("/api/groups/<uuid>")]
-pub async fn delete(pool: State<'_, Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
+pub async fn delete(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   Group::delete(&mut conn, &uuid).await.context("could not delete group").short()?;
 
