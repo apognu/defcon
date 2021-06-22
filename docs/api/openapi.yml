@@ -7,6 +7,7 @@ info:
 
 tags:
   - name: Checks
+  - name: Groups
   - name: Alerters
   - name: Outages
   - name: Site outages
@@ -148,6 +149,88 @@ paths:
       responses:
         '204':
           description: Check was disabled successfully
+        '404':
+          description: Provided UUID does not match a known check
+
+  /api/groups:
+    get:
+      summary: List Groups
+      description: List all defined groups
+      tags: ['Groups']
+      responses:
+        '200':
+          description: List of groups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/group/ReadGroup'
+
+    post:
+      summary: Create a new group
+      tags: ['Groups']
+      requestBody:
+        description: The definition of a group
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/group/WriteGroup'
+      responses:
+        '201':
+          description: The group was created
+          headers:
+            Location:
+              description: The absolute path to the group, including the unique identifier
+              schema:
+                type: string
+                format: url
+        '400':
+          description: Invalid payload
+
+    put:
+      summary: Update a group
+      description: Update a group by providing a full valid definition.
+      tags: ['Groups']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        description: The definition of a group
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/group/WriteGroup'
+      responses:
+        '200':
+          description: The group was updated
+        '400':
+          description: Invalid payload
+        '404':
+          description: Provided UUID does not match a known check
+
+    delete:
+      summary: Delete a group
+      description: Delete an existing group. All checks assigned to this group will be unassigned.
+      tags: ['Groups']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '204':
+          description: Group was deleted successfully
         '404':
           description: Provided UUID does not match a known check
 
@@ -388,6 +471,8 @@ components:
       $ref: './models/check.yml'
     specs:
       $ref: './models/specs/_index.yml'
+    group:
+      $ref: './models/group.yml'
     alerter:
       $ref: './models/alerter.yml'
     outage:

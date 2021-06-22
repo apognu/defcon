@@ -1,0 +1,32 @@
+ReadGroup:
+  type: object
+  $ref: '#/components/schemas/ReadGroup'
+
+WriteGroup:
+  allOf:
+    - $ref: '#/components/schemas/WriteGroup'
+    - type: object
+      required:
+        - name
+
+components:
+  schemas:
+    ReadGroup:
+      type: object
+      properties:
+        uuid:
+          readOnly: true
+          description: Unique identifier
+          type: string
+          format: uuid
+        name:
+          description: Human-friendly name
+          type: string
+
+    WriteGroup:
+      type: object
+      properties:
+        name:
+          description: Unique identifier
+          type: string
+          format: uuid
