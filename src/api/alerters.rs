@@ -69,7 +69,7 @@ pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Jso
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
-  use rocket::http::Status;
+  use rocket::{http::Status, serde::json::json};
 
   use crate::{
     model::{Alerter, AlerterKind},

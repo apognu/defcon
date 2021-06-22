@@ -214,7 +214,7 @@ pub async fn delete(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<NoCo
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
-  use rocket::http::Status;
+  use rocket::{http::Status, serde::json::json};
   use uuid::Uuid;
 
   use crate::{api::types as api, config::CONTROLLER_ID, tests};
