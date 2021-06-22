@@ -38,7 +38,7 @@ INFO[2021-01-30T00:19:39.576+0000] started handler loop
 
 ## Concepts
 
-Defcon allows you to create **checks** used to describe external services to be monitored`, `how often it should be monitored, and some options for state change thresholds. The actual check that is performed is described in a check's **spec**.
+Defcon allows you to create **checks** used to describe external services to be monitored, how often it should be monitored, and some options for state change thresholds. The actual check that is performed is described in a check's **spec**.
 
 This spec is going to be given to the **handler** that is able to perform the check and determine if it succeeds or fails. This handler will produce an **event** describing the status for the check, at a given time, and potentially include some details about the result.
 
@@ -49,6 +49,10 @@ A check is defined as so (here, for an HTTP request check):
   "name": "ACME corporate website",
   "uuid": "50a5c57f-6971-446a-b9a2-42cb7c7b5427",
   "alerter": "df2dcc77-00c1-4dc1-a8a3-6ba0bc64d486",
+  "group": {
+    "uuid": "626dda88-42f3-4b9c-ab04-8eb3824cfb42",
+    "name": "ACME Inc. - Web properties"
+  },
   "enabled": true,
   "sites": ["eu-1", "eu-2"],
   "interval": "1m",
