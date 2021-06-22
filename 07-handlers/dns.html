@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>UDP datagram - Defcon - User manual</title>
+        <title>DNS - Defcon - User manual</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="../03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="../05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="../06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../06-handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="../06-handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="../06-handlers/udp.html" class="active"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="../06-handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="../06-handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="../06-handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="../06-handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="../06-handlers/appstores.html"><strong aria-hidden="true">6.8.</strong> App stores</a></li><li class="chapter-item expanded "><a href="../06-handlers/deadmanswitch.html"><strong aria-hidden="true">6.9.</strong> Dead Man Switch</a></li></ol></li><li class="chapter-item expanded "><a href="../07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li><li class="chapter-item expanded "><a href="../api.html"><strong aria-hidden="true">8.</strong> REST API</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="../03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="../05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="../06-groups.html"><strong aria-hidden="true">6.</strong> Groups</a></li><li class="chapter-item expanded "><a href="../07-handlers.html"><strong aria-hidden="true">7.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../07-handlers/ping.html"><strong aria-hidden="true">7.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="../07-handlers/tcp.html"><strong aria-hidden="true">7.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="../07-handlers/udp.html"><strong aria-hidden="true">7.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="../07-handlers/http.html"><strong aria-hidden="true">7.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="../07-handlers/dns.html" class="active"><strong aria-hidden="true">7.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="../07-handlers/whois.html"><strong aria-hidden="true">7.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="../07-handlers/tls.html"><strong aria-hidden="true">7.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="../07-handlers/appstores.html"><strong aria-hidden="true">7.8.</strong> App stores</a></li><li class="chapter-item expanded "><a href="../07-handlers/deadmanswitch.html"><strong aria-hidden="true">7.9.</strong> Dead Man Switch</a></li></ol></li><li class="chapter-item expanded "><a href="../08-alerters.html"><strong aria-hidden="true">8.</strong> Alerters</a></li><li class="chapter-item expanded "><a href="../api.html"><strong aria-hidden="true">9.</strong> REST API</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -163,30 +163,20 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#udp-datagram" id="udp-datagram">UDP datagram</a></h1>
-<p>The UDP handler will attempt to send a datagram to a host and port, and expect to receive a specific response in return.</p>
-<h2><a class="header" href="#attributes" id="attributes">Attributes</a></h2>
-<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>kind</code></td><td>string</td><td><code>&quot;udp&quot;</code></td><td>-</td></tr>
-<tr><td><code>host</code></td><td>string</td><td><code>&quot;1.2.3.4&quot;</code></td><td>Target host where to send the datagram</td></tr>
-<tr><td><code>port</code></td><td>int</td><td><code>10000</code></td><td>Port to use as destination</td></tr>
-<tr><td><code>message</code></td><td>string</td><td><code>&quot;aGVsbG8=&quot;</code></td><td>Base 64-encoded message to send on the socket</td></tr>
-<tr><td><code>timeout</code></td><td>string</td><td><code>&quot;5s&quot;</code></td><td>Timeout before giving up on the response</td></tr>
-<tr><td><code>content</code></td><td>string</td><td><code>&quot;Z29vZGJ5ZQ==&quot;</code></td><td>Base64-encoded value to expect in the response. This must be a submatch of the actual response</td></tr>
-</tbody></table>
+                        <h1><a class="header" href="#dns" id="dns">DNS</a></h1>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../06-handlers/tcp.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../07-handlers/http.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../06-handlers/http.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../07-handlers/whois.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -198,13 +188,13 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../06-handlers/tcp.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../07-handlers/http.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../06-handlers/http.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../07-handlers/whois.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

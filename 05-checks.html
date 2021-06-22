@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="05-checks.html" class="active"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="06-handlers.html"><strong aria-hidden="true">6.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="06-handlers/ping.html"><strong aria-hidden="true">6.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="06-handlers/tcp.html"><strong aria-hidden="true">6.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="06-handlers/udp.html"><strong aria-hidden="true">6.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="06-handlers/http.html"><strong aria-hidden="true">6.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="06-handlers/dns.html"><strong aria-hidden="true">6.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="06-handlers/whois.html"><strong aria-hidden="true">6.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="06-handlers/tls.html"><strong aria-hidden="true">6.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="06-handlers/appstores.html"><strong aria-hidden="true">6.8.</strong> App stores</a></li><li class="chapter-item expanded "><a href="06-handlers/deadmanswitch.html"><strong aria-hidden="true">6.9.</strong> Dead Man Switch</a></li></ol></li><li class="chapter-item expanded "><a href="07-alerters.html"><strong aria-hidden="true">7.</strong> Alerters</a></li><li class="chapter-item expanded "><a href="api.html"><strong aria-hidden="true">8.</strong> REST API</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="05-checks.html" class="active"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="06-groups.html"><strong aria-hidden="true">6.</strong> Groups</a></li><li class="chapter-item expanded "><a href="07-handlers.html"><strong aria-hidden="true">7.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="07-handlers/ping.html"><strong aria-hidden="true">7.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="07-handlers/tcp.html"><strong aria-hidden="true">7.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="07-handlers/udp.html"><strong aria-hidden="true">7.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="07-handlers/http.html"><strong aria-hidden="true">7.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="07-handlers/dns.html"><strong aria-hidden="true">7.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="07-handlers/whois.html"><strong aria-hidden="true">7.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="07-handlers/tls.html"><strong aria-hidden="true">7.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="07-handlers/appstores.html"><strong aria-hidden="true">7.8.</strong> App stores</a></li><li class="chapter-item expanded "><a href="07-handlers/deadmanswitch.html"><strong aria-hidden="true">7.9.</strong> Dead Man Switch</a></li></ol></li><li class="chapter-item expanded "><a href="08-alerters.html"><strong aria-hidden="true">8.</strong> Alerters</a></li><li class="chapter-item expanded "><a href="api.html"><strong aria-hidden="true">9.</strong> REST API</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -171,6 +171,7 @@
 <tr><td><code>alerter</code></td><td>UUID</td><td><code>&quot;19b9eb20-3e3e-46d5-801f-a912e159913c&quot;</code></td><td>Alerter to be triggered when an outage is created</td></tr>
 <tr><td><code>enabled</code></td><td>bool</td><td><code>true</code></td><td>When disabled, a check will not run</td></tr>
 <tr><td><code>silent</code></td><td>bool</td><td><code>false</code></td><td>When silent, a check will not trigger its alerter</td></tr>
+<tr><td><code>group</code></td><td>object</td><td><code>{ &quot;uuid&quot;: &quot;9b77035c-218e-4d32-bcd7-4a015f7ee147&quot; }</code></td><td>Put the check into a pre-existing group</td></tr>
 </tbody></table>
 <h2><a class="header" href="#run-and-error-condition" id="run-and-error-condition">Run and error condition</a></h2>
 <table><thead><tr><th>Attribute</th><th>Type</th><th>Example value</th><th>Description</th></tr></thead><tbody>
@@ -197,7 +198,7 @@
                         
 
                         
-                            <a rel="next" href="06-handlers.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="06-groups.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -215,7 +216,7 @@
                 
 
                 
-                    <a rel="next" href="06-handlers.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="06-groups.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
