@@ -29,7 +29,7 @@ impl<'h> Handler for PingHandler<'h> {
 
   async fn run(&self, spec: &Ping, site: &str, _stash: Stash) -> Result<Event> {
     #[cfg(target_os = "linux")]
-    if !caps::has_caps(None, Capability::CAP_NET_RAW, CapSet::Effective)? {
+    if !caps::has_cap(None, CapSet::Effective, Capability::CAP_NET_RAW)? {
       return Err(anyhow!("ping: missing CAP_NET_RAW capabilities"));
     }
 
