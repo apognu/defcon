@@ -32,7 +32,7 @@ impl Display for AlerterKind {
       AlerterKind::Noop => "noop",
     };
 
-    write!(formatter, "{}", name.to_string())
+    write!(formatter, "{}", name)
   }
 }
 

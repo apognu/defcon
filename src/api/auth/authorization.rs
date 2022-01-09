@@ -83,7 +83,7 @@ impl<'r> FromRequest<'r> for RunnerCredentials {
 
   async fn from_request(request: &'r Request<'_>) -> request::Outcome<RunnerCredentials, Error> {
     let headers: Vec<_> = request.headers().get("authorization").collect();
-    let token = headers.get(0).map(|value| value.strip_prefix("Bearer ")).flatten();
+    let token = headers.get(0).and_then(|value| value.strip_prefix("Bearer "));
     let rgx = Regex::new(r"^[a-z0-9-]+$").unwrap();
 
     if let Outcome::Success(guard) = request.guard::<&State<Keys>>().await {

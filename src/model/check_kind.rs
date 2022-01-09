@@ -52,7 +52,7 @@ impl Display for CheckKind {
       Unsupported => "unsupported",
     };
 
-    write!(formatter, "{}", name.to_string())
+    write!(formatter, "{}", name)
   }
 }
 

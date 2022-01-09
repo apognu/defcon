@@ -8,14 +8,8 @@ use sqlx::{
   Decode, Encode, MySql,
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 pub struct HttpHeaders(pub HashMap<String, String>);
-
-impl Default for HttpHeaders {
-  fn default() -> HttpHeaders {
-    HttpHeaders(HashMap::default())
-  }
-}
 
 impl Deref for HttpHeaders {
   type Target = HashMap<String, String>;
