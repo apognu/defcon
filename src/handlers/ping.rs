@@ -2,7 +2,7 @@ use std::{net::ToSocketAddrs, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use capabilities::{Capabilities, Capability, Flag};
+use caps::{Capability, CapSet};
 use sqlx::MySqlConnection;
 use surge_ping::Pinger;
 
@@ -29,10 +29,8 @@ impl<'h> Handler for PingHandler<'h> {
 
   async fn run(&self, spec: &Ping, site: &str, _stash: Stash) -> Result<Event> {
     #[cfg(target_os = "linux")]
-    if let Ok(caps) = Capabilities::from_current_proc() {
-      if !caps.check(Capability::CAP_NET_RAW, Flag::Effective) {
-        return Err(anyhow!("ping: missing CAP_NET_RAW capabilities"));
-      }
+    if !caps::has_caps(None, Capability::CAP_NET_RAW, CapSet::Effective)? {
+      return Err(anyhow!("ping: missing CAP_NET_RAW capabilities"));
     }
 
     let host = format!("{}:{}", spec.host, 0)
