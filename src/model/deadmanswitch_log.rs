@@ -18,7 +18,7 @@ impl DeadManSwitchLog {
         SELECT id, check_id, created_at
         FROM deadmanswitch_logs
         WHERE check_id = ?
-        ORDER BY created_at DESC
+        ORDER BY created_at DESC, id DESC
         LIMIT 1
       ",
     )
@@ -64,10 +64,10 @@ mod tests {
     DeadManSwitchLog::insert(&mut conn, 1).await?;
     DeadManSwitchLog::insert(&mut conn, 1).await?;
 
-    let check = DeadManSwitchLog::last(&mut conn, 1).await?;
+    let log = DeadManSwitchLog::last(&mut conn, 1).await?;
 
-    assert!(matches!(check, Some(_)));
-    assert_eq!(check.unwrap().id, 1);
+    assert!(matches!(log, Some(_)));
+    assert_eq!(log.unwrap().id, 2);
 
     pool.cleanup().await;
 
