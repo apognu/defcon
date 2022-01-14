@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use async_trait::async_trait;
 use caps::{Capability, CapSet};
 use sqlx::MySqlConnection;
-use surge_ping::Pinger;
+use surge_ping::{Client as PingClient, Config as PingConfig};
 
 use crate::{
   config::Config,
@@ -39,7 +39,8 @@ impl<'h> Handler for PingHandler<'h> {
       .next()
       .ok_or_else(|| anyhow!("could not parse host"))?;
 
-    let mut pinger = Pinger::new(host.ip())?;
+    let client = PingClient::new(&PingConfig::default())?;
+    let mut pinger = client.pinger(host.ip()).await;
     pinger.timeout(Duration::from_secs(5));
 
     let (status, message) = match pinger.ping(0).await {
