@@ -9,14 +9,14 @@ mod embedded {
   embed_migrations!("src/model/migrations");
 }
 
-pub fn migrate(dsn: &str) -> Result<(bool, Report)> {
-  let apply = env::args().nth(1).as_deref() == Some("migrate");
+pub fn migrate(dsn: &str, force: bool) -> Result<(bool, Report)> {
+  let apply = force || env::args().nth(1).as_deref() == Some("migrate");
   let mut config = refinery::config::Config::from_str(dsn).context("database configuration not found in DSL environment variable")?;
 
   let pending = embedded::migrations::runner()
-    .get_applied_migrations(&mut config)?
-    .iter()
-    .any(|migration| migration.applied_on().is_none());
+    .get_applied_migrations(&mut config)
+    .map(|migrations| migrations.iter().any(|migration| migration.applied_on().is_none()))
+    .unwrap_or(true);
 
   if pending && !apply {
     return Err(anyhow!("unapplied migrations pending, aborting"));

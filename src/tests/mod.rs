@@ -30,7 +30,7 @@ pub async fn api_client() -> Result<(TestConnection, Client)> {
   dsn.set_path(&format!("/{}", database));
   let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
 
-  migrations::migrate(&dsn.to_string())?;
+  migrations::migrate(&dsn.to_string(), true)?;
 
   let keys = Keys::new_public(
     "-----BEGIN PUBLIC KEY-----MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMUdYFmfbi57NV7pTIht38+w8yPly7rmrD1MPXenlCOu8Mu5623/ztsGeTV9uatuMQeMS+a7NEFzPGjMIKiR3AA==-----END PUBLIC KEY-----".as_bytes(),
@@ -51,7 +51,7 @@ pub async fn db_client() -> Result<TestConnection> {
   dsn.set_path(&format!("/{}", database));
   let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
 
-  migrations::migrate(&dsn.to_string())?;
+  migrations::migrate(&dsn.to_string(), true)?;
 
   Ok(TestConnection(pool, database))
 }

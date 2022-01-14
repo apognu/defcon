@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
   let dsn = env::var("DSN")?;
   let pool = MySqlPoolOptions::new().max_connections(20).connect(&dsn).await?;
 
-  if let (true, _) = migrations::migrate(&dsn)? {
+  if let (true, _) = migrations::migrate(&dsn, false)? {
     return Ok(());
   }
 
