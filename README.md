@@ -18,7 +18,12 @@ Defcon requires the following infrastructure to be run:
 
 Provided binaries in the [Releases](https://github.com/apognu/defcon/releases) section are compiled with all optional features.
 
-Until clearly stated, the database schema is subject to breaking changes, and migrations will not be used.
+Until clearly stated, the database schema is subject to breaking changes. Defcon will refuse to start if there are pending migration. To apply them, run it with the `migrate` option:
+
+```shell
+$ DSN=mysql://defcon:password@mysql.host/defcon?ssl-mode=DISABLED
+  defcon migrate
+```
 
 ### Configuration
 

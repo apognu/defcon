@@ -42,7 +42,9 @@ async fn main() -> Result<()> {
   let dsn = env::var("DSN")?;
   let pool = MySqlPoolOptions::new().max_connections(20).connect(&dsn).await?;
 
-  migrations::migrate(&dsn)?;
+  if let (true, _) = migrations::migrate(&dsn)? {
+    return Ok(());
+  }
 
   if !config.handler && !config.cleaner && !config.api {
     return Err(anyhow!("all processes disabled, aborting"));
