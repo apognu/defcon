@@ -403,6 +403,8 @@ mod tests {
 
     assert_eq!(outage, (2, 2));
 
+    pool.cleanup().await;
+
     Ok(())
   }
 

@@ -107,7 +107,7 @@ mod tests {
     super::handle_event(&mut *conn, &event, &check, None).await?;
     assert_eq!(SiteOutage::count(&mut *conn, &check).await?, 1);
 
-    assert!(matches!(Outage::for_check(&mut *conn, &check).await, Err(_)));
+    assert!(matches!(Outage::for_check_current(&mut *conn, &check).await, Err(_)));
 
     event.site = "eu-1".to_string();
 
@@ -116,7 +116,7 @@ mod tests {
     super::handle_event(&mut *conn, &event, &check, None).await?;
     assert_eq!(SiteOutage::current(&mut *conn).await?.len(), 2);
 
-    assert!(matches!(Outage::for_check(&mut *conn, &check).await, Ok(_)));
+    assert!(matches!(Outage::for_check_current(&mut *conn, &check).await, Ok(_)));
 
     pool.cleanup().await;
 
@@ -147,7 +147,7 @@ mod tests {
     super::handle_event(&mut *conn, &event, &check, None).await?;
     super::handle_event(&mut *conn, &event, &check, None).await?;
 
-    assert!(matches!(Outage::for_check(&mut *conn, &check).await, Err(_)));
+    assert!(matches!(Outage::for_check_current(&mut *conn, &check).await, Err(_)));
 
     pool.cleanup().await;
 

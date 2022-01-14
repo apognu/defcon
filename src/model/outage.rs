@@ -83,7 +83,7 @@ impl Outage {
     Ok(outage)
   }
 
-  pub async fn ongoing_for_check(conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
+  pub async fn for_check_current(conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
     let outage = sqlx::query_as::<_, Outage>(
       "
         SELECT id, check_id, uuid, started_on, ended_on, comment
@@ -136,7 +136,7 @@ impl Outage {
   }
 
   pub async fn confirm(conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
-    match Outage::ongoing_for_check(conn, check).await {
+    match Outage::for_check_current(conn, check).await {
       Err(_) => {
         let uuid = Uuid::new_v4().to_string();
 
@@ -169,7 +169,7 @@ impl Outage {
   }
 
   pub async fn resolve(conn: &mut MySqlConnection, check: &Check) -> Result<()> {
-    if let Ok(outage) = Outage::ongoing_for_check(conn, check).await {
+    if let Ok(outage) = Outage::for_check_current(conn, check).await {
       kvlog!(Info, "outage resolved", {
         "check" => check.uuid,
         "outage" => outage.uuid,

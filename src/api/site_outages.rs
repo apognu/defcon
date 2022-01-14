@@ -65,6 +65,8 @@ mod tests {
     assert_eq!(outages.len(), 1);
     assert_eq!(&outages[0].uuid, "dd9a531a-1b0b-4a12-bc09-e5637f916261");
 
+    pool.cleanup().await;
+
     Ok(())
   }
 
