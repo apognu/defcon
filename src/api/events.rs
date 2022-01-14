@@ -3,14 +3,35 @@ use rocket::{serde::json::Json, State};
 use sqlx::{MySql, Pool};
 
 use crate::{
-  api::{error::Shortable, ApiResponse},
+  api::{error::Shortable, types as api, ApiResponse},
   model as db,
 };
 
+#[get("/api/checks/<uuid>/events", rank = 10)]
+pub async fn list_for_check(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<Vec<db::Event>>> {
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
+
+  let events = db::Event::for_check(&mut conn, &check).await.context("could not retrieve events").short()?;
+
+  Ok(Json(events))
+}
+
+#[get("/api/checks/<uuid>/events?<from>&<to>", rank = 5)]
+pub async fn list_for_check_between(pool: &State<Pool<MySql>>, uuid: String, from: api::DateTime, to: api::DateTime) -> ApiResponse<Json<Vec<db::Event>>> {
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
+
+  let events = db::Event::for_check_between(&mut conn, &check, *from, *to).await.context("could not retrieve events").short()?;
+
+  Ok(Json(events))
+}
+
 #[get("/api/sites/outages/<uuid>/events")]
-pub async fn list(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<Vec<db::Event>>> {
+pub async fn list_for_outage(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::SiteOutage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
+
   let events = db::Event::for_outage(&mut conn, &outage).await.context("could not retrieve events").short()?;
 
   Ok(Json(events))

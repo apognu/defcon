@@ -152,6 +152,68 @@ paths:
         '404':
           description: Provided UUID does not match a known check
 
+  /api/checks/{uuid}/outages:
+    get:
+      summary: Get a check outages
+      tags: ['Checks']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          description: Display outages from this date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          description: Display outages until this date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of outages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/outage/Outage'
+
+  /api/checks/{uuid}/events:
+    get:
+      summary: Get a check outage events
+      tags: ['Checks']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          description: Display events from this date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          description: Display events until this date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of handler events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/site_outage/Event'
+
   /api/groups:
     get:
       summary: List Groups
@@ -354,7 +416,7 @@ paths:
           schema:
             type: string
             format: date-time
-        - name: all
+        - name: to
           description: Display resolved outages until this date
           in: query
           schema:
@@ -411,7 +473,7 @@ paths:
           schema:
             type: string
             format: date-time
-        - name: all
+        - name: to
           description: Display resolved outages until this date
           in: query
           schema:

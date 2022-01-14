@@ -2,7 +2,10 @@ use anyhow::Result;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use sqlx::{FromRow, MySqlConnection};
 
-use crate::{api::error::Shortable, model::SiteOutage};
+use crate::{
+  api::error::Shortable,
+  model::{Check, SiteOutage},
+};
 
 pub mod status {
   pub const OK: u8 = 0;
@@ -25,6 +28,40 @@ pub struct Event {
 }
 
 impl Event {
+  pub async fn for_check(conn: &mut MySqlConnection, check: &Check) -> Result<Vec<Event>> {
+    let events = sqlx::query_as::<_, Event>(
+      "
+        SELECT id, check_id, outage_id, site, status, message, created_at
+        FROM events
+        WHERE check_id = ?
+      ",
+    )
+    .bind(check.id)
+    .fetch_all(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(events)
+  }
+
+  pub async fn for_check_between(conn: &mut MySqlConnection, check: &Check, from: NaiveDateTime, to: NaiveDateTime) -> Result<Vec<Event>> {
+    let events = sqlx::query_as::<_, Event>(
+      "
+        SELECT id, check_id, outage_id, site, status, message, created_at
+        FROM events
+        WHERE check_id = ? AND created_at BETWEEN ? AND ?
+      ",
+    )
+    .bind(check.id)
+    .bind(from)
+    .bind(to)
+    .fetch_all(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(events)
+  }
+
   pub async fn for_outage(conn: &mut MySqlConnection, outage: &SiteOutage) -> Result<Vec<Event>> {
     let events = sqlx::query_as::<_, Event>(
       "

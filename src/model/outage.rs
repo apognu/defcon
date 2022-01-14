@@ -83,7 +83,7 @@ impl Outage {
     Ok(outage)
   }
 
-  pub async fn for_check(conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
+  pub async fn ongoing_for_check(conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
     let outage = sqlx::query_as::<_, Outage>(
       "
         SELECT id, check_id, uuid, started_on, ended_on, comment
@@ -99,8 +99,44 @@ impl Outage {
     Ok(outage)
   }
 
+  pub async fn for_check(conn: &mut MySqlConnection, check: &Check) -> Result<Vec<Outage>> {
+    let outages = sqlx::query_as::<_, Outage>(
+      "
+        SELECT id, check_id, uuid, started_on, ended_on, comment
+        FROM outages
+        WHERE check_id = ?
+      ",
+    )
+    .bind(check.id)
+    .fetch_all(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(outages)
+  }
+
+  pub async fn for_check_between(conn: &mut MySqlConnection, check: &Check, from: NaiveDateTime, to: NaiveDateTime) -> Result<Vec<Outage>> {
+    let outages = sqlx::query_as::<_, Outage>(
+      "
+        SELECT id, check_id, uuid, started_on, ended_on, comment
+        FROM outages
+        WHERE check_id = ? AND
+        (outages.started_on BETWEEN ? AND ? AND (outages.ended_on IS NULL OR outages.ended_on <= ?))
+      ",
+    )
+    .bind(check.id)
+    .bind(from)
+    .bind(to)
+    .bind(to)
+    .fetch_all(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(outages)
+  }
+
   pub async fn confirm(conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
-    match Outage::for_check(conn, check).await {
+    match Outage::ongoing_for_check(conn, check).await {
       Err(_) => {
         let uuid = Uuid::new_v4().to_string();
 
@@ -133,7 +169,7 @@ impl Outage {
   }
 
   pub async fn resolve(conn: &mut MySqlConnection, check: &Check) -> Result<()> {
-    if let Ok(outage) = Outage::for_check(conn, check).await {
+    if let Ok(outage) = Outage::ongoing_for_check(conn, check).await {
       kvlog!(Info, "outage resolved", {
         "check" => check.uuid,
         "outage" => outage.uuid,

@@ -22,9 +22,7 @@ Until clearly stated, the database schema is subject to breaking changes, and mi
 
 ### Configuration
 
-Some of Defcon's default behavior can be customized through environment variables. You can find all supported configuration variables in the table below:
-
-Configuration options for the controller can be found in the [user manual](https://apognu.github.io/defcon/03-configuration.html).
+Some of Defcon's default behavior can be customized through environment variables. Configuration options for the controller can be found in the [user manual](https://apognu.github.io/defcon/03-configuration.html).
 
 ### Let's go!
 
