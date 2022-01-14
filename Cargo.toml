@@ -2,7 +2,7 @@
 name = "defcon"
 version = "0.1.0"
 authors = ["Antoine POPINEAU <antoine@popineau.eu>"]
-edition = "2018"
+edition = "2021"
 
 default-run = "defcon"
 
@@ -44,7 +44,7 @@ sha2 = "^0.10"
 slack-hook = "^0.8"
 sqlx = { version = "^0.5", default_features = false, features = ["macros", "mysql", "runtime-tokio-rustls", "chrono", "all-types"] }
 ssl-expiration2 = "^0.4"
-surge-ping = { version = "^0.3", optional = true }
+surge-ping = { version = "^0.4", optional = true }
 thiserror = "^1.0"
 tokio = { version = "^1.2", default_features = false, features = ["time", "net"] }
 trust-dns-client = { version = "^0.20", default_features = false }
