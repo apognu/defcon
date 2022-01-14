@@ -50,6 +50,23 @@ impl Outage {
     Ok(outages)
   }
 
+  pub async fn count(conn: &mut MySqlConnection) -> Result<i64> {
+    let outages = sqlx::query_as::<_, (i64,)>(
+      "
+        SELECT COUNT(outages.id)
+        FROM outages
+        INNER JOIN checks
+        ON checks.id = outages.check_id
+        WHERE outages.ended_on IS NULL AND checks.enabled = 1
+      ",
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(outages.0)
+  }
+
   pub async fn current(conn: &mut MySqlConnection) -> Result<Vec<Outage>> {
     let outages = sqlx::query_as::<_, Outage>(
       "

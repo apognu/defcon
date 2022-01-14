@@ -8,6 +8,7 @@ pub mod middlewares;
 mod outages;
 mod runner;
 mod site_outages;
+mod status;
 pub mod types;
 
 use rocket::{
@@ -58,6 +59,7 @@ pub fn routes() -> Vec<Route> {
     alerters::get,
     alerters::add,
     alerters::update,
+    status::status,
   ]
 }
 

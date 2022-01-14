@@ -239,7 +239,7 @@ impl SiteOutage {
     Ok(result.rows_affected())
   }
 
-  pub async fn count(conn: &mut MySqlConnection, check: &Check) -> Result<i64> {
+  pub async fn count(conn: &mut MySqlConnection) -> Result<i64> {
     let count = sqlx::query_as::<_, (i64,)>(
       "
         SELECT COUNT(site_outages.id)
@@ -247,7 +247,27 @@ impl SiteOutage {
         INNER JOIN checks
         ON checks.id = site_outages.check_id
         WHERE
-          checks.id = ? AND
+          checks.enabled = 1 AND
+          site_outages.failing_strikes >= checks.failing_threshold AND
+          site_outages.passing_strikes < checks.passing_threshold
+      ",
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(count.0)
+  }
+
+  pub async fn count_for_check(conn: &mut MySqlConnection, check: &Check) -> Result<i64> {
+    let count = sqlx::query_as::<_, (i64,)>(
+      "
+        SELECT COUNT(site_outages.id)
+        FROM site_outages
+        INNER JOIN checks
+        ON checks.id = site_outages.check_id
+        WHERE
+          checks.id = ? AND checks.enabled = 1 AND
           site_outages.failing_strikes >= checks.failing_threshold AND
           site_outages.passing_strikes < checks.passing_threshold
       ",

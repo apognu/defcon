@@ -60,13 +60,13 @@ pub async fn handle_event(conn: &mut MySqlConnection, event: &Event, check: &Che
   if let Some(outage) = outage {
     match outage.ended_on {
       None => {
-        if SiteOutage::count(conn, check).await? >= check.site_threshold as i64 {
+        if SiteOutage::count_for_check(conn, check).await? >= check.site_threshold as i64 {
           Outage::confirm(conn, check).await?;
         }
       }
 
       Some(_) => {
-        if SiteOutage::count(conn, check).await? < check.site_threshold as i64 {
+        if SiteOutage::count_for_check(conn, check).await? < check.site_threshold as i64 {
           Outage::resolve(conn, check).await?;
         }
       }
@@ -103,9 +103,9 @@ mod tests {
     };
 
     super::handle_event(&mut *conn, &event, &check, None).await?;
-    assert_eq!(SiteOutage::count(&mut *conn, &check).await?, 0);
+    assert_eq!(SiteOutage::count_for_check(&mut *conn, &check).await?, 0);
     super::handle_event(&mut *conn, &event, &check, None).await?;
-    assert_eq!(SiteOutage::count(&mut *conn, &check).await?, 1);
+    assert_eq!(SiteOutage::count_for_check(&mut *conn, &check).await?, 1);
 
     assert!(matches!(Outage::for_check_current(&mut *conn, &check).await, Err(_)));
 

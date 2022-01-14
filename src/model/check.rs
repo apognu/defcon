@@ -41,6 +41,20 @@ const fn default_site_threshold() -> u8 {
 }
 
 impl Check {
+  pub async fn count(conn: &mut MySqlConnection) -> Result<i64> {
+    let check = sqlx::query_as::<_, (i64,)>(
+      "
+        SELECT COUNT(id)
+        FROM checks
+      ",
+    )
+    .fetch_one(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(check.0)
+  }
+
   pub async fn list(conn: &mut MySqlConnection, all: bool, group: Option<Group>) -> Result<Vec<Check>> {
     let conditions = match (all, &group) {
       (true, None) => "",

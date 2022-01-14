@@ -527,6 +527,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/site_outage/Event'
 
+  /api/status:
+    get:
+      summary: Get the global status for the system
+      tags: ['Statistics']
+      responses:
+        '200':
+          description: System global status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/status/Status'
+
 components:
   schemas:
     check:
@@ -541,3 +553,5 @@ components:
       $ref: './models/outage.yml'
     site_outage:
       $ref: './models/site_outage.yml'
+    status:
+      $ref: './models/status.yml'

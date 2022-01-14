@@ -1,0 +1,24 @@
+Status:
+  type: object
+  properties:
+    ok:
+      description: Global status for the system
+      type: boolean
+    checks:
+      description: Number of enabled checks across the system
+      type: integer
+    outages:
+      description: Outage status across the system
+      $ref: '#/components/schemas/StatusOutages'
+
+components:
+  schemas:
+    StatusOutages:
+      type: object
+      properties:
+        site:
+          description: Number of site-local outages currently active
+          type: integer
+        global:
+          description: Number of global outages currently active
+          type: integer
