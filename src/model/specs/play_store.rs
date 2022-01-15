@@ -13,7 +13,7 @@ impl SpecMeta for PlayStore {
   }
 }
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, FromRow, Clone, Serialize, Deserialize)]
 pub struct PlayStore {
   #[serde(skip)]
   pub id: u64,

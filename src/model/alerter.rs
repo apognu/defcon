@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{alerters::*, api::error::Shortable, model::AlerterKind};
 
-#[derive(Debug, Default, FromRow, Serialize, Deserialize)]
+#[derive(Debug, Default, FromRow, Clone, Serialize, Deserialize)]
 pub struct Alerter {
   #[serde(skip)]
   pub id: u64,

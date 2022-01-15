@@ -9,7 +9,7 @@ use crate::{
   },
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "kind")]
 pub enum Spec {
   #[cfg(feature = "ping")]

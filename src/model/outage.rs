@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{api::error::Shortable, model::Check};
 
-#[derive(Debug, FromRow, Default, Serialize)]
+#[derive(Debug, FromRow, Default, Clone, Serialize)]
 pub struct Outage {
   #[serde(skip)]
   pub id: u64,

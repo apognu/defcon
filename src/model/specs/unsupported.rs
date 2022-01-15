@@ -1,6 +1,6 @@
 use crate::model::specs::SpecMeta;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Unsupported;
 
 impl SpecMeta for Unsupported {

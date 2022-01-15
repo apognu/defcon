@@ -7,7 +7,7 @@ use crate::{
   model as db,
 };
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Outage {
   #[serde(flatten)]
   pub outage: db::Outage,

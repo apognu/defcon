@@ -11,7 +11,7 @@ use sqlx::{
   Decode, Encode, MySql,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Binary(Vec<u8>);
 
 impl Display for Binary {

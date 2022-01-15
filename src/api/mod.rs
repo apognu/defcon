@@ -60,6 +60,7 @@ pub fn routes() -> Vec<Route> {
     alerters::add,
     alerters::update,
     status::status,
+    status::statistics,
   ]
 }
 

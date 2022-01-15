@@ -15,7 +15,7 @@ enum OutageRef {
   Existing(SiteOutage),
 }
 
-#[derive(Debug, Default, FromRow, Serialize, Deserialize)]
+#[derive(Debug, Default, FromRow, Clone, Serialize, Deserialize)]
 pub struct SiteOutage {
   #[serde(skip)]
   pub id: u64,

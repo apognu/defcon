@@ -3,7 +3,7 @@ use sqlx::{FromRow, MySqlConnection};
 
 use crate::model::{specs::SpecMeta, Binary, Check, Duration};
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, FromRow, Clone, Serialize, Deserialize)]
 pub struct Udp {
   #[serde(skip)]
   pub id: u64,

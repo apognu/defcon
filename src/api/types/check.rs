@@ -8,7 +8,7 @@ use crate::{
   model as db,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RunnerCheck {
   pub id: u64,
   pub uuid: String,
@@ -29,7 +29,7 @@ impl From<Check> for RunnerCheck {
   }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Check {
   #[serde(flatten)]
   pub check: db::Check,
@@ -44,7 +44,7 @@ pub struct Check {
   pub sites: Option<api::Sites>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CheckGroup {
   pub uuid: String,
   #[serde(skip_deserializing)]

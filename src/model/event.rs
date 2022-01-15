@@ -13,7 +13,7 @@ pub mod status {
   pub const WARNING: u8 = 2;
 }
 
-#[derive(Debug, Default, FromRow, Serialize, Deserialize)]
+#[derive(Debug, Default, FromRow, Clone, Serialize, Deserialize)]
 pub struct Event {
   #[serde(skip)]
   pub id: u64,

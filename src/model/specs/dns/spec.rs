@@ -5,7 +5,7 @@ use crate::model::{specs::SpecMeta, Check};
 
 pub use super::record::*;
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, FromRow, Clone, Serialize, Deserialize)]
 pub struct Dns {
   #[serde(skip)]
   pub id: u64,

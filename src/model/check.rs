@@ -12,7 +12,7 @@ use crate::{
   stash::Stash,
 };
 
-#[derive(Debug, Default, FromRow, Serialize, Deserialize)]
+#[derive(Debug, Default, FromRow, Clone, Serialize, Deserialize)]
 pub struct Check {
   #[serde(skip)]
   pub id: u64,

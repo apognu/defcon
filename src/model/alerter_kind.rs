@@ -11,7 +11,7 @@ use sqlx::{
   Decode, Encode, MySql,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum AlerterKind {
   Webhook,
   Slack,

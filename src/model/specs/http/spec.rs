@@ -8,7 +8,7 @@ use crate::model::{
   Check, Duration,
 };
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, FromRow, Clone, Serialize, Deserialize)]
 pub struct Http {
   #[serde(skip)]
   pub id: u64,

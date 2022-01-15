@@ -3,7 +3,7 @@ use sqlx::{FromRow, MySqlConnection};
 
 use crate::api::error::Shortable;
 
-#[derive(Debug, FromRow, Default, Serialize, Deserialize)]
+#[derive(Debug, FromRow, Default, Clone, Serialize, Deserialize)]
 pub struct Group {
   #[serde(skip)]
   pub id: u64,

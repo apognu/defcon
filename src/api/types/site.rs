@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use crate::model as db;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Sites(pub Vec<String>);
 
 impl Deref for Sites {

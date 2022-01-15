@@ -539,6 +539,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/status/Status'
 
+  /api/statistics:
+    get:
+      summary: Get outage history by day
+      tags: ['Statistics']
+      parameters:
+        - name: from
+          description: Display resolved outages from this date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          description: Display resolved outages until this date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of outages by day
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/outage/Outage'
+
 components:
   schemas:
     check:

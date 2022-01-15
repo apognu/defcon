@@ -7,7 +7,7 @@ use crate::{
   model::{status::*, Alerter, Check, Event, Outage},
 };
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 struct Payload<'p> {
   pub level: Option<&'p str>,
   #[serde(flatten)]
