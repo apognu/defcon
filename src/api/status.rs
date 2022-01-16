@@ -35,14 +35,19 @@ pub async fn status(pool: &State<Pool<MySql>>) -> ApiResponse<Json<api::Status>>
 }
 
 #[get("/api/statistics?<from>&<to>")]
-pub async fn statistics(pool: &State<Pool<MySql>>, from: api::DateTime, to: api::DateTime) -> ApiResponse<Json<HashMap<NaiveDate, Vec<api::Outage>>>> {
+pub async fn statistics(pool: &State<Pool<MySql>>, from: api::Date, to: api::Date) -> ApiResponse<Json<HashMap<NaiveDate, Vec<api::Outage>>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  let outages = Outage::between(&mut conn, *from, *to).await.context("could not retrieve outages").short()?.map(&*pool).await.short()?;
+  let outages = Outage::between(&mut conn, from.and_hms(0, 0, 0), to.and_hms(23, 59, 59))
+    .await
+    .context("could not retrieve outages")
+    .short()?
+    .map(&*pool)
+    .await
+    .short()?;
 
   let now = Utc::now().date().naive_local();
-  let from = from.date();
-  let interval = to.date().signed_duration_since(from).num_days() as usize + 1;
+  let interval = to.signed_duration_since(*from).num_days() as usize + 1;
 
   let mut stats: HashMap<NaiveDate, Vec<api::Outage>> = HashMap::new();
 

@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 use rocket::form::{error::ErrorKind, FromFormField, Result as FormResult, ValueField};
 
 pub struct DateTime(NaiveDateTime);
@@ -18,5 +18,23 @@ impl<'v> FromFormField<'v> for DateTime {
     let datetime = NaiveDateTime::parse_from_str(field.value, "%Y-%m-%dT%H:%M:%S").map_err(|_| ErrorKind::Unknown)?;
 
     Ok(DateTime(datetime))
+  }
+}
+
+pub struct Date(NaiveDate);
+
+impl Deref for Date {
+  type Target = NaiveDate;
+
+  fn deref(&self) -> &Self::Target {
+    &self.0
+  }
+}
+
+impl<'v> FromFormField<'v> for Date {
+  fn from_value(field: ValueField<'v>) -> FormResult<'v, Date> {
+    let date = NaiveDate::parse_from_str(field.value, "%Y-%m-%d").map_err(|_| ErrorKind::Unknown)?;
+
+    Ok(Date(date))
   }
 }
