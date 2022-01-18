@@ -24,7 +24,7 @@ paths:
           in: query
           schema:
             type: boolean
-            enum: [0, 1]
+            enum: [false, true]
             default: false
       responses:
         '200':
@@ -135,7 +135,7 @@ paths:
           description: Provided UUID does not match a known check
 
     delete:
-      summary: Disable a check
+      summary: Disable or delete a check
       description: Defcon does not allow to completely delete a check, only to disable it (prevent it from running).
       tags: ['Checks']
       parameters:
@@ -146,9 +146,16 @@ paths:
             type: string
             format: uuid
           required: true
+        - name: delete
+          description: Delete the check instead of disabling it
+          in: query
+          schema:
+            type: boolean
+            enum: [false, true]
+            default: false
       responses:
         '204':
-          description: Check was disabled successfully
+          description: Check was disabled or deleted successfully
         '404':
           description: Provided UUID does not match a known check
 

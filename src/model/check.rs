@@ -196,11 +196,26 @@ impl Check {
     Ok(check)
   }
 
-  pub async fn delete(conn: &mut MySqlConnection, uuid: &str) -> Result<()> {
+  pub async fn disable(conn: &mut MySqlConnection, uuid: &str) -> Result<()> {
     sqlx::query(
       "
         UPDATE checks
         SET enabled = 0
+        WHERE uuid = ?
+      ",
+    )
+    .bind(uuid)
+    .execute(conn)
+    .await
+    .short()?;
+
+    Ok(())
+  }
+
+  pub async fn delete(conn: &mut MySqlConnection, uuid: &str) -> Result<()> {
+    sqlx::query(
+      "
+        DELETE FROM checks
         WHERE uuid = ?
       ",
     )
@@ -540,21 +555,33 @@ mod tests {
   }
 
   #[tokio::test]
+  async fn disbale() -> Result<()> {
+    let pool = tests::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    pool.create_check(None, None, "disable()", None, None).await?;
+
+    Check::disable(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+
+    let deleted = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE id = 1"#).fetch_one(&*pool).await?;
+    assert_eq!(deleted.0, false);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
   async fn delete() -> Result<()> {
     let pool = tests::db_client().await?;
     let mut conn = pool.acquire().await?;
 
     pool.create_check(None, None, "delete()", None, None).await?;
 
-    let check = Check {
-      uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
-      ..Default::default()
-    };
+    Check::delete(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
 
-    Check::delete(&mut *conn, &check.uuid).await?;
-
-    let deleted = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE id = 1"#).fetch_one(&*pool).await?;
-    assert_eq!(deleted.0, false);
+    let deleted = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE id = 1"#).fetch_one(&*pool).await;
+    assert!(matches!(&deleted, Err(_)));
 
     pool.cleanup().await;
 

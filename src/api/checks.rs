@@ -203,10 +203,14 @@ pub async fn patch(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json
   Ok(())
 }
 
-#[delete("/api/checks/<uuid>")]
-pub async fn delete(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
+#[delete("/api/checks/<uuid>?<delete>")]
+pub async fn delete(pool: &State<Pool<MySql>>, uuid: String, delete: Option<bool>) -> ApiResponse<NoContent> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  Check::delete(&mut conn, &uuid).await.context("could not delete check").short()?;
+
+  match delete.unwrap_or(false) {
+    false => Check::disable(&mut conn, &uuid).await.context("could not disable check").short()?,
+    true => Check::delete(&mut conn, &uuid).await.context("could not delete check").short()?,
+  }
 
   Ok(NoContent)
 }
@@ -566,10 +570,10 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn delete() -> Result<()> {
+  async fn disable() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    pool.create_check(None, None, "delete()", None, None).await?;
+    pool.create_check(None, None, "disable()", None, None).await?;
 
     let response = client.delete("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
     assert_eq!(response.status(), Status::NoContent);
@@ -579,6 +583,26 @@ mod tests {
       .await?;
 
     assert_eq!(check.0, false);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn delete() -> Result<()> {
+    let (pool, client) = tests::api_client().await?;
+
+    pool.create_check(None, None, "delete()", None, None).await?;
+
+    let response = client.delete("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261?delete=true").dispatch().await;
+    assert_eq!(response.status(), Status::NoContent);
+
+    let check = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+      .fetch_one(&*pool)
+      .await;
+
+    assert!(matches!(&check, Err(_)));
 
     pool.cleanup().await;
 
