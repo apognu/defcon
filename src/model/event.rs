@@ -103,9 +103,12 @@ impl Event {
         DELETE events FROM events
         LEFT JOIN site_outages AS outages
         ON outages.id = events.outage_id
-        WHERE ended_on IS NOT NULL AND ended_on < ?
+        WHERE
+          (outage_id IS NULL AND created_at < ?) OR
+          (ended_on IS NOT NULL AND ended_on < ?)
       ",
     )
+    .bind(epoch)
     .bind(epoch)
     .execute(conn)
     .await
