@@ -11,12 +11,15 @@ mod embedded {
 
 pub fn migrate(dsn: &str, force: bool) -> Result<(bool, Report)> {
   let apply = force || env::args().nth(1).as_deref() == Some("migrate");
-  let mut config = refinery::config::Config::from_str(dsn).context("database configuration not found in DSL environment variable")?;
+  let mut config = refinery::config::Config::from_str(dsn).context("database configuration not found in DSN environment variable")?;
 
-  let pending = embedded::migrations::runner()
+  let applied = embedded::migrations::runner()
     .get_applied_migrations(&mut config)
-    .map(|migrations| migrations.iter().any(|migration| migration.applied_on().is_none()))
-    .unwrap_or(true);
+    .map(|migrations| migrations.len())
+    .unwrap_or_default();
+
+  let total = embedded::migrations::runner().get_migrations().len();
+  let pending = applied != total;
 
   if pending && !apply {
     return Err(anyhow!("unapplied migrations pending, aborting"));

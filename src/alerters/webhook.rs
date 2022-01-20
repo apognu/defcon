@@ -32,7 +32,13 @@ impl Webhook for WebhookAlerter {
     let payload = Payload { level, check, spec, outage };
     let client = reqwest::Client::new();
 
-    client.post(&self.0.webhook).json(&payload).send().await.context("could not call alerter webhook")?;
+    let builder = client.post(&self.0.webhook);
+    let builder = match &self.0.username {
+      Some(username) => builder.basic_auth(username, self.0.password.as_ref()),
+      None => builder,
+    };
+
+    builder.json(&payload).send().await.context("could not call alerter webhook")?;
 
     Ok(())
   }

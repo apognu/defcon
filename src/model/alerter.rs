@@ -12,13 +12,17 @@ pub struct Alerter {
   pub uuid: String,
   pub kind: AlerterKind,
   pub webhook: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub username: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub password: Option<String>,
 }
 
 impl Alerter {
   pub async fn all(conn: &mut MySqlConnection) -> Result<Vec<Alerter>> {
     let alerters = sqlx::query_as::<_, Alerter>(
       "
-        SELECT id, uuid, kind, webhook
+        SELECT id, uuid, kind, webhook, username, password
         FROM alerters
       ",
     )
@@ -32,7 +36,7 @@ impl Alerter {
   pub async fn by_id(conn: &mut MySqlConnection, id: u64) -> Result<Alerter> {
     let alerter = sqlx::query_as::<_, Alerter>(
       "
-        SELECT id, uuid, kind, webhook
+        SELECT id, uuid, kind, webhook, username, password
         FROM alerters
         WHERE id = ?
       ",
@@ -48,7 +52,7 @@ impl Alerter {
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Alerter> {
     let alerter = sqlx::query_as::<_, Alerter>(
       "
-        SELECT id, uuid, kind, webhook
+        SELECT id, uuid, kind, webhook, username, password
         FROM alerters
         WHERE uuid = ?
       ",
@@ -66,13 +70,15 @@ impl Alerter {
 
     sqlx::query(
       "
-        INSERT INTO alerters ( uuid, kind, webhook )
-        VALUES ( ?, ?, ? )
+        INSERT INTO alerters ( uuid, kind, webhook, username, password )
+        VALUES ( ?, ?, ?, ?, ? )
       ",
     )
     .bind(&uuid)
     .bind(self.kind)
     .bind(self.webhook)
+    .bind(self.username)
+    .bind(self.password)
     .execute(&mut *conn)
     .await
     .short()?;
@@ -86,12 +92,14 @@ impl Alerter {
     sqlx::query(
       "
         UPDATE alerters
-        SET kind = ?, webhook = ?
+        SET kind = ?, webhook = ?, username = ?, password = ?
         WHERE id = ?
       ",
     )
     .bind(self.kind)
     .bind(self.webhook)
+    .bind(self.username)
+    .bind(self.password)
     .bind(self.id)
     .execute(&mut *conn)
     .await
