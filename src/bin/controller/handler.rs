@@ -61,8 +61,8 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, stash: Stash, inhibito
 async fn run(pool: Pool<MySql>, config: Arc<Config>, check: Check, stash: Stash, mut inhibitor: Inhibitor) -> Result<()> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
 
-  match check.run(&mut *conn, config, CONTROLLER_ID, stash).await {
-    Ok(event) => handlers::handle_event(&mut conn, &event, &check, Some(inhibitor)).await?,
+  match check.run(&mut *conn, config.clone(), CONTROLLER_ID, stash).await {
+    Ok(event) => handlers::handle_event(config, &mut conn, &event, &check, Some(inhibitor)).await?,
 
     Err(err) => {
       inhibitor.inhibit_for(CONTROLLER_ID, &check.uuid, *check.interval).await;

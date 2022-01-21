@@ -107,7 +107,11 @@ async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Option<Keys<'stat
     ..RocketConfig::release_default()
   };
 
-  api::server(provider, pool, keys).attach(ApiLogger::new()).launch().await.context("could not launch api process")?;
+  api::server(provider, config, pool, keys)
+    .attach(ApiLogger::new())
+    .launch()
+    .await
+    .context("could not launch api process")?;
 
   Ok(())
 }

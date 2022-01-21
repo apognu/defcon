@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Context;
 use rocket::{
   response::status::{Created, NoContent},
@@ -13,7 +15,7 @@ use crate::{
     types::{self as api, ApiMapper, Sites},
     ApiResponse,
   },
-  config::CONTROLLER_ID,
+  config::{Config, CONTROLLER_ID},
   ext::Run,
   model::{Alerter, Check, CheckKind, Group},
 };
@@ -52,7 +54,7 @@ pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<ap
 }
 
 #[post("/api/checks", data = "<payload>")]
-pub async fn create(pool: &State<Pool<MySql>>, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<Created<String>> {
+pub async fn create(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<Created<String>> {
   let payload = check_json(payload).short()?.0;
   let uuid = Uuid::new_v4().to_string();
 
@@ -74,7 +76,10 @@ pub async fn create(pool: &State<Pool<MySql>>, payload: Result<Json<api::Check>,
 
   let alerter = match payload.alerter {
     Some(uuid) => Some(Alerter::by_uuid(&mut txn, &uuid).await.context("could not retrieve alerter").short()?),
-    None => None,
+    None => match config.alerters.default.as_ref() {
+      Some(uuid) => Some(Alerter::by_uuid(&mut txn, uuid).await.context("could not retrieve alerter").short()?),
+      None => None,
+    },
   };
 
   let check = Check {

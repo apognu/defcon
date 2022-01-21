@@ -11,22 +11,36 @@ mod site_outages;
 mod status;
 pub mod types;
 
+use std::sync::Arc;
+
 use rocket::{
   serde::json::{json, Value as JsonValue},
   Build, Config as RocketConfig, Rocket, Route,
 };
 use sqlx::{MySql, Pool};
 
-use crate::api::{auth::Keys, error::ErrorResponse};
+use crate::{
+  api::{auth::Keys, error::ErrorResponse},
+  config::Config,
+};
 
 type ApiResponse<T> = Result<T, ErrorResponse>;
 
-pub fn server(provider: RocketConfig, pool: Pool<MySql>, keys: Option<Keys<'static>>) -> Rocket<Build> {
+pub fn server(provider: RocketConfig, config: Arc<Config>, pool: Pool<MySql>, keys: Option<Keys<'static>>) -> Rocket<Build> {
   let routes: Vec<Route> = routes().into_iter().chain(runner_routes(&keys).into_iter()).collect();
 
   match keys {
-    Some(keys) => rocket::custom(provider).manage(pool).manage(keys).mount("/", routes).register("/", catchers![not_found, unprocessable]),
-    None => rocket::custom(provider).manage(pool).mount("/", routes).register("/", catchers![not_found, unprocessable]),
+    Some(keys) => rocket::custom(provider)
+      .manage(config)
+      .manage(pool)
+      .manage(keys)
+      .mount("/", routes)
+      .register("/", catchers![not_found, unprocessable]),
+    None => rocket::custom(provider)
+      .manage(config)
+      .manage(pool)
+      .mount("/", routes)
+      .register("/", catchers![not_found, unprocessable]),
   }
 }
 

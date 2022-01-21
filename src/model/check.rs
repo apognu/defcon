@@ -370,12 +370,19 @@ impl Check {
     }
   }
 
-  pub async fn alert(&self, conn: &mut MySqlConnection, outage: &str) {
+  pub async fn alert(&self, config: Arc<Config>, conn: &mut MySqlConnection, outage: &str) {
     if !self.silent {
       let inner = async move || -> Result<()> {
         let outage = Outage::by_uuid(&mut *conn, outage).await?;
+        let alerter = self.alerter(&mut *conn).await;
 
-        if let Some(alerter) = self.alerter(&mut *conn).await {
+        let alerter = match (alerter, config.alerters.fallback.as_ref()) {
+          (alerter @ Some(_), _) => alerter,
+          (None, Some(fallback)) => Alerter::by_uuid(&mut *conn, fallback).await.ok(),
+          _ => None,
+        };
+
+        if let Some(alerter) = alerter {
           alerter.webhook().alert(&mut *conn, self, &outage).await?;
         }
 

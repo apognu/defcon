@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use kvlogger::*;
 use sqlx::{FromRow, MySqlConnection};
 use uuid::Uuid;
 
-use crate::{api::error::Shortable, model::Check};
+use crate::{api::error::Shortable, config::Config, model::Check};
 
 #[derive(Debug, FromRow, Default, Clone, Serialize)]
 pub struct Outage {
@@ -152,7 +154,7 @@ impl Outage {
     Ok(outages)
   }
 
-  pub async fn confirm(conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
+  pub async fn confirm(config: Arc<Config>, conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
     match Outage::for_check_current(conn, check).await {
       Err(_) => {
         let uuid = Uuid::new_v4().to_string();
@@ -176,7 +178,7 @@ impl Outage {
           "since" => outage.started_on.map(|dt| dt.to_string()).unwrap_or_else(|| "-".to_string())
         });
 
-        check.alert(&mut *conn, &outage.uuid).await;
+        check.alert(config, &mut *conn, &outage.uuid).await;
 
         Ok(outage)
       }
@@ -185,7 +187,7 @@ impl Outage {
     }
   }
 
-  pub async fn resolve(conn: &mut MySqlConnection, check: &Check) -> Result<()> {
+  pub async fn resolve(config: Arc<Config>, conn: &mut MySqlConnection, check: &Check) -> Result<()> {
     if let Ok(outage) = Outage::for_check_current(conn, check).await {
       kvlog!(Info, "outage resolved", {
         "check" => check.uuid,
@@ -206,7 +208,7 @@ impl Outage {
       .short()?;
 
       if result.rows_affected() > 0 {
-        check.alert(&mut *conn, &outage.uuid).await;
+        check.alert(config, &mut *conn, &outage.uuid).await;
       }
     }
 

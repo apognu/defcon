@@ -17,6 +17,8 @@ The controller has a few configuration knobs you can tweak to adjust its overall
 | `CLEANER_ENABLE`     |          | 0              | Enable or disable the cleaner process                  |
 | `CLEANER_INTERVAL`   |          | 10m            | Interval between cleaner loop iterations               |
 | `CLEANER_THRESHOLD`  |          | 1y             | Period of time after which to delete stale objects     |
+| `ALERTER_DEFAULT`    |          |                | Alerter to create checks with, if unspecified          |
+| `ALERTER_FALLBACK`   |          |                | Alerter to be called when none is set on a check       |
 
 ### `RUST_LOG`
 

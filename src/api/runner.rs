@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Context;
 use rocket::{serde::json::Json, State};
 use sqlx::{MySql, Pool};
@@ -9,6 +11,7 @@ use crate::{
     types::{self as api, ApiMapper},
     ApiResponse,
   },
+  config::Config,
   handlers,
   model::{Check, Event},
 };
@@ -32,7 +35,7 @@ pub async fn list_stale(pool: &State<Pool<MySql>>, credentials: RunnerCredential
 }
 
 #[post("/api/runner/report", data = "<payload>")]
-pub async fn report(pool: &State<Pool<MySql>>, credentials: RunnerCredentials, payload: Json<api::ReportEvent>) -> ApiResponse<()> {
+pub async fn report(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, credentials: RunnerCredentials, payload: Json<api::ReportEvent>) -> ApiResponse<()> {
   let report = payload.0;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = Check::by_uuid(&mut *conn, &report.check).await.short()?;
@@ -45,7 +48,7 @@ pub async fn report(pool: &State<Pool<MySql>>, credentials: RunnerCredentials, p
     ..Default::default()
   };
 
-  handlers::handle_event(&mut *conn, &event, &check, None).await.short()?;
+  handlers::handle_event(config.inner().clone(), &mut *conn, &event, &check, None).await.short()?;
 
   Ok(())
 }

@@ -4,6 +4,13 @@ An alerter defined what is to be done when an outage is confirmed. Generally, in
 
 As of now, only two alerters are supported: generic Webhook and Slack message.
 
+## Default values
+
+Two default values can be configured for alerters, through environment variables:
+
+ * The `ALERTER_DEFAULT`, which sets the UUID of the alerter that will be set on all newly created checks, if left unspecified.
+ * The `ALERTER_FALLBACK` sets the UUID of the alerter that will be used for checks without a configured alerter.
+
 ## Wehook
 
 ```json

@@ -27,6 +27,7 @@ pub struct Config {
   pub cleaner: CleanerConfig,
   pub dms: DmsConfig,
   pub checks: ChecksConfig,
+  pub alerters: AlertersConfig,
   pub key: Option<&'static Vec<u8>>,
 }
 
@@ -59,6 +60,12 @@ pub struct DmsConfig {
 #[derive(Debug, Clone)]
 pub struct ChecksConfig {
   pub dns_resolver: IpAddr,
+}
+
+#[derive(Debug, Clone)]
+pub struct AlertersConfig {
+  pub default: Option<String>,
+  pub fallback: Option<String>,
 }
 
 impl ChecksConfig {
@@ -132,6 +139,10 @@ impl Config {
         listen: dms_listen,
       },
       checks,
+      alerters: AlertersConfig {
+        default: env::var("ALERTER_DEFAULT").ok(),
+        fallback: env::var("ALERTER_FALLBACK").ok(),
+      },
       key: PUBLIC_KEY.as_ref(),
     };
 
