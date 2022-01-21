@@ -178,6 +178,8 @@
 <tr><td><code>CLEANER_ENABLE</code></td><td></td><td>0</td><td>Enable or disable the cleaner process</td></tr>
 <tr><td><code>CLEANER_INTERVAL</code></td><td></td><td>10m</td><td>Interval between cleaner loop iterations</td></tr>
 <tr><td><code>CLEANER_THRESHOLD</code></td><td></td><td>1y</td><td>Period of time after which to delete stale objects</td></tr>
+<tr><td><code>ALERTER_DEFAULT</code></td><td></td><td></td><td>Alerter to create checks with, if unspecified</td></tr>
+<tr><td><code>ALERTER_FALLBACK</code></td><td></td><td></td><td>Alerter to be called when none is set on a check</td></tr>
 </tbody></table>
 <h3><a class="header" href="#rust_log" id="rust_log"><code>RUST_LOG</code></a></h3>
 <p>This allows for controlling the log level for each individual dependency. Defcon uses the <code>defcon</code> identifier, and default to <code>info</code>, which will mainly print errors, API access logs and when outages are created and resolved.</p>
