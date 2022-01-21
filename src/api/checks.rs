@@ -15,11 +15,11 @@ use crate::{
   },
   config::CONTROLLER_ID,
   ext::Run,
-  model::{Alerter, Check, Group},
+  model::{Alerter, Check, CheckKind, Group},
 };
 
-#[get("/api/checks?<all>&<group>")]
-pub async fn list(pool: &State<Pool<MySql>>, all: Option<bool>, group: Option<String>) -> ApiResponse<Json<Vec<api::Check>>> {
+#[get("/api/checks?<all>&<group>&<kind>&<site>")]
+pub async fn list(pool: &State<Pool<MySql>>, all: Option<bool>, group: Option<String>, kind: Option<String>, site: Option<String>) -> ApiResponse<Json<Vec<api::Check>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let group = match group {
@@ -27,7 +27,12 @@ pub async fn list(pool: &State<Pool<MySql>>, all: Option<bool>, group: Option<St
     Some(uuid) => Some(Group::by_uuid(&mut *conn, &uuid).await.context("could not retrieve group").short()?),
   };
 
-  let checks = Check::list(&mut conn, all.unwrap_or(false), group)
+  let kind = match kind {
+    None => None,
+    Some(kind) => Some(CheckKind::try_from(kind).context("cannot filter by this handler type").short()?),
+  };
+
+  let checks = Check::list(&mut conn, all.unwrap_or(false), group, kind, site)
     .await
     .short()?
     .map(&*pool)

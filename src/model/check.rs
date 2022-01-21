@@ -55,13 +55,25 @@ impl Check {
     Ok(check.0)
   }
 
-  pub async fn list(conn: &mut MySqlConnection, all: bool, group: Option<Group>) -> Result<Vec<Check>> {
-    let conditions = match (all, &group) {
-      (true, None) => "",
-      (false, None) => "WHERE enabled = 1",
-      (true, Some(_)) => "WHERE groups.uuid = ?",
-      (false, Some(_)) => "WHERE enabled = 1 AND groups.uuid = ?",
-    };
+  pub async fn list(conn: &mut MySqlConnection, all: bool, group: Option<Group>, kind: Option<CheckKind>, site: Option<String>) -> Result<Vec<Check>> {
+    let mut conditions = vec!["1"];
+    let mut binds: Vec<String> = Vec::new();
+
+    if !all {
+      conditions.push("enabled = 1");
+    }
+    if let Some(group) = group {
+      conditions.push("groups.uuid = ?");
+      binds.push(group.name);
+    }
+    if let Some(kind) = kind {
+      conditions.push("kind = ?");
+      binds.push(kind.to_string());
+    }
+    if let Some(site) = site {
+      conditions.push("check_sites.slug = ?");
+      binds.push(site);
+    }
 
     let query = format!(
       "
@@ -69,17 +81,15 @@ impl Check {
       FROM checks
       LEFT JOIN groups
       ON groups.id = checks.group_id
-      {}
+      LEFT JOIN check_sites
+      ON check_sites.check_id = checks.id
+      WHERE {}
     ",
-      conditions
+      conditions.join(" AND ")
     );
 
     let checks = sqlx::query_as::<_, Check>(&query);
-    let checks = match group {
-      None => checks,
-      Some(group) => checks.bind(group.uuid),
-    };
-
+    let checks = binds.iter().fold(checks, |acc, bind| acc.bind(bind));
     let checks = checks.fetch_all(&mut *conn).await.short()?;
 
     Ok(checks)

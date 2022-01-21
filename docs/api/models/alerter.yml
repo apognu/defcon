@@ -28,3 +28,9 @@ components:
           description: URL to the incoming webhook
           type: string
           format: url
+        username:
+          description: Username to use in the HTTP Basic auth to the webhook
+          type: string
+        password:
+          description: Password to use in the HTTP Basic auth to the webhook
+          type: string

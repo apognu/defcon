@@ -26,6 +26,21 @@ paths:
             type: boolean
             enum: [false, true]
             default: false
+        - name: group
+          description: UUID of the group of which to return the checks
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: kind
+          description: Slug for the handler types to return
+          in: query
+          schema:
+            type: string
+        - name: site
+          description: Name of the site for which to return the checks
+          schema:
+            type: string
       responses:
         '200':
           description: List of enabled checks
