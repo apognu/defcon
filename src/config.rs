@@ -22,23 +22,38 @@ lazy_static! {
 
 #[derive(Debug, Clone)]
 pub struct Config {
-  pub api: bool,
-  pub api_listen: SocketAddr,
-
-  pub handler: bool,
-  pub handler_interval: Duration,
-  pub handler_spread: Option<Duration>,
-
-  pub cleaner: bool,
-  pub cleaner_interval: Duration,
-  pub cleaner_threshold: Duration,
-
-  pub dms: bool,
-  pub dms_listen: SocketAddr,
-
+  pub api: ApiConfig,
+  pub handler: HandlerConfig,
+  pub cleaner: CleanerConfig,
+  pub dms: DmsConfig,
   pub checks: ChecksConfig,
-
   pub key: Option<&'static Vec<u8>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ApiConfig {
+  pub enable: bool,
+  pub listen: SocketAddr,
+}
+
+#[derive(Debug, Clone)]
+pub struct HandlerConfig {
+  pub enable: bool,
+  pub interval: Duration,
+  pub spread: Option<Duration>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CleanerConfig {
+  pub enable: bool,
+  pub interval: Duration,
+  pub threshold: Duration,
+}
+
+#[derive(Debug, Clone)]
+pub struct DmsConfig {
+  pub enable: bool,
+  pub listen: SocketAddr,
 }
 
 #[derive(Debug, Clone)]
@@ -67,10 +82,10 @@ impl Config {
   }
 
   pub fn parse() -> Result<Arc<Config>> {
-    let api = env::var("API_ENABLE").or_string("1") == "1";
+    let api_enable = env::var("API_ENABLE").or_string("1") == "1";
     let api_listen = env::var("API_LISTEN").or_string("127.0.0.1:8000").parse::<SocketAddr>().context("could not parse API listen address")?;
 
-    let handler = env::var("HANDLER_ENABLE").or_string("1") == "1";
+    let handler_enable = env::var("HANDLER_ENABLE").or_string("1") == "1";
     let handler_interval = env::var("HANDLER_INTERVAL")
       .or_duration_min("1s", Duration::from_secs(1))
       .context("HANDLER_INTERVAL is not a duration")?;
@@ -80,7 +95,7 @@ impl Config {
       duration => Some(duration),
     };
 
-    let cleaner = env::var("CLEANER_ENABLE").unwrap_or_default() == "1";
+    let cleaner_enable = env::var("CLEANER_ENABLE").unwrap_or_default() == "1";
     let cleaner_interval = env::var("CLEANER_INTERVAL")
       .or_duration_min("10m", Duration::from_secs(1))
       .context("CLEANER_INTERVAL is not a duration")?;
@@ -89,22 +104,33 @@ impl Config {
       .or_duration_min("1y", Duration::from_secs(1))
       .context("CLEANER_THRESHOLD is not a duration")?;
 
-    let dms= env::var("DMS_ENABLE").or_string("1") == "1";
-    let dms_listen = env::var("DMS_LISTEN").or_string("127.0.0.1:8080").parse::<SocketAddr>().context("could not parse Dead Man Switch listen address")?;
+    let dms_enable = env::var("DMS_ENABLE").or_string("1") == "1";
+    let dms_listen = env::var("DMS_LISTEN")
+      .or_string("127.0.0.1:8080")
+      .parse::<SocketAddr>()
+      .context("could not parse Dead Man Switch listen address")?;
 
     let checks = ChecksConfig::new()?;
 
     let config = Config {
-      api,
-      api_listen,
-      handler,
-      handler_interval,
-      handler_spread,
-      cleaner,
-      cleaner_interval,
-      cleaner_threshold,
-      dms,
-      dms_listen,
+      api: ApiConfig {
+        enable: api_enable,
+        listen: api_listen,
+      },
+      handler: HandlerConfig {
+        enable: handler_enable,
+        interval: handler_interval,
+        spread: handler_spread,
+      },
+      cleaner: CleanerConfig {
+        enable: cleaner_enable,
+        interval: cleaner_interval,
+        threshold: cleaner_threshold,
+      },
+      dms: DmsConfig {
+        enable: dms_enable,
+        listen: dms_listen,
+      },
       checks,
       key: PUBLIC_KEY.as_ref(),
     };
@@ -141,15 +167,15 @@ mod tests {
 
     let config = Config::parse()?;
 
-    assert_eq!(config.api, true);
-    assert_eq!(config.api_listen.ip(), Ipv4Addr::new(127, 0, 0, 1));
-    assert_eq!(config.api_listen.port(), 8000);
-    assert_eq!(config.handler, true);
-    assert_eq!(config.handler_interval, Duration::from_secs(1));
-    assert_eq!(config.handler_spread, None);
-    assert_eq!(config.cleaner, false);
-    assert_eq!(config.cleaner_interval, Duration::from_secs(600));
-    assert_eq!(config.cleaner_threshold, Duration::from_secs(31557600));
+    assert_eq!(config.api.enable, true);
+    assert_eq!(config.api.listen.ip(), Ipv4Addr::new(127, 0, 0, 1));
+    assert_eq!(config.api.listen.port(), 8000);
+    assert_eq!(config.handler.enable, true);
+    assert_eq!(config.handler.interval, Duration::from_secs(1));
+    assert_eq!(config.handler.spread, None);
+    assert_eq!(config.cleaner.enable, false);
+    assert_eq!(config.cleaner.interval, Duration::from_secs(600));
+    assert_eq!(config.cleaner.threshold, Duration::from_secs(31557600));
 
     assert_eq!(config.checks.dns_resolver, Ipv4Addr::new(1, 1, 1, 1));
 
@@ -175,15 +201,15 @@ mod tests {
 
     let config = Config::parse()?;
 
-    assert_eq!(config.api, false);
-    assert_eq!(config.api_listen.ip(), Ipv4Addr::new(0, 0, 0, 0));
-    assert_eq!(config.api_listen.port(), 10000);
-    assert_eq!(config.handler, false);
-    assert_eq!(config.handler_interval, Duration::from_secs(10));
-    assert_eq!(config.handler_spread, Some(Duration::from_secs(10)));
-    assert_eq!(config.cleaner, true);
-    assert_eq!(config.cleaner_interval, Duration::from_secs(10));
-    assert_eq!(config.cleaner_threshold, Duration::from_secs(10));
+    assert_eq!(config.api.enable, false);
+    assert_eq!(config.api.listen.ip(), Ipv4Addr::new(0, 0, 0, 0));
+    assert_eq!(config.api.listen.port(), 10000);
+    assert_eq!(config.handler.enable, false);
+    assert_eq!(config.handler.interval, Duration::from_secs(10));
+    assert_eq!(config.handler.spread, Some(Duration::from_secs(10)));
+    assert_eq!(config.cleaner.enable, true);
+    assert_eq!(config.cleaner.interval, Duration::from_secs(10));
+    assert_eq!(config.cleaner.threshold, Duration::from_secs(10));
 
     env::remove_var("API_ENABLE");
     env::remove_var("API_LISTEN");

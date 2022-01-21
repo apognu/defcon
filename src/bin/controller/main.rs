@@ -46,11 +46,11 @@ async fn main() -> Result<()> {
     return Ok(());
   }
 
-  if !config.handler && !config.cleaner && !config.api {
+  if !config.handler.enable && !config.cleaner.enable && !config.api.enable {
     return Err(anyhow!("all processes disabled, aborting"));
   }
 
-  if config.handler {
+  if config.handler.enable {
     tokio::spawn({
       let config = config.clone();
       let pool = pool.clone();
@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
     });
   }
 
-  if config.cleaner {
+  if config.cleaner.enable {
     tokio::spawn({
       let config = config.clone();
       let pool = pool.clone();
@@ -72,7 +72,7 @@ async fn main() -> Result<()> {
     });
   }
 
-  if config.dms {
+  if config.dms.enable {
     tokio::spawn({
       let config = config.clone();
       let pool = pool.clone();
@@ -83,7 +83,7 @@ async fn main() -> Result<()> {
     });
   }
 
-  match config.api {
+  match config.api.enable {
     true => {
       if let Err(err) = run_api(pool, config, keys).await {
         log::error!("{:#}", err);
@@ -98,12 +98,12 @@ async fn main() -> Result<()> {
 
 async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Option<Keys<'static>>) -> Result<()> {
   kvlog!(Info, "starting api process", {
-    "listen" => config.api_listen
+    "listen" => config.api.listen
   });
 
   let provider = RocketConfig {
-    address: config.api_listen.ip(),
-    port: config.api_listen.port(),
+    address: config.api.listen.ip(),
+    port: config.api.listen.port(),
     ..RocketConfig::release_default()
   };
 
@@ -114,15 +114,15 @@ async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Option<Keys<'stat
 
 async fn run_defcon(pool: &Pool<MySql>, config: Arc<Config>) {
   kvlog!(Info, "starting handler process", {
-    "interval" => format_duration(config.handler_interval),
-    "spread" => config.handler_spread.map(format_duration).map(|s| s.to_string()).unwrap_or_default()
+    "interval" => format_duration(config.handler.interval),
+    "spread" => config.handler.spread.map(format_duration).map(|s| s.to_string()).unwrap_or_default()
   });
 
   let stash = Stash::new();
   let inhibitor = Inhibitor::new();
 
   loop {
-    let next_tick_at = Instant::now() + config.handler_interval;
+    let next_tick_at = Instant::now() + config.handler.interval;
 
     tokio::spawn({
       let pool = pool.clone();
@@ -143,13 +143,13 @@ async fn run_defcon(pool: &Pool<MySql>, config: Arc<Config>) {
 
 async fn run_cleaner(pool: &Pool<MySql>, config: Arc<Config>) {
   kvlog!(Info, "starting cleaner process", {
-    "interval" => format_duration(config.cleaner_interval),
-    "threshold" => format_duration(config.cleaner_threshold)
+    "interval" => format_duration(config.cleaner.interval),
+    "threshold" => format_duration(config.cleaner.threshold)
   });
 
   loop {
     let config = config.clone();
-    let next_tick_at = Instant::now() + config.cleaner_interval;
+    let next_tick_at = Instant::now() + config.cleaner.interval;
 
     tokio::spawn({
       let pool = pool.clone();

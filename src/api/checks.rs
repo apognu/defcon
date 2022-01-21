@@ -266,6 +266,52 @@ mod tests {
   }
 
   #[tokio::test]
+  async fn list_by_kind() -> Result<()> {
+    let (pool, client) = tests::api_client().await?;
+
+    pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true), None).await?;
+
+    let response = client.get("/api/checks?kind=tcp").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(checks.len(), 1);
+
+    let response = client.get("/api/checks?kind=http").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(checks.len(), 0);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn list_by_site() -> Result<()> {
+    let (pool, client) = tests::api_client().await?;
+
+    pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true), Some(&["eu-1"])).await?;
+
+    let response = client.get("/api/checks?site=eu-1").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(checks.len(), 1);
+
+    let response = client.get("/api/checks?site=nosite").dispatch().await;
+    assert_eq!(response.status(), Status::Ok);
+
+    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(checks.len(), 0);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
   async fn get() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 

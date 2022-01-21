@@ -12,7 +12,7 @@ use defcon::{
 
 pub async fn tick(pool: Pool<MySql>, config: Arc<Config>) {
   let inner = async move || -> Result<()> {
-    let threshold = Duration::from_std(config.cleaner_threshold)?;
+    let threshold = Duration::from_std(config.cleaner.threshold)?;
     let epoch = Utc::now().naive_utc() - threshold;
     let mut txn = pool.begin().await?;
 

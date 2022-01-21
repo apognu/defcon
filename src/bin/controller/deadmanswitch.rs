@@ -11,8 +11,8 @@ use defcon::{
 
 pub async fn run(pool: Pool<MySql>, config: Arc<Config>) {
   let provider = RocketConfig {
-    address: config.dms_listen.ip(),
-    port: config.dms_listen.port(),
+    address: config.dms.listen.ip(),
+    port: config.dms.listen.port(),
     ..RocketConfig::release_default()
   };
 

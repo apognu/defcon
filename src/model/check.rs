@@ -421,7 +421,7 @@ mod tests {
 
     pool.create_check(None, None, "all()", None, None).await?;
 
-    let checks = Check::list(&mut *conn, true, None).await?;
+    let checks = Check::list(&mut *conn, true, None, None, None).await?;
 
     assert_eq!(checks.len(), 1);
     assert_eq!(&checks[0].name, "all()");
@@ -445,9 +445,49 @@ mod tests {
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "enabled()", Some(true), None).await?;
     pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "enabled()", Some(false), None).await?;
 
-    let checks = Check::list(&mut *conn, false, None).await?;
+    let checks = Check::list(&mut *conn, false, None, None, None).await?;
 
     assert_eq!(checks.len(), 1);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn list_by_kind() -> Result<()> {
+    let pool = tests::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    pool.create_check(None, None, "list_by_kind()", None, None).await?;
+
+    let checks = Check::list(&mut *conn, true, None, Some(CheckKind::Tcp), None).await?;
+
+    assert_eq!(checks.len(), 1);
+
+    let checks = Check::list(&mut *conn, true, None, Some(CheckKind::Http), None).await?;
+
+    assert_eq!(checks.len(), 0);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn list_by_site() -> Result<()> {
+    let pool = tests::db_client().await?;
+    let mut conn = pool.acquire().await?;
+
+    pool.create_check(None, None, "list_by_site()", None, Some(&["eu-1"])).await?;
+
+    let checks = Check::list(&mut *conn, true, None, None, Some("eu-1".to_string())).await?;
+
+    assert_eq!(checks.len(), 1);
+
+    let checks = Check::list(&mut *conn, true, None, None, Some("nosite".to_string())).await?;
+
+    assert_eq!(checks.len(), 0);
 
     pool.cleanup().await;
 

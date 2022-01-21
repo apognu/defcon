@@ -26,7 +26,7 @@ pub async fn tick(pool: Pool<MySql>, config: Arc<Config>, stash: Stash, inhibito
         continue;
       }
 
-      let spread = config.handler_spread.map(|duration| rand::thread_rng().gen_range(0..duration.as_millis() as u64));
+      let spread = config.handler.spread.map(|duration| rand::thread_rng().gen_range(0..duration.as_millis() as u64));
 
       tokio::spawn({
         let config = config.clone();
