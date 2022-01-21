@@ -69,12 +69,12 @@ pub async fn create(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, payl
 
   let mut txn = pool.begin().await.context("could not start transaction").short()?;
 
-  let group = match payload.group {
-    Some(group) => Some(Group::by_uuid(&mut txn, &group.uuid).await.context("could not retrieve group").short()?),
+  let group = match payload.group_in {
+    Some(group) => Some(Group::by_uuid(&mut txn, &group).await.context("could not retrieve group").short()?),
     None => None,
   };
 
-  let alerter = match payload.alerter {
+  let alerter = match payload.alerter_in {
     Some(uuid) => Some(Alerter::by_uuid(&mut txn, &uuid).await.context("could not retrieve alerter").short()?),
     None => match config.alerters.default.as_ref() {
       Some(uuid) => Some(Alerter::by_uuid(&mut txn, uuid).await.context("could not retrieve alerter").short()?),
@@ -131,7 +131,7 @@ pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Jso
     None => None,
   };
 
-  let alerter = match payload.alerter {
+  let alerter = match payload.alerter_in {
     Some(uuid) => Some(Alerter::by_uuid(&mut txn, &uuid).await.context("could not retrieve alerter").short()?),
     None => None,
   };
@@ -174,7 +174,7 @@ pub async fn patch(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json
   payload.silent.run(|value| check.silent = value);
 
   if let Some(value) = payload.group {
-    let group = Group::by_uuid(&mut txn, &value.uuid).await.context("could not retrieve group").short()?;
+    let group = Group::by_uuid(&mut txn, &value).await.context("could not retrieve group").short()?;
 
     check.group_id = Some(group.id);
   } else {

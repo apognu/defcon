@@ -1,11 +1,34 @@
 ReadCheck:
-  type: object
-  $ref: '#/components/schemas/Check'
+  allOf:
+    - $ref: '#/components/schemas/Check'
+    - type: object
+      properties:
+        group:
+          description: Group to which the check is assigned
+          type: object
+          default: null
+          $ref: '#/components/schemas/group/ReadGroup'
+        alerter:
+          description: Unique identifier for the alerter linked to the check
+          type: object
+          default: null
+          $ref: '#/components/schemas/alerter/ReadAlerter'
 
 WriteCheck:
   allOf:
     - $ref: '#/components/schemas/Check'
     - type: object
+      properties:
+        group:
+          description: Group to which the check is assigned
+          type: string
+          format: uuid
+          default: null
+        alerter:
+          description: Unique identifier for the alerter linked to the check
+          type: string
+          format: uuid
+          default: null
       required:
         - name
         - interval
@@ -13,10 +36,28 @@ WriteCheck:
         - failing_threshold
         - spec
 
+PatchWriteCheck:
+  allOf:
+    - $ref: '#/components/schemas/Check'
+    - type: object
+      properties:
+        group:
+          description: Group to which the check is assigned
+          type: string
+          format: uuid
+          default: null
+        alerter:
+          description: Unique identifier for the alerter linked to the check
+          type: string
+          format: uuid
+          default: null
+
 components:
   schemas:
     group:
       $ref: './group.yml'
+    alerter:
+      $ref: './alerter.yml'
 
     Check:
       type: object
@@ -26,18 +67,9 @@ components:
           description: Unique identifier
           type: string
           format: uuid
-        alerter:
-          description: Unique identifier for the alerter linked to the check
-          type: string
-          format: uuid
-          default: null
         name:
           description: Human-friendly name
           type: string
-        group:
-          description: Group to which the check is assigned
-          type: object
-          $ref: '#/components/schemas/group/ReadGroup'
         enabled:
           description: Whether the check should run or not
           type: boolean

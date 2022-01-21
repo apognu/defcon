@@ -3,7 +3,7 @@ use futures::{stream, StreamExt};
 use sqlx::{MySql, Pool};
 
 use crate::{
-  api::types::{self as api, ApiMapper, CheckGroup},
+  api::types::{self as api, ApiMapper, CheckAlerter, CheckGroup},
   model as db,
 };
 
@@ -37,7 +37,9 @@ impl ApiMapper for db::Outage {
         check,
         spec,
         group: CheckGroup::from(group),
-        alerter: alerter.map(|alerter| alerter.uuid),
+        group_in: None,
+        alerter: CheckAlerter::from(alerter),
+        alerter_in: None,
         sites: Some(sites.into()),
       },
     };
@@ -67,7 +69,9 @@ impl ApiMapper for Vec<db::Outage> {
                     check,
                     spec,
                     group: CheckGroup::from(group),
-                    alerter: alerter.map(|alerter| alerter.uuid),
+                    group_in: None,
+                    alerter: CheckAlerter::from(alerter),
+                    alerter_in: None,
                     sites: Some(sites.into()),
                   },
                 };

@@ -4,13 +4,13 @@ A check is used to describe an external service to be monitored. Among other thi
 
 ## Metadata
 
-| Attribute | Type   | Example value                                        | Description                                       |
-| --------- | ------ | ---------------------------------------------------- | ------------------------------------------------- |
-| `name`    | string | `"acme-public-site"`                                 | A human-friendly name used in logs and alerters   |
-| `alerter` | UUID   | `"19b9eb20-3e3e-46d5-801f-a912e159913c"`             | Alerter to be triggered when an outage is created |
-| `enabled` | bool   | `true`                                               | When disabled, a check will not run               |
-| `silent`  | bool   | `false`                                              | When silent, a check will not trigger its alerter |
-| `group`   | object | `{ "uuid": "9b77035c-218e-4d32-bcd7-4a015f7ee147" }` | Put the check into a pre-existing group           |
+| Attribute | Type   | Example value                            | Description                                       |
+| --------- | ------ | ---------------------------------------- | ------------------------------------------------- |
+| `name`    | string | `"acme-public-site"`                     | A human-friendly name used in logs and alerters   |
+| `alerter` | UUID   | `"19b9eb20-3e3e-46d5-801f-a912e159913c"` | Alerter to be triggered when an outage is created |
+| `enabled` | bool   | `true`                                   | When disabled, a check will not run               |
+| `silent`  | bool   | `false`                                  | When silent, a check will not trigger its alerter |
+| `group`   | string | `"9b77035c-218e-4d32-bcd7-4a015f7ee147"` | Put the check into a pre-existing group           |
 
 ## Run and error condition
 

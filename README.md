@@ -51,7 +51,10 @@ A check is defined as so (here, for an HTTP request check):
 {
   "name": "ACME corporate website",
   "uuid": "50a5c57f-6971-446a-b9a2-42cb7c7b5427",
-  "alerter": "df2dcc77-00c1-4dc1-a8a3-6ba0bc64d486",
+  "alerter": {
+    "uuid": "df2dcc77-00c1-4dc1-a8a3-6ba0bc64d486",
+    "kind": "webhook"
+  },
   "group": {
     "uuid": "626dda88-42f3-4b9c-ab04-8eb3824cfb42",
     "name": "ACME Inc. - Web properties"

@@ -1,3 +1,16 @@
+ReadCheckAlerter:
+  type: object
+  properties:
+    uuid:
+      readOnly: true
+      description: Unique identifier
+      type: string
+      format: uuid
+    kind:
+      description: Type of alerter
+      type: string
+      enum: ["webhook", "slack"]
+
 ReadAlerter:
   type: object
   $ref: '#/components/schemas/Alerter'

@@ -35,19 +35,22 @@ pub struct Check {
   pub check: db::Check,
   pub spec: api::Spec,
 
-  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(skip_serializing_if = "Option::is_none", skip_deserializing)]
   pub group: Option<CheckGroup>,
+  #[serde(rename = "group", skip_serializing)]
+  pub group_in: Option<String>,
 
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub alerter: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none", skip_deserializing)]
+  pub alerter: Option<CheckAlerter>,
+  #[serde(rename = "alerter", skip_serializing)]
+  pub alerter_in: Option<String>,
 
   pub sites: Option<api::Sites>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CheckGroup {
   pub uuid: String,
-  #[serde(skip_deserializing)]
   pub name: String,
 }
 
@@ -57,9 +60,24 @@ impl CheckGroup {
   }
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct CheckAlerter {
+  pub uuid: String,
+  pub kind: String,
+}
+
+impl CheckAlerter {
+  pub fn from(alerter: Option<db::Alerter>) -> Option<CheckAlerter> {
+    alerter.map(|alerter| CheckAlerter {
+      uuid: alerter.uuid,
+      kind: alerter.kind.to_string(),
+    })
+  }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct CheckPatch {
-  pub group: Option<CheckGroup>,
+  pub group: Option<String>,
   pub alerter: Option<String>,
   pub sites: Option<api::Sites>,
   pub name: Option<String>,
@@ -87,7 +105,9 @@ impl ApiMapper for db::Check {
       check: self,
       spec,
       group: CheckGroup::from(group),
-      alerter: alerter.map(|alerter| alerter.uuid),
+      group_in: None,
+      alerter: CheckAlerter::from(alerter),
+      alerter_in: None,
       sites: Some(sites.into()),
     };
 
@@ -113,7 +133,9 @@ impl ApiMapper for Vec<db::Check> {
                 check,
                 spec,
                 group: CheckGroup::from(group),
-                alerter: alerter.map(|alerter| alerter.uuid),
+                group_in: None,
+                alerter: CheckAlerter::from(alerter),
+                alerter_in: None,
                 sites: Some(sites.into()),
               };
 
