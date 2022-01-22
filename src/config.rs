@@ -7,18 +7,18 @@ use std::{
 
 use anyhow::{Context, Result};
 use kvlogger::KvLoggerBuilder;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 
 use crate::ext::EnvExt;
 
 pub const CONTROLLER_ID: &str = "@controller";
 
-lazy_static! {
-  pub static ref PUBLIC_KEY: Option<Vec<u8>> = env::var("PUBLIC_KEY")
+pub static PUBLIC_KEY: Lazy<Option<Vec<u8>>> = Lazy::new(|| {
+  env::var("PUBLIC_KEY")
     .map(|key| fs::read_to_string(key).expect("could not read public key"))
     .map(|key| key.as_bytes().to_vec())
-    .ok();
-}
+    .ok()
+});
 
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -37,11 +37,36 @@ pub struct ApiConfig {
   pub listen: SocketAddr,
 }
 
+impl ApiConfig {
+  pub fn new() -> Result<ApiConfig> {
+    let enable = env::var("API_ENABLE").or_string("1") == "1";
+    let listen = env::var("API_LISTEN").or_string("127.0.0.1:8000").parse::<SocketAddr>().context("could not parse API listen address")?;
+
+    Ok(ApiConfig { enable, listen })
+  }
+}
+
 #[derive(Debug, Clone)]
 pub struct HandlerConfig {
   pub enable: bool,
   pub interval: Duration,
   pub spread: Option<Duration>,
+}
+
+impl HandlerConfig {
+  pub fn new() -> Result<HandlerConfig> {
+    let enable = env::var("HANDLER_ENABLE").or_string("1") == "1";
+    let interval = env::var("HANDLER_INTERVAL")
+      .or_duration_min("1s", Duration::from_secs(1))
+      .context("HANDLER_INTERVAL is not a duration")?;
+
+    let spread = match env::var("HANDLER_SPREAD").or_duration_min("0s", Duration::from_secs(0)).context("HANDLER_SPREAD is not a duration")? {
+      duration if duration == Duration::from_nanos(0) => None,
+      duration => Some(duration),
+    };
+
+    Ok(HandlerConfig { enable, interval, spread })
+  }
 }
 
 #[derive(Debug, Clone)]
@@ -51,21 +76,42 @@ pub struct CleanerConfig {
   pub threshold: Duration,
 }
 
+impl CleanerConfig {
+  pub fn new() -> Result<CleanerConfig> {
+    let enable = env::var("CLEANER_ENABLE").unwrap_or_default() == "1";
+    let interval = env::var("CLEANER_INTERVAL")
+      .or_duration_min("10m", Duration::from_secs(1))
+      .context("CLEANER_INTERVAL is not a duration")?;
+
+    let threshold = env::var("CLEANER_THRESHOLD")
+      .or_duration_min("1y", Duration::from_secs(1))
+      .context("CLEANER_THRESHOLD is not a duration")?;
+
+    Ok(CleanerConfig { enable, interval, threshold })
+  }
+}
+
 #[derive(Debug, Clone)]
 pub struct DmsConfig {
   pub enable: bool,
   pub listen: SocketAddr,
 }
 
-#[derive(Debug, Clone)]
-pub struct ChecksConfig {
-  pub dns_resolver: IpAddr,
+impl DmsConfig {
+  pub fn new() -> Result<DmsConfig> {
+    let enable = env::var("DMS_ENABLE").or_string("1") == "1";
+    let listen = env::var("DMS_LISTEN")
+      .or_string("127.0.0.1:8080")
+      .parse::<SocketAddr>()
+      .context("could not parse Dead Man Switch listen address")?;
+
+    Ok(DmsConfig { enable, listen })
+  }
 }
 
 #[derive(Debug, Clone)]
-pub struct AlertersConfig {
-  pub default: Option<String>,
-  pub fallback: Option<String>,
+pub struct ChecksConfig {
+  pub dns_resolver: IpAddr,
 }
 
 impl ChecksConfig {
@@ -79,6 +125,21 @@ impl ChecksConfig {
   }
 }
 
+#[derive(Debug, Clone)]
+pub struct AlertersConfig {
+  pub default: Option<String>,
+  pub fallback: Option<String>,
+}
+
+impl Default for AlertersConfig {
+  fn default() -> AlertersConfig {
+    AlertersConfig {
+      default: env::var("ALERTER_DEFAULT").ok(),
+      fallback: env::var("ALERTER_FALLBACK").ok(),
+    }
+  }
+}
+
 impl Config {
   pub fn set_log_level() -> Result<()> {
     if env::var("RUST_LOG").is_err() {
@@ -89,60 +150,13 @@ impl Config {
   }
 
   pub fn parse() -> Result<Arc<Config>> {
-    let api_enable = env::var("API_ENABLE").or_string("1") == "1";
-    let api_listen = env::var("API_LISTEN").or_string("127.0.0.1:8000").parse::<SocketAddr>().context("could not parse API listen address")?;
-
-    let handler_enable = env::var("HANDLER_ENABLE").or_string("1") == "1";
-    let handler_interval = env::var("HANDLER_INTERVAL")
-      .or_duration_min("1s", Duration::from_secs(1))
-      .context("HANDLER_INTERVAL is not a duration")?;
-
-    let handler_spread = match env::var("HANDLER_SPREAD").or_duration_min("0s", Duration::from_secs(0)).context("HANDLER_SPREAD is not a duration")? {
-      duration if duration == Duration::from_nanos(0) => None,
-      duration => Some(duration),
-    };
-
-    let cleaner_enable = env::var("CLEANER_ENABLE").unwrap_or_default() == "1";
-    let cleaner_interval = env::var("CLEANER_INTERVAL")
-      .or_duration_min("10m", Duration::from_secs(1))
-      .context("CLEANER_INTERVAL is not a duration")?;
-
-    let cleaner_threshold = env::var("CLEANER_THRESHOLD")
-      .or_duration_min("1y", Duration::from_secs(1))
-      .context("CLEANER_THRESHOLD is not a duration")?;
-
-    let dms_enable = env::var("DMS_ENABLE").or_string("1") == "1";
-    let dms_listen = env::var("DMS_LISTEN")
-      .or_string("127.0.0.1:8080")
-      .parse::<SocketAddr>()
-      .context("could not parse Dead Man Switch listen address")?;
-
-    let checks = ChecksConfig::new()?;
-
     let config = Config {
-      api: ApiConfig {
-        enable: api_enable,
-        listen: api_listen,
-      },
-      handler: HandlerConfig {
-        enable: handler_enable,
-        interval: handler_interval,
-        spread: handler_spread,
-      },
-      cleaner: CleanerConfig {
-        enable: cleaner_enable,
-        interval: cleaner_interval,
-        threshold: cleaner_threshold,
-      },
-      dms: DmsConfig {
-        enable: dms_enable,
-        listen: dms_listen,
-      },
-      checks,
-      alerters: AlertersConfig {
-        default: env::var("ALERTER_DEFAULT").ok(),
-        fallback: env::var("ALERTER_FALLBACK").ok(),
-      },
+      api: ApiConfig::new()?,
+      handler: HandlerConfig::new()?,
+      cleaner: CleanerConfig::new()?,
+      dms: DmsConfig::new()?,
+      checks: ChecksConfig::new()?,
+      alerters: AlertersConfig::default(),
       key: PUBLIC_KEY.as_ref(),
     };
 

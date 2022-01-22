@@ -2,21 +2,21 @@ use std::{env, sync::Arc, time::Duration};
 
 use anyhow::{anyhow, Context, Result};
 use kvlogger::KvLoggerBuilder;
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
 
 use defcon::{api::auth::Keys, config::ChecksConfig, ext::EnvExt};
 
-lazy_static! {
-  static ref PRIVATE_KEY: Vec<u8> = env::var("PRIVATE_KEY")
+static PRIVATE_KEY: Lazy<Vec<u8>> = Lazy::new(|| {
+  env::var("PRIVATE_KEY")
     .map(std::fs::read_to_string)
     .context("PRIVATE_KEY must be provided")
     .unwrap()
     .context("could not read private key")
     .unwrap()
     .as_bytes()
-    .to_vec();
-}
+    .to_vec()
+});
 
 #[derive(Debug, Clone)]
 pub struct Config<'k> {
