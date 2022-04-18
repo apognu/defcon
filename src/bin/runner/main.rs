@@ -81,7 +81,7 @@ async fn main() -> Result<()> {
   }
 }
 
-async fn run_check(config: Arc<Config<'_>>, stash: Stash, mut inhibitor: Inhibitor, claims: &Claims, check: api::RunnerCheck) -> Result<()> {
+async fn run_check(config: Arc<Config>, stash: Stash, mut inhibitor: Inhibitor, claims: &Claims, check: api::RunnerCheck) -> Result<()> {
   let dummy = Check { id: check.id, ..Default::default() };
 
   let result = match check.spec {

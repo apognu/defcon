@@ -8,13 +8,18 @@ const OptimizeCSSAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const PurgecssPlugin = require('purgecss-webpack-plugin');
+const ESLintPlugin = require('eslint-webpack-plugin');
 
 const { VueLoaderPlugin } = require('vue-loader');
 
 const config = {
   optimization: {
+    minimize: true,
     minimizer: [
-      new TerserPlugin({ cache: true, parallel: true, sourceMap: false }),
+      new TerserPlugin({
+        parallel: true,
+      }),
+
       new OptimizeCSSAssetsPlugin({}),
     ],
   },
@@ -93,13 +98,6 @@ const config = {
           },
         },
       },
-
-      {
-        test: /\.(js|vue)$/,
-        exclude: /node_modules/,
-        enforce: 'pre',
-        loader: 'eslint-loader',
-      },
     ],
   },
 
@@ -117,12 +115,18 @@ const config = {
       extensions: ['.vue'],
     }),
 
-    new CopyWebpackPlugin([{
-      from: 'static/',
-      to: 'static',
-    }]),
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: 'static/',
+          to: 'static',
+        }
+      ]
+    }),
 
     new VueLoaderPlugin(),
+
+    new ESLintPlugin(),
   ],
 
   resolve: {

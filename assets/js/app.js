@@ -11,8 +11,6 @@ import { extendMoment } from 'moment-range';
 import router from '@/router';
 import App from '@/components/App.vue';
 
-// import 'uikit/dist/css/uikit.min.css';
-
 UIkit.use(Icons);
 
 Vue.config.productionTip = false;

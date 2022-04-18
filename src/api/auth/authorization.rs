@@ -11,20 +11,20 @@ use rocket::{
 
 use crate::api::error::AppError;
 
-#[derive(Debug, Default, Clone)]
-pub struct Keys<'k> {
+#[derive(Default, Clone)]
+pub struct Keys {
   private: Option<EncodingKey>,
-  public: Option<DecodingKey<'k>>,
+  public: Option<DecodingKey>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct Claims {
   pub iat: u64,
   pub exp: u64,
   pub site: String,
 }
 
-impl<'k> Keys<'k> {
+impl Keys {
   pub fn new_private(pem: &'static [u8]) -> Result<Keys> {
     let keys = Keys {
       private: Some(EncodingKey::from_ec_pem(pem).context("invalid private key format")?),

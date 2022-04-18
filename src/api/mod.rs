@@ -26,7 +26,7 @@ use crate::{
 
 type ApiResponse<T> = Result<T, ErrorResponse>;
 
-pub fn server(provider: RocketConfig, config: Arc<Config>, pool: Pool<MySql>, keys: Option<Keys<'static>>) -> Rocket<Build> {
+pub fn server(provider: RocketConfig, config: Arc<Config>, pool: Pool<MySql>, keys: Option<Keys>) -> Rocket<Build> {
   let routes: Vec<Route> = routes().into_iter().chain(runner_routes(&keys).into_iter()).chain(web_routes(&config).into_iter()).collect();
 
   match keys {
@@ -80,7 +80,7 @@ pub fn routes() -> Vec<Route> {
   ]
 }
 
-pub fn runner_routes(keys: &Option<Keys<'static>>) -> Vec<Route> {
+pub fn runner_routes(keys: &Option<Keys>) -> Vec<Route> {
   match keys {
     Some(_) => routes![runner::list_stale, runner::report,],
 

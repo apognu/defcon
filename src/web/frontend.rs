@@ -21,7 +21,11 @@ impl<'r, 'o: 'r> Responder<'r, 'o> for StaticResponse {
 pub fn robots() -> Result<StaticResponse, Custom<()>> {
   Asset::get("static/robots.txt").map_or_else(
     || Err(Custom(Status::NotFound, ())),
-    |asset| Ok(StaticResponse(Response::build().header(ContentType::Plain).sized_body(asset.len(), Cursor::new(asset)).finalize())),
+    |asset| {
+      Ok(StaticResponse(
+        Response::build().header(ContentType::Plain).sized_body(asset.data.len(), Cursor::new(asset.data)).finalize(),
+      ))
+    },
   )
 }
 
@@ -29,7 +33,11 @@ pub fn robots() -> Result<StaticResponse, Custom<()>> {
 pub fn index() -> Result<StaticResponse, Custom<()>> {
   Asset::get("index.html").map_or_else(
     || Err(Custom(Status::NotFound, ())),
-    |asset| Ok(StaticResponse(Response::build().header(ContentType::HTML).sized_body(asset.len(), Cursor::new(asset)).finalize())),
+    |asset| {
+      Ok(StaticResponse(
+        Response::build().header(ContentType::HTML).sized_body(asset.data.len(), Cursor::new(asset.data)).finalize(),
+      ))
+    },
   )
 }
 
@@ -38,7 +46,11 @@ pub fn index() -> Result<StaticResponse, Custom<()>> {
 pub fn catchall(path: PathBuf) -> Result<StaticResponse, Custom<()>> {
   Asset::get("index.html").map_or_else(
     || Err(Custom(Status::NotFound, ())),
-    |asset| Ok(StaticResponse(Response::build().header(ContentType::HTML).sized_body(asset.len(), Cursor::new(asset)).finalize())),
+    |asset| {
+      Ok(StaticResponse(
+        Response::build().header(ContentType::HTML).sized_body(asset.data.len(), Cursor::new(asset.data)).finalize(),
+      ))
+    },
   )
 }
 
@@ -64,7 +76,7 @@ pub fn assets(path: PathBuf) -> Result<StaticResponse, Custom<()>> {
         Response::build()
           .header(content_type)
           .raw_header("cache-control", format!("max-age={}", age))
-          .sized_body(asset.len(), Cursor::new(asset))
+          .sized_body(asset.data.len(), Cursor::new(asset.data))
           .finalize(),
       ))
     },

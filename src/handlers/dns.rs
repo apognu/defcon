@@ -53,18 +53,18 @@ impl<'h> Handler for DnsHandler<'h> {
     let found = records.iter().fold(Ok(false), |acc: Result<bool, anyhow::Error>, record| match acc {
       Err(_) => acc,
       Ok(true) => acc,
-      Ok(false) => match *record.rdata() {
-        RData::NS(ref ns) => Ok(ns == &Name::from_str(&spec.value)?),
-        RData::MX(ref mx) => Ok(mx.exchange() == &Name::from_str(&spec.value)?),
-        RData::A(ref ip) => Ok(ip == &spec.value.parse::<Ipv4Addr>()?),
-        RData::AAAA(ref ip) => Ok(ip == &spec.value.parse::<Ipv6Addr>()?),
-        RData::CNAME(ref name) => Ok(name == &Name::from_str(&spec.value)?),
-        RData::SRV(ref srv) => Ok(srv.target() == &Name::from_str(&spec.value)?),
+      Ok(false) => match record.data() {
+        Some(RData::NS(ref ns)) => Ok(ns == &Name::from_str(&spec.value)?),
+        Some(RData::MX(ref mx)) => Ok(mx.exchange() == &Name::from_str(&spec.value)?),
+        Some(RData::A(ref ip)) => Ok(ip == &spec.value.parse::<Ipv4Addr>()?),
+        Some(RData::AAAA(ref ip)) => Ok(ip == &spec.value.parse::<Ipv6Addr>()?),
+        Some(RData::CNAME(ref name)) => Ok(name == &Name::from_str(&spec.value)?),
+        Some(RData::SRV(ref srv)) => Ok(srv.target() == &Name::from_str(&spec.value)?),
 
-        RData::CAA(CAA {
+        Some(RData::CAA(CAA {
           value: CaaValue::Issuer(Some(ref issuer), _),
           ..
-        }) => Ok(issuer == &Name::from_str(&spec.value)?),
+        })) => Ok(issuer == &Name::from_str(&spec.value)?),
 
         _ => Ok(false),
       },

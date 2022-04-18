@@ -96,7 +96,7 @@ async fn main() -> Result<()> {
   Ok(())
 }
 
-async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Option<Keys<'static>>) -> Result<()> {
+async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Option<Keys>) -> Result<()> {
   kvlog!(Info, "starting api process", {
     "listen" => config.api.listen
   });

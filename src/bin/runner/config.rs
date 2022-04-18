@@ -18,11 +18,11 @@ static PRIVATE_KEY: Lazy<Vec<u8>> = Lazy::new(|| {
     .to_vec()
 });
 
-#[derive(Debug, Clone)]
-pub struct Config<'k> {
+#[derive(Clone)]
+pub struct Config {
   pub base: String,
   pub site: String,
-  pub keys: Keys<'k>,
+  pub keys: Keys,
 
   pub poll_interval: Duration,
   pub handler_spread: Option<Duration>,
@@ -30,7 +30,7 @@ pub struct Config<'k> {
   pub checks: ChecksConfig,
 }
 
-impl<'k> Config<'k> {
+impl Config {
   pub fn set_log_level() -> Result<()> {
     if env::var("RUST_LOG").is_err() {
       env::set_var("RUST_LOG", "defcon=info");
@@ -39,7 +39,7 @@ impl<'k> Config<'k> {
     Ok(KvLoggerBuilder::default().init()?)
   }
 
-  pub fn parse() -> Result<Arc<Config<'k>>> {
+  pub fn parse() -> Result<Arc<Config>> {
     let base = env::var("CONTROLLER_URL").context("CONTROLLER_URL should be provided")?;
     let site = env::var("SITE").context("SITE should be provided")?;
     let keys = Keys::new_private(&PRIVATE_KEY).context("PRIVATE_KEY should be provided and be en ECDSA key in PEM format")?;
