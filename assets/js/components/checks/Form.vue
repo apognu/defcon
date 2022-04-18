@@ -1,7 +1,9 @@
 <template lang="pug">
 div
-  h2(v-if='new_record') Create a check
-  h2(v-else) Edit a check
+  h2(v-if='new_record') New check
+  template(v-else-if='check')
+    p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Edit check
+    h2.uk-margin-remove-top {{ check.name }}
 
   .uk-card.uk-card-default.uk-card-body.uk-margin
     h3.uk-card-title Basic settings

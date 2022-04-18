@@ -1,7 +1,9 @@
 <template lang="pug">
 div
-  h2(v-if='new_record') Create an alerter
-  h2(v-else) Edit an alerter
+  h2(v-if='new_record') New alerter
+  template(v-else-if='alerter')
+    p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Edit alerter
+    h2.uk-margin-remove-top {{ alerter.name }}
 
   .uk-form-horizontal(v-if='alerter || new_record')
     .uk-margin

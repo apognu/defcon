@@ -1,7 +1,9 @@
 <template lang="pug">
 div
-  h2(v-if='new_record') Create a group
-  h2(v-else) Edit a group
+  h2(v-if='new_record') New group
+  template(v-else-if='group')
+    p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Edit group
+    h2.uk-margin-remove-top {{ group.name }}
 
   .uk-form-horizontal(v-if='group || new_record')
     .uk-margin

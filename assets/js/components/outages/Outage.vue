@@ -1,66 +1,66 @@
 <template lang="pug">
-div
-  h2 Incident
+div(v-id='outage')
+  p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Incident
+  h2.uk-margin-remove-top {{ outage.check.name }} - {{ outage.started_on | moment("MMMM Do YYYY, h:mm:ss a") }}
 
-  div(v-if='outage')
-    .heading.uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin-bottom
-      .uk-flex.uk-flex-middle
-        div
-          .bubble.success.uk-margin-right(v-if='outage.ended_on')
-          .bubble.error.uk-margin-right(v-else)
-
-        .uk-flex-1
-          p.uk-text-bold.uk-text-emphasis.uk-margin-remove {{ outage.check.name }}
-          p.uk-margin-remove.uk-text-muted {{ outage.check.uuid }}
-
-        router-link.uk-margin-left(
-          :to='{ name: "checks.view", params: { uuid: outage.check.uuid } }'
-        )
-          span(uk-icon='icon: search')
-
-    .uk-child-width-expand.uk-grid-match.uk-margin-bottom(uk-grid)
+  .heading.uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin-bottom
+    .uk-flex.uk-flex-middle
       div
-        .uk-card.uk-card-default.uk-card-small.uk-text-center
-          .uk-card-header
-            h3.uk-h6.uk-text-uppercase.uk-text-muted Started at
-          .uk-card-body
-            p.uk-text.bold.uk-text-emphasis {{ outage.started_on | moment("from") }}
+        .bubble.success.uk-margin-right(v-if='outage.ended_on')
+        .bubble.error.uk-margin-right(v-else)
 
-      div
-        .uk-card.uk-card-default.uk-card-small.uk-text-center
-          .uk-card-header
-            h3.uk-h6.uk-text-uppercase.uk-text-muted Lasted
-          .uk-card-body
-            p.uk-text-bold.uk-text-success(v-if='outage.ended_on') {{ lasted(outage) | duration("humanize") }}
-            p.uk-text-bold.uk-text-warning(v-else) Ongoing
+      .uk-flex-1
+        p.uk-text-bold.uk-text-emphasis.uk-margin-remove {{ outage.check.name }}
+        p.uk-margin-remove.uk-text-muted {{ outage.check.uuid }}
 
-    .uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin
-      h3.uk-card-title Comment
-
-      textarea.uk-textarea.uk-form-blank.uk-margin-small-bottom(
-        v-model='outage.comment'
+      router-link.uk-margin-left(
+        :to='{ name: "checks.view", params: { uuid: outage.check.uuid } }'
       )
-      .uk-text-right
-        button.uk-button.uk-button-small(@click='comment') Save comment
+        span(uk-icon='icon: search')
 
-    Spec(:check='outage.check')
+  .uk-child-width-expand.uk-grid-match.uk-margin-bottom(uk-grid)
+    div
+      .uk-card.uk-card-default.uk-card-small.uk-text-center
+        .uk-card-header
+          h3.uk-h6.uk-text-uppercase.uk-text-muted Started at
+        .uk-card-body
+          p.uk-text.bold.uk-text-emphasis {{ outage.started_on | moment("from") }}
 
-    .uk-card.uk-card-default.uk-card-body.uk-margin(v-if='events')
-      h3 Latest events
+    div
+      .uk-card.uk-card-default.uk-card-small.uk-text-center
+        .uk-card-header
+          h3.uk-h6.uk-text-uppercase.uk-text-muted Lasted
+        .uk-card-body
+          p.uk-text-bold.uk-text-success(v-if='outage.ended_on') {{ lasted(outage) | duration("humanize") }}
+          p.uk-text-bold.uk-text-warning(v-else) Ongoing
 
-      table.uk-table.uk-table-divider
-        tr(v-for='event in events')
-          td.uk-table-shrink
-            .bubble.success(v-if='event.status === 0')
-            .bubble.error(v-else)
+  .uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin
+    h3.uk-card-title Comment
 
-          td.uk-table-shrink.uk-text-nowrap
-            p {{ event.created_at | moment("from") }}
+    textarea.uk-textarea.uk-form-blank.uk-margin-small-bottom(
+      v-model='outage.comment'
+    )
+    .uk-text-right
+      button.uk-button.uk-button-small(@click='comment') Save comment
 
-          td.uk-table-shrink
-            span.checkkind {{ event.site }}
+  Spec(:check='outage.check')
 
-          td.uk-text-right {{ event.message }}
+  .uk-card.uk-card-default.uk-card-body.uk-margin(v-if='events')
+    h3 Latest events
+
+    table.uk-table.uk-table-divider
+      tr(v-for='event in events')
+        td.uk-table-shrink
+          .bubble.success(v-if='event.status === 0')
+          .bubble.error(v-else)
+
+        td.uk-table-shrink.uk-text-nowrap
+          p {{ event.created_at | moment("from") }}
+
+        td.uk-table-shrink
+          span.checkkind {{ event.site }}
+
+        td.uk-text-right {{ event.message }}
 </template>
 
 <script>

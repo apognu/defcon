@@ -1,6 +1,7 @@
 <template lang="pug">
-.check
-  h2 Check
+.check(v-if='check')
+  p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Check
+  h2.uk-margin-remove-top {{ check.name }}
 
   .uk-alert.uk-alert-warning(v-if='check && !check.enabled')
     span.uk-margin-right(uk-icon='icon: ban')
@@ -10,53 +11,62 @@
     span.uk-margin-right(uk-icon='icon: bell')
     | This check is silenced.
 
-  div(v-if='check')
-    .heading.uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin-bottom
-      .uk-flex.uk-flex-middle
-        .uk-flex-1
-          p.uk-text-bold.uk-text-emphasis.uk-margin-remove {{ check.name }}
-          p.uk-margin-remove.uk-text-muted {{ check.uuid }}
+  .heading.uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin-bottom
+    .uk-flex.uk-flex-middle
+      .uk-flex-1
+        p.uk-text-bold.uk-text-emphasis.uk-margin-remove {{ check.name }}
+        p.uk-margin-remove.uk-text-muted {{ check.uuid }}
 
-        a.uk-margin-left.uk-text-success(
-          v-if='check.silent',
-          @click='silence(false)'
-        )
-          span(uk-icon='icon: bell')
-        a.uk-margin-left.uk-text-danger(v-else, @click='silence(true)')
-          span(uk-icon='icon: bell')
+      a.uk-margin-left.uk-text-success(
+        v-if='check.silent',
+        @click='silence(false)',
+        uk-tooltip='Unsilence'
+      )
+        span(uk-icon='icon: bell')
+      a.uk-margin-left.uk-text-danger(
+        v-else,
+        @click='silence(true)',
+        uk-tooltip='Silence'
+      )
+        span(uk-icon='icon: bell')
 
-        a.uk-margin-left.uk-text-danger(
-          v-if='check.enabled',
-          @click='enable(false)'
-        )
-          span(uk-icon='icon: play')
-        a.uk-margin-left.uk-text-success(v-else, @click='enable(true)')
-          span(uk-icon='icon: play')
+      a.uk-margin-left.uk-text-danger(
+        v-if='check.enabled',
+        @click='enable(false)',
+        uk-tooltip='Disable'
+      )
+        span(uk-icon='icon: ban')
+      a.uk-margin-left.uk-text-success(
+        v-else,
+        @click='enable(true)',
+        uk-tooltip='Enable'
+      )
+        span(uk-icon='icon: play')
 
-        router-link.uk-margin-left(
-          :to='{ name: "checks.edit", uuid: check.uuid }'
-        )
-          span(uk-icon='icon: pencil')
+      router-link.uk-margin-left(
+        :to='{ name: "checks.edit", uuid: check.uuid }'
+      )
+        span(uk-icon='icon: pencil')
 
-        a.uk-margin-left.uk-text-danger(@click='deleteCheck()')
-          span(uk-icon='icon: trash')
+      a.uk-margin-left.uk-text-danger(@click='deleteCheck()')
+        span(uk-icon='icon: trash')
 
-    Spec.uk-margin-bottom(:check='check')
+  Spec.uk-margin-bottom(:check='check')
 
-    Timeline(:check='check.uuid')
+  Timeline(:check='check.uuid')
 
-    .uk-card.uk-card-default(v-if='outages.length > 0')
-      .uk-card-header
-        h3.uk-card-title Past outages
-      .uk-card-body
-        table.uk-table.uk-table-middle
-          tbody
-            tr(
-              v-for='outage in outages',
-              is='OutageRow',
-              :outage='outage',
-              :key='outage.uuid'
-            )
+  .uk-card.uk-card-default(v-if='outages.length > 0')
+    .uk-card-header
+      h3.uk-card-title Past incidents
+    .uk-card-body
+      table.uk-table.uk-table-middle
+        tbody
+          tr(
+            v-for='outage in outages',
+            is='OutageRow',
+            :outage='outage',
+            :key='outage.uuid'
+          )
 </template>
 
 <script>
@@ -122,11 +132,11 @@ export default {
 
           if (state) {
             UIkit.notification(
-              '<span uk-icon="icon: play"></span> The check was silenced.',
+              '<span class="uk-margin-small-right" uk-icon="icon: bell"></span> The check was silenced.',
             );
           } else {
             UIkit.notification(
-              '<span uk-icon="icon: play"></span> The check was unsilenced.',
+              '<span class="uk-margin-small-right" uk-icon="icon: bell"></span> The check was unsilenced.',
             );
           }
         });
@@ -140,11 +150,11 @@ export default {
 
           if (state) {
             UIkit.notification(
-              '<span uk-icon="icon: bell"></span> The check was enabled.',
+              '<span class="uk-margin-small-right" uk-icon="icon: play"></span> The check was enabled.',
             );
           } else {
             UIkit.notification(
-              '<span uk-icon="icon: bell"></span> The check was disabled.',
+              '<span class="uk-margin-small-right" uk-icon="icon: ban"></span> The check was disabled.',
             );
           }
         });
