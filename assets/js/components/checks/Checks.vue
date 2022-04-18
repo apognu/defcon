@@ -34,30 +34,25 @@ div
           option(v-for='option in state_options', :value='option.slug') {{ option.label }}
 
   .uk-card.uk-card-default.uk-card-body(v-if='filteredChecks.length > 0')
-    table.uk-table.uk-table-responsive.uk-table-middle
+    table.uk-table.uk-table-middle
       tbody
         tr(v-for='check in filteredChecks')
-          td.uk-table-shrink(class='uk-visible@m')
+          td.uk-table-shrink
             .bubble.success(v-if='check.status')
             .bubble.error(v-else)
 
-          td(class='uk-visible@m')
+          td
             p.uk-margin-remove
               span.uk-text-bold.uk-text-emphasis(
                 :class='{ "uk-text-warning": !check.enabled }'
               ) {{ check.name }}
-              span.uk-margin-left.uk-text-muted(v-if='check.group') {{ check.group.name }}
-            p.uk-margin-remove.uk-text-muted.uk-text-small {{ check.uuid }}
+              span.uk-margin-left.uk-text-muted(
+                v-if='check.group',
+                class='uk-visible@m'
+              ) {{ check.group.name }}
+            p.uk-margin-remove.uk-text-muted.uk-text-small(class='uk-visible@m') {{ check.uuid }}
 
-          td(class='uk-hidden@m')
-            span.bubble.success(v-if='check.status')
-            span.bubble.error(v-else)
-            span.uk-margin-left.uk-text-bold.uk-text-emphasis {{ check.name }}
-
-          td.uk-table-shrink.uk-text-nowrap.uk-text-right(class='uk-visible@m')
-            span.checkkind {{ check.spec.kind | checkkind() }}
-
-          td.uk-table-shrink.uk-text-nowrap(class='uk-hidden@m')
+          td.uk-table-shrink.uk-text-nowrap.uk-text-right
             span.checkkind {{ check.spec.kind | checkkind() }}
 
           td.actions

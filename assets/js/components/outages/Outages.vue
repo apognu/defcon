@@ -6,7 +6,7 @@ div
 
   div(v-if='outages')
     .uk-card.uk-card-default.uk-card-body(v-if='outages.length > 0')
-      table.uk-table.uk-table-responsive.uk-table-middle
+      table.uk-table.uk-table-middle
         tbody
           tr(
             v-for='outage in outages',

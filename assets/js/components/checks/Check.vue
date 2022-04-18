@@ -59,7 +59,7 @@
     .uk-card-header
       h3.uk-card-title Past incidents
     .uk-card-body
-      table.uk-table.uk-table-responsive.uk-table-middle
+      table.uk-table.uk-table-middle
         tbody
           tr(
             v-for='outage in outages',

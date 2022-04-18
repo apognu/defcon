@@ -29,31 +29,38 @@
   #app-mobile(class='uk-hidden@m')
     aside#sidebar.uk-card.uk-card-default.uk-card-body.uk-padding-small
       header
-        h1.uk-h3 Defcon
+        .uk-flex.uk-flex-middle
+          a.uk-margin-right(href='#menu', uk-toggle)
+            span(uk-icon='icon: menu; ratio: 1.5')
 
-        ul#menu.uk-nav.uk-nav-default
-          router-link(:to='{ name: "home" }', exact-active-class='active')
-            span.uk-margin-right(uk-icon='icon: home')
-            | Dashboard
-          router-link(:to='{ name: "outages" }', active-class='active')
-            span.uk-margin-right(uk-icon='icon: warning')
-            | Incidents
-            span.uk-badge.uk-margin-small-left(v-if='outages > 0') {{ outages }}
-          router-link(:to='{ name: "checks" }', active-class='active')
-            span.uk-margin-right(uk-icon='icon: check')
-            | Checks
-          router-link(:to='{ name: "groups" }', active-class='active')
-            span.uk-margin-right(uk-icon='icon: folder')
-            | Groups
-          router-link(:to='{ name: "alerters" }', active-class='active')
-            span.uk-margin-right(uk-icon='icon: bell')
-            | Alerters
+          h1.uk-margin-remove.uk-h3.uk-width-1-1 Defcon
+
+        #menu(uk-offcanvas='mode: reveal; overlay: true', ref='menu')
+          .uk-offcanvas-bar
+            ul#menu.uk-nav.uk-nav-default
+              router-link(:to='{ name: "home" }', exact-active-class='active')
+                span.uk-margin-right(uk-icon='icon: home')
+                | Dashboard
+              router-link(:to='{ name: "outages" }', active-class='active')
+                span.uk-margin-right(uk-icon='icon: warning')
+                | Incidents
+                span.uk-badge.uk-margin-small-left(v-if='outages > 0') {{ outages }}
+              router-link(:to='{ name: "checks" }', active-class='active')
+                span.uk-margin-right(uk-icon='icon: check')
+                | Checks
+              router-link(:to='{ name: "groups" }', active-class='active')
+                span.uk-margin-right(uk-icon='icon: folder')
+                | Groups
+              router-link(:to='{ name: "alerters" }', active-class='active')
+                span.uk-margin-right(uk-icon='icon: bell')
+                | Alerters
 
     #main
       router-view.uk-container-large.uk-margin-auto.uk-padding
 </template>
 
 <script>
+import UIkit from 'uikit';
 import axios from 'axios';
 
 export default {
@@ -65,6 +72,8 @@ export default {
 
   watch: {
     $route(to) {
+      UIkit.offcanvas(this.$refs.menu).hide();
+
       this.setTitle(to.meta.title);
     },
   },

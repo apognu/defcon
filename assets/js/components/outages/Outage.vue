@@ -1,5 +1,5 @@
 <template lang="pug">
-div(v-id='outage')
+div(v-if='outage')
   p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Incident
   h2.uk-margin-remove-top {{ outage.check.name }} - {{ outage.started_on | moment("MMMM Do YYYY, h:mm:ss a") }}
 
@@ -48,18 +48,17 @@ div(v-id='outage')
   .uk-card.uk-card-default.uk-card-body.uk-margin(v-if='events')
     h3 Latest events
 
-    table.uk-table.uk-table-responsive.uk-table-divider
+    table.uk-table.uk-table-middle.uk-table-divider
       tr(v-for='event in events')
-        td.uk-table-shrink(class='uk-hidden@m')
-          span.bubble.success(v-if='event.status === 0')
-          span.bubble.error(v-else)
-          span.uk-margin-left.checkkind {{ event.site }}
-
-        td.uk-table-shrink(class='uk-visible@m')
+        td.uk-table-shrink
           .bubble.success(v-if='event.status === 0')
           .bubble.error(v-else)
 
-        td.uk-table-shrink.uk-text-nowrap
+        td(class='uk-hidden@m')
+          p.uk-margin-remove {{ event.created_at | moment("from") }}
+          p.uk-margin-remove: span.checkkind {{ event.site }}
+
+        td.uk-table-shrink.uk-text-nowrap(class='uk-visible@m')
           p {{ event.created_at | moment("from") }}
 
         td.uk-table-shrink(class='uk-visible@m')
