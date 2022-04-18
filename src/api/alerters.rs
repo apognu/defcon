@@ -1,6 +1,6 @@
 use anyhow::Context;
 use rocket::{
-  response::status::Created,
+  response::status::{Created, NoContent},
   serde::json::{Error as JsonError, Json},
   State,
 };
@@ -38,6 +38,7 @@ pub async fn add(pool: &State<Pool<MySql>>, payload: Result<Json<db::Alerter>, J
 
   let alerter = db::Alerter {
     uuid: uuid.clone(),
+    name: payload.name,
     kind: payload.kind,
     webhook: payload.webhook,
     username: payload.username,
@@ -58,6 +59,7 @@ pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Jso
   let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.context("could not find alerter").short()?;
 
   let alerter = db::Alerter {
+    name: payload.name,
     kind: payload.kind,
     webhook: payload.webhook,
     username: payload.username,
@@ -68,6 +70,15 @@ pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Jso
   alerter.update(&mut conn).await.context("could not update alerter").short()?;
 
   Ok(())
+}
+
+#[delete("/api/alerters/<uuid>")]
+pub async fn delete(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+
+  db::Alerter::delete(&mut conn, &uuid).await.context("could not delete alerter").short()?;
+
+  Ok(NoContent)
 }
 
 #[cfg(test)]
@@ -136,6 +147,7 @@ mod tests {
     let (pool, client) = tests::api_client().await?;
 
     let payload = json!({
+      "name": "My Alerter",
       "kind": "webhook",
       "webhook": "https://hooks.example.com/1"
     });
@@ -143,14 +155,15 @@ mod tests {
     let response = client.post("/api/alerters").body(payload.to_string().as_bytes()).dispatch().await;
     assert_eq!(response.status(), Status::Created);
 
-    let check = sqlx::query_as::<_, (String, String, Option<String>, Option<String>)>("SELECT kind, webhook, username, password FROM alerters")
+    let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, webhook, username, password FROM alerters")
       .fetch_one(&*pool)
       .await?;
 
-    assert_eq!(&check.0, "webhook");
-    assert_eq!(&check.1, "https://hooks.example.com/1");
-    assert!(matches!(check.2, None));
+    assert_eq!(&check.0, "My Alerter");
+    assert_eq!(&check.1, "webhook");
+    assert_eq!(&check.2, "https://hooks.example.com/1");
     assert!(matches!(check.3, None));
+    assert!(matches!(check.4, None));
 
     pool.cleanup().await;
 
@@ -162,6 +175,7 @@ mod tests {
     let (pool, client) = tests::api_client().await?;
 
     let payload = json!({
+      "name": "My Alerter",
       "kind": "webhook",
       "webhook": "https://hooks.example.com/1",
       "username": "bob",
@@ -171,14 +185,15 @@ mod tests {
     let response = client.post("/api/alerters").body(payload.to_string().as_bytes()).dispatch().await;
     assert_eq!(response.status(), Status::Created);
 
-    let check = sqlx::query_as::<_, (String, String, Option<String>, Option<String>)>("SELECT kind, webhook, username, password FROM alerters")
+    let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, webhook, username, password FROM alerters")
       .fetch_one(&*pool)
       .await?;
 
-    assert_eq!(&check.0, "webhook");
-    assert_eq!(&check.1, "https://hooks.example.com/1");
-    assert!(matches!(check.2.as_deref(), Some("bob")));
-    assert!(matches!(check.3.as_deref(), Some("password")));
+    assert_eq!(&check.0, "My Alerter");
+    assert_eq!(&check.1, "webhook");
+    assert_eq!(&check.2, "https://hooks.example.com/1");
+    assert!(matches!(check.3.as_deref(), Some("bob")));
+    assert!(matches!(check.4.as_deref(), Some("password")));
 
     pool.cleanup().await;
 
@@ -192,6 +207,7 @@ mod tests {
     pool.create_alerter().await?;
 
     let payload = json!({
+      "name": "My Alerter",
       "kind": "webhook",
       "webhook": "https://hooks.example.com/2",
       "username": "bob",
@@ -200,14 +216,15 @@ mod tests {
     let response = client.put("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(payload.to_string().as_bytes()).dispatch().await;
     assert_eq!(response.status(), Status::Ok);
 
-    let check = sqlx::query_as::<_, (String, String, Option<String>, Option<String>)>("SELECT kind, webhook, username, password FROM alerters")
+    let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, webhook, username, password FROM alerters")
       .fetch_one(&*pool)
       .await?;
 
-    assert_eq!(&check.0, "webhook");
-    assert_eq!(&check.1, "https://hooks.example.com/2");
-    assert!(matches!(check.2.as_deref(), Some("bob")));
-    assert!(matches!(check.3.as_deref(), None));
+    assert_eq!(&check.0, "My Alerter");
+    assert_eq!(&check.1, "webhook");
+    assert_eq!(&check.2, "https://hooks.example.com/2");
+    assert!(matches!(check.3.as_deref(), Some("bob")));
+    assert!(matches!(check.4.as_deref(), None));
 
     pool.cleanup().await;
 

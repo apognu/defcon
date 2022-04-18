@@ -126,8 +126,8 @@ pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Jso
     Err(anyhow!("cannot change the resource `kind`").context(AppError::BadRequest)).short()?;
   }
 
-  let group = match payload.group {
-    Some(group) => Some(Group::by_uuid(&mut txn, &group.uuid).await.context("could not retrieve group").short()?),
+  let group = match payload.group_in {
+    Some(group) => Some(Group::by_uuid(&mut txn, &group).await.context("could not retrieve group").short()?),
     None => None,
   };
 

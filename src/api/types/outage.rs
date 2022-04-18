@@ -11,6 +11,8 @@ use crate::{
 pub struct Outage {
   #[serde(flatten)]
   pub outage: db::Outage,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub event: Option<db::Event>,
   pub check: api::Check,
 }
 
@@ -30,9 +32,11 @@ impl ApiMapper for db::Outage {
     let group = check.group(&mut *conn).await;
     let alerter = check.alerter(&mut *conn).await;
     let sites = check.sites(&mut *conn).await?;
+    let event = db::Event::last_for_outage(&mut *conn, &self).await?;
 
     let outage = api::Outage {
       outage: self,
+      event: Some(event),
       check: api::Check {
         check,
         spec,
@@ -62,9 +66,11 @@ impl ApiMapper for Vec<db::Outage> {
                 let group = check.group(&mut *conn).await;
                 let alerter = check.alerter(&mut *conn).await;
                 let sites = check.sites(&mut *conn).await.unwrap_or_default();
+                let event = db::Event::last_for_outage(&mut *conn, &outage).await.unwrap_or_default();
 
                 let outage = api::Outage {
                   outage,
+                  event: Some(event),
                   check: api::Check {
                     check,
                     spec,

@@ -64,7 +64,7 @@ impl Dns {
     sqlx::query(
       "
         UPDATE dns_specs
-        SET domain = ?, value = ?, record = ?
+        SET record = ?, domain = ?, value = ?
         WHERE check_id = ?
       ",
     )

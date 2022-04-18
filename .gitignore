@@ -1,2 +1,4 @@
-/target
 /.vscode
+/target
+/assets/node_modules
+/dist

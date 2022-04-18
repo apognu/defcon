@@ -38,6 +38,21 @@ pub async fn list_between(pool: &State<Pool<MySql>>, from: api::DateTime, to: ap
   Ok(Json(outages))
 }
 
+#[get("/api/outages/<uuid>")]
+pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Outage>> {
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+
+  let outage = db::Outage::by_uuid(&mut conn, &uuid)
+    .await
+    .context("could not retrieve outage")
+    .short()?
+    .map(&*pool)
+    .await
+    .short()?;
+
+  Ok(Json(outage))
+}
+
 #[get("/api/checks/<uuid>/outages", rank = 10)]
 pub async fn list_for_check(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;

@@ -8,6 +8,9 @@ extern crate serde;
 extern crate rocket;
 #[macro_use]
 extern crate anyhow;
+#[cfg(feature = "web")]
+#[macro_use]
+extern crate rust_embed;
 
 pub mod alerters;
 pub mod api;
@@ -17,6 +20,9 @@ pub mod handlers;
 pub mod inhibitor;
 pub mod model;
 pub mod stash;
+
+#[cfg(feature = "web")]
+pub mod web;
 
 #[cfg(test)]
 mod tests;

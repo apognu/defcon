@@ -454,6 +454,25 @@ paths:
                 items:
                   $ref: '#/components/schemas/outage/Outage'
 
+  /api/outages/{uuid}/events:
+    get:
+      summary: Get a site outage events
+      tags: ['Site outages']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of handler events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/site_outage/Event'
+
   /api/outages/{uuid}/comment:
     put:
       summary: Add a comment
@@ -529,25 +548,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/site_outage/SiteOutage'
-
-  /api/sites/outages/{uuid}/events:
-    get:
-      summary: Get a site outage events
-      tags: ['Site outages']
-      parameters:
-        - name: uuid
-          description: Unique identifier
-          in: path
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: List of handler events
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/site_outage/Event'
 
   /api/status:
     get:

@@ -32,6 +32,11 @@ pub fn config() -> Arc<Config> {
       enable: true,
       listen: "127.0.0.1:1234".parse::<SocketAddr>().unwrap(),
     },
+    #[cfg(feature = "web")]
+    web: WebConfig {
+      enable: false,
+      listen: "127.0.0.1:4321".parse::<SocketAddr>().unwrap(),
+    },
     handler: HandlerConfig {
       enable: true,
       interval: Duration::from_secs(0),

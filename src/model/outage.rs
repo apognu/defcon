@@ -35,13 +35,16 @@ impl Outage {
           (
             (outages.started_on <= ? AND outages.ended_on IS NULL) OR
             (outages.started_on <= ? AND outages.ended_on >= ?) OR
-            (outages.started_on BETWEEN ? AND ? AND (outages.ended_on IS NULL OR outages.ended_on <= ?))
+            outages.started_on BETWEEN ? AND ? OR
+            outages.ended_on BETWEEN ? AND ?
           )
       ",
     )
     .bind(end)
     .bind(from)
     .bind(from)
+    .bind(from)
+    .bind(end)
     .bind(from)
     .bind(end)
     .bind(end)

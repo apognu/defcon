@@ -23,6 +23,8 @@ pub static PUBLIC_KEY: Lazy<Option<Vec<u8>>> = Lazy::new(|| {
 #[derive(Debug, Clone)]
 pub struct Config {
   pub api: ApiConfig,
+  #[cfg(feature = "web")]
+  pub web: WebConfig,
   pub handler: HandlerConfig,
   pub cleaner: CleanerConfig,
   pub dms: DmsConfig,
@@ -37,12 +39,28 @@ pub struct ApiConfig {
   pub listen: SocketAddr,
 }
 
+
 impl ApiConfig {
   pub fn new() -> Result<ApiConfig> {
     let enable = env::var("API_ENABLE").or_string("1") == "1";
     let listen = env::var("API_LISTEN").or_string("127.0.0.1:8000").parse::<SocketAddr>().context("could not parse API listen address")?;
 
     Ok(ApiConfig { enable, listen })
+  }
+}
+
+#[derive(Debug, Clone)]
+pub struct WebConfig {
+  pub enable: bool,
+  pub listen: SocketAddr,
+}
+
+impl WebConfig {
+  pub fn new() -> Result<WebConfig> {
+    let enable = env::var("WEB_ENABLE").or_string("0") == "1";
+    let listen = env::var("WEB_LISTEN").or_string("127.0.0.1:3000").parse::<SocketAddr>().context("could not parse Web listen address")?;
+
+    Ok(WebConfig { enable, listen })
   }
 }
 
@@ -152,6 +170,8 @@ impl Config {
   pub fn parse() -> Result<Arc<Config>> {
     let config = Config {
       api: ApiConfig::new()?,
+      #[cfg(feature = "web")]
+      web: WebConfig::new()?,
       handler: HandlerConfig::new()?,
       cleaner: CleanerConfig::new()?,
       dms: DmsConfig::new()?,
@@ -195,6 +215,12 @@ mod tests {
     assert_eq!(config.api.enable, true);
     assert_eq!(config.api.listen.ip(), Ipv4Addr::new(127, 0, 0, 1));
     assert_eq!(config.api.listen.port(), 8000);
+    #[cfg(feature = "web")]
+    {
+      assert_eq!(config.web.enable, false);
+      assert_eq!(config.web.listen.ip(), Ipv4Addr::new(127, 0, 0, 1));
+      assert_eq!(config.web.listen.port(), 3000);
+    }
     assert_eq!(config.handler.enable, true);
     assert_eq!(config.handler.interval, Duration::from_secs(1));
     assert_eq!(config.handler.spread, None);
@@ -217,6 +243,11 @@ mod tests {
 
     env::set_var("API_ENABLE", "0");
     env::set_var("API_LISTEN", "0.0.0.0:10000");
+    #[cfg(feature = "web")]
+    {
+      env::set_var("WEB_ENABLE", "1");
+      env::set_var("WEB_LISTEN", "0.0.0.0:10001");
+    }
     env::set_var("HANDLER_ENABLE", "0");
     env::set_var("HANDLER_INTERVAL", "10s");
     env::set_var("HANDLER_SPREAD", "10s");
@@ -229,6 +260,12 @@ mod tests {
     assert_eq!(config.api.enable, false);
     assert_eq!(config.api.listen.ip(), Ipv4Addr::new(0, 0, 0, 0));
     assert_eq!(config.api.listen.port(), 10000);
+    #[cfg(feature = "web")]
+    {
+      assert_eq!(config.web.enable, true);
+      assert_eq!(config.web.listen.ip(), Ipv4Addr::new(0, 0, 0, 0));
+      assert_eq!(config.web.listen.port(), 10001);
+    }
     assert_eq!(config.handler.enable, false);
     assert_eq!(config.handler.interval, Duration::from_secs(10));
     assert_eq!(config.handler.spread, Some(Duration::from_secs(10)));
@@ -238,6 +275,11 @@ mod tests {
 
     env::remove_var("API_ENABLE");
     env::remove_var("API_LISTEN");
+    #[cfg(feature = "web")]
+    {
+      env::remove_var("WEB_ENABLE");
+      env::remove_var("WEB_LISTEN");
+    }
     env::remove_var("HANDLER_ENABLE");
     env::remove_var("HANDLER_INTERVAL");
     env::remove_var("HANDLER_SPREAD");

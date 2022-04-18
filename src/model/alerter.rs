@@ -10,6 +10,7 @@ pub struct Alerter {
   pub id: u64,
   #[serde(skip_deserializing)]
   pub uuid: String,
+  pub name: String,
   pub kind: AlerterKind,
   pub webhook: String,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -22,7 +23,7 @@ impl Alerter {
   pub async fn all(conn: &mut MySqlConnection) -> Result<Vec<Alerter>> {
     let alerters = sqlx::query_as::<_, Alerter>(
       "
-        SELECT id, uuid, kind, webhook, username, password
+        SELECT id, uuid, name, kind, webhook, username, password
         FROM alerters
       ",
     )
@@ -36,7 +37,7 @@ impl Alerter {
   pub async fn by_id(conn: &mut MySqlConnection, id: u64) -> Result<Alerter> {
     let alerter = sqlx::query_as::<_, Alerter>(
       "
-        SELECT id, uuid, kind, webhook, username, password
+        SELECT id, uuid, name, kind, webhook, username, password
         FROM alerters
         WHERE id = ?
       ",
@@ -52,7 +53,7 @@ impl Alerter {
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Alerter> {
     let alerter = sqlx::query_as::<_, Alerter>(
       "
-        SELECT id, uuid, kind, webhook, username, password
+        SELECT id, uuid, name, kind, webhook, username, password
         FROM alerters
         WHERE uuid = ?
       ",
@@ -70,11 +71,12 @@ impl Alerter {
 
     sqlx::query(
       "
-        INSERT INTO alerters ( uuid, kind, webhook, username, password )
-        VALUES ( ?, ?, ?, ?, ? )
+        INSERT INTO alerters ( uuid, name, kind, webhook, username, password )
+        VALUES ( ?, ?, ?, ?, ?, ? )
       ",
     )
     .bind(&uuid)
+    .bind(&self.name)
     .bind(self.kind)
     .bind(self.webhook)
     .bind(self.username)
@@ -92,10 +94,11 @@ impl Alerter {
     sqlx::query(
       "
         UPDATE alerters
-        SET kind = ?, webhook = ?, username = ?, password = ?
+        SET name = ?, kind = ?, webhook = ?, username = ?, password = ?
         WHERE id = ?
       ",
     )
+    .bind(self.name)
     .bind(self.kind)
     .bind(self.webhook)
     .bind(self.username)
@@ -108,6 +111,21 @@ impl Alerter {
     let alerter = Alerter::by_uuid(conn, &self.uuid).await?;
 
     Ok(alerter)
+  }
+
+  pub async fn delete(conn: &mut MySqlConnection, uuid: &str) -> Result<()> {
+    sqlx::query(
+      "
+      DELETE FROM alerters
+      WHERE uuid = ?
+    ",
+    )
+    .bind(uuid)
+    .execute(conn)
+    .await
+    .short()?;
+
+    Ok(())
   }
 
   pub fn webhook(self) -> Box<dyn Webhook + Send + Sync> {

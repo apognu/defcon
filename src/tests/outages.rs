@@ -93,7 +93,7 @@ impl TestConnection {
     sqlx::query(
       r#"
         INSERT INTO outages (id, check_id, uuid, started_on, ended_on, comment)
-        VALUES ( ?, 1, ?, NOW(), NOW(), NULL )
+        VALUES ( ?, 1, ?, '2021-01-01T00:00:00', NOW(), NULL )
       "#,
     )
     .bind(id)

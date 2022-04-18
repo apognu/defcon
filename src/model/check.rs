@@ -64,7 +64,7 @@ impl Check {
     }
     if let Some(group) = group {
       conditions.push("groups.uuid = ?");
-      binds.push(group.name);
+      binds.push(group.uuid);
     }
     if let Some(kind) = kind {
       conditions.push("kind = ?");

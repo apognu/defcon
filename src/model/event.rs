@@ -4,7 +4,7 @@ use sqlx::{FromRow, MySqlConnection};
 
 use crate::{
   api::error::Shortable,
-  model::{Check, SiteOutage},
+  model::{Check, Outage, SiteOutage},
 };
 
 pub mod status {
@@ -62,20 +62,48 @@ impl Event {
     Ok(events)
   }
 
-  pub async fn for_outage(conn: &mut MySqlConnection, outage: &SiteOutage) -> Result<Vec<Event>> {
+  pub async fn for_outage(conn: &mut MySqlConnection, outage: &Outage) -> Result<Vec<Event>> {
     let events = sqlx::query_as::<_, Event>(
       "
         SELECT id, check_id, outage_id, site, status, message, created_at
         FROM events
-        WHERE outage_id = ?
+        WHERE
+          check_id = ? AND
+          created_at >= ? AND (? IS NULL OR created_at <= ?)
       ",
     )
-    .bind(outage.id)
+    .bind(outage.check_id)
+    .bind(outage.started_on)
+    .bind(outage.ended_on)
+    .bind(outage.ended_on)
     .fetch_all(&mut *conn)
     .await
     .short()?;
 
     Ok(events)
+  }
+
+  pub async fn last_for_outage(conn: &mut MySqlConnection, outage: &Outage) -> Result<Event> {
+    let event = sqlx::query_as::<_, Event>(
+      "
+        SELECT id, check_id, outage_id, site, status, message, created_at
+        FROM events
+        WHERE
+          check_id = ? AND
+          created_at >= ? AND (? IS NULL OR created_at <= ?)
+        ORDER BY id DESC
+        LIMIT 1
+      ",
+    )
+    .bind(outage.check_id)
+    .bind(outage.started_on)
+    .bind(outage.ended_on)
+    .bind(outage.ended_on)
+    .fetch_one(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(event)
   }
 
   pub async fn insert(&self, conn: &mut MySqlConnection, outage: Option<&SiteOutage>) -> Result<()> {
@@ -121,11 +149,14 @@ impl Event {
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
-  use chrono::NaiveDate;
+  use chrono::{DateTime, NaiveDate, Utc};
   use uuid::Uuid;
 
   use super::Event;
-  use crate::{model::SiteOutage, tests};
+  use crate::{
+    model::{Outage, SiteOutage},
+    tests,
+  };
 
   #[tokio::test]
   async fn for_outage() -> Result<()> {
@@ -135,7 +166,12 @@ mod tests {
     pool.create_check(None, None, "for_outage()", None, None).await?;
     pool.create_unresolved_site_outage(None, None).await?;
 
-    let outage = SiteOutage { id: 1, ..Default::default() };
+    let outage = Outage {
+      id: 1,
+      check_id: 1,
+      started_on: Some(DateTime::<Utc>::from_utc(NaiveDate::from_ymd(2019, 12, 1).and_hms(0, 0, 0), Utc)),
+      ..Default::default()
+    };
     let events = Event::for_outage(&mut *conn, &outage).await?;
 
     assert_eq!(events.len(), 1);
