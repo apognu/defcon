@@ -8,13 +8,16 @@ div
     ) New alerter
 
   .uk-card.uk-card-default.uk-card-body(v-if='alerters.length > 0')
-    table.uk-table.uk-table-middle
+    table.uk-table.uk-table-responsive.uk-table-middle
       tr(v-for='alerter in alerters')
         td
           p.uk-margin-remove.uk-text-bold.uk-text-emphasis {{ alerter.name }}
-          p.uk-margin-remove.uk-text-muted.uk-text-small {{ alerter.uuid }}
+          p.uk-margin-remove.uk-text-muted.uk-text-small(class='uk-visible@m') {{ alerter.uuid }}
 
-        td.uk-table-shrink.uk-text-nowrap.uk-text-right
+        td.uk-table-shrink.uk-text-nowrap.uk-text-right(class='uk-visible@m')
+          span.checkkind {{ alerter.kind | alerterkind() }}
+
+        td.uk-table-shrink.uk-text-nowrap(class='uk-hidden@m')
           span.checkkind {{ alerter.kind | alerterkind() }}
 
         td.actions

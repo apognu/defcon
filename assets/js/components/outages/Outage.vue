@@ -48,16 +48,21 @@ div(v-id='outage')
   .uk-card.uk-card-default.uk-card-body.uk-margin(v-if='events')
     h3 Latest events
 
-    table.uk-table.uk-table-divider
+    table.uk-table.uk-table-responsive.uk-table-divider
       tr(v-for='event in events')
-        td.uk-table-shrink
+        td.uk-table-shrink(class='uk-hidden@m')
+          span.bubble.success(v-if='event.status === 0')
+          span.bubble.error(v-else)
+          span.uk-margin-left.checkkind {{ event.site }}
+
+        td.uk-table-shrink(class='uk-visible@m')
           .bubble.success(v-if='event.status === 0')
           .bubble.error(v-else)
 
         td.uk-table-shrink.uk-text-nowrap
           p {{ event.created_at | moment("from") }}
 
-        td.uk-table-shrink
+        td.uk-table-shrink(class='uk-visible@m')
           span.checkkind {{ event.site }}
 
         td.uk-text-right {{ event.message }}

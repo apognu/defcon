@@ -8,73 +8,75 @@ div
   .uk-card.uk-card-default.uk-card-body.uk-margin
     h3.uk-card-title Basic settings
 
-    .uk-grid-small(v-if='check || new_record', uk-grid)
-      .uk-width-1-3
-        label.uk-form-label Check name
-        .uk-form-controls
-          input.uk-input(
-            type='text',
-            v-model='check.name',
-            @keyup.enter='save()'
-          )
+    div(v-if='check || new_record')
+      .uk-grid-small(uk-grid, class='uk-child-width-1-3@m')
+        div
+          label.uk-form-label Check name
+          .uk-form-controls
+            input.uk-input(
+              type='text',
+              v-model='check.name',
+              @keyup.enter='save()'
+            )
 
-      .uk-width-1-3
-        label.uk-form-label Group
-        .uk-form-controls
-          select.uk-select(v-model='check.group')
-            option(:value='undefined') -
-            option(
-              v-for='group in groups',
-              :key='group.uuid',
-              :value='group.uuid'
-            ) {{ group.name }}
+        div
+          label.uk-form-label Group
+          .uk-form-controls
+            select.uk-select(v-model='check.group')
+              option(:value='undefined') -
+              option(
+                v-for='group in groups',
+                :key='group.uuid',
+                :value='group.uuid'
+              ) {{ group.name }}
 
-      .uk-width-1-3
-        label.uk-form-label Alerter
-        .uk-form-controls
-          select.uk-select(v-model='check.alerter')
-            option(:value='undefined') -
-            option(
-              v-for='alerter in alerters',
-              :key='alerter.uuid',
-              :value='alerter.uuid'
-            ) {{ alerter.name }}
+        div
+          label.uk-form-label Alerter
+          .uk-form-controls
+            select.uk-select(v-model='check.alerter')
+              option(:value='undefined') -
+              option(
+                v-for='alerter in alerters',
+                :key='alerter.uuid',
+                :value='alerter.uuid'
+              ) {{ alerter.name }}
 
-      .uk-width-1-4
-        label.uk-form-label Interval
-        .uk-form-controls
-          input.uk-input(
-            type='text',
-            v-model='check.interval',
-            @keyup.enter='save()'
-          )
+      .uk-grid-small(uk-grid, class='uk-child-width-1-4@m uk-child-width-1-2@s')
+        div
+          label.uk-form-label Interval
+          .uk-form-controls
+            input.uk-input(
+              type='text',
+              v-model='check.interval',
+              @keyup.enter='save()'
+            )
 
-      .uk-width-1-4
-        label.uk-form-label Failing threshold
-        .uk-form-controls
-          input.uk-input(
-            type='text',
-            v-model.number='check.failing_threshold',
-            @keyup.enter='save()'
-          )
+        div
+          label.uk-form-label Failing threshold
+          .uk-form-controls
+            input.uk-input(
+              type='text',
+              v-model.number='check.failing_threshold',
+              @keyup.enter='save()'
+            )
 
-      .uk-width-1-4
-        label.uk-form-label Passing threshold
-        .uk-form-controls
-          input.uk-input(
-            type='text',
-            v-model.number='check.passing_threshold',
-            @keyup.enter='save()'
-          )
+        div
+          label.uk-form-label Passing threshold
+          .uk-form-controls
+            input.uk-input(
+              type='text',
+              v-model.number='check.passing_threshold',
+              @keyup.enter='save()'
+            )
 
-      .uk-width-1-4
-        label.uk-form-label Site threshold
-        .uk-form-controls
-          input.uk-input(
-            type='text',
-            v-model.number='check.site_threshold',
-            @keyup.enter='save()'
-          )
+        div
+          label.uk-form-label Site threshold
+          .uk-form-controls
+            input.uk-input(
+              type='text',
+              v-model.number='check.site_threshold',
+              @keyup.enter='save()'
+            )
 
   .uk-card.uk-card-default.uk-card-body.uk-margin
     h3.uk-card-title(v-if='new_record') Check specification

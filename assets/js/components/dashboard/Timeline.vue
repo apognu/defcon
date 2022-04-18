@@ -2,7 +2,18 @@
 .uk-card.uk-card-default.uk-card-body.uk-margin
   h3 {{ title }}
 
-  .timeline(v-if='statistics')
+  .timeline.desktop(v-if='statistics', class='uk-visible@m')
+    div(v-for='day in days')
+      .bar.error.uk-margin-small-right.uk-margin-small-bottom(
+        v-if='day.format("YYYY-MM-DD") in statistics',
+        :uk-tooltip='`title: ${day.format("YYYY-MM-DD")}`'
+      )
+      .bar.success.uk-margin-small-right.uk-margin-small-bottom(
+        v-else,
+        :uk-tooltip='`title: ${day.format("YYYY-MM-DD")}`'
+      )
+
+  .timeline.mobile(v-if='statistics', class='uk-hidden@m')
     div(v-for='day in days')
       .bar.error.uk-margin-small-right.uk-margin-small-bottom(
         v-if='day.format("YYYY-MM-DD") in statistics',
@@ -84,8 +95,15 @@ export default {
 
 <style lang="scss" scoped>
 .timeline {
-  display: grid;
-  grid-template-columns: repeat(30, 1fr);
+  &.desktop {
+    display: grid;
+    grid-template-columns: repeat(30, 1fr);
+  }
+
+  &.mobile {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+  }
 
   .bar {
     height: 32px;

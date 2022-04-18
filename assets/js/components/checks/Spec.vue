@@ -4,7 +4,7 @@
     h3.uk-card-title {{ check.spec.kind | checkkind() }}
 
   .uk-card-body
-    .uk-child-width-expand(uk-grid)
+    div(uk-grid, class='uk-child-width-1-2@s uk-child-width-1-4@m')
       Attribute(label='Interval') {{ check.interval | duration("humanize") }}
       Attribute(label='Failing threshold') {{ check.failing_threshold }}
       Attribute(label='Passing threshold') {{ check.passing_threshold }}

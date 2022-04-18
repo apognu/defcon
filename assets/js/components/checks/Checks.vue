@@ -7,7 +7,7 @@ div
       :to='{ name: "checks.new" }'
     ) New check
 
-  .uk-child-width-1-3.uk-margin-bottom(uk-grid)
+  .uk-margin-bottom(uk-grid, class='uk-child-width-1-3@m uk-child-width-1-1@s')
     .uk-form-stacked
       label.uk-form-label Search
       .uk-form-control
@@ -34,14 +34,14 @@ div
           option(v-for='option in state_options', :value='option.slug') {{ option.label }}
 
   .uk-card.uk-card-default.uk-card-body(v-if='filteredChecks.length > 0')
-    table.uk-table.uk-table-middle
+    table.uk-table.uk-table-responsive.uk-table-middle
       tbody
         tr(v-for='check in filteredChecks')
-          td.uk-table-shrink
+          td.uk-table-shrink(class='uk-visible@m')
             .bubble.success(v-if='check.status')
             .bubble.error(v-else)
 
-          td
+          td(class='uk-visible@m')
             p.uk-margin-remove
               span.uk-text-bold.uk-text-emphasis(
                 :class='{ "uk-text-warning": !check.enabled }'
@@ -49,7 +49,15 @@ div
               span.uk-margin-left.uk-text-muted(v-if='check.group') {{ check.group.name }}
             p.uk-margin-remove.uk-text-muted.uk-text-small {{ check.uuid }}
 
-          td.uk-table-shrink.uk-text-nowrap.uk-text-right
+          td(class='uk-hidden@m')
+            span.bubble.success(v-if='check.status')
+            span.bubble.error(v-else)
+            span.uk-margin-left.uk-text-bold.uk-text-emphasis {{ check.name }}
+
+          td.uk-table-shrink.uk-text-nowrap.uk-text-right(class='uk-visible@m')
+            span.checkkind {{ check.spec.kind | checkkind() }}
+
+          td.uk-table-shrink.uk-text-nowrap(class='uk-hidden@m')
             span.checkkind {{ check.spec.kind | checkkind() }}
 
           td.actions

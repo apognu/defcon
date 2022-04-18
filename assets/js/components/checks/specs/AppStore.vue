@@ -1,5 +1,5 @@
 <template lang="pug">
-.uk-child-width-1-4(uk-grid)
+div(uk-grid, class='uk-child-width-1-2@s uk-child-width-1-4@m')
   Attribute(label='Bundle ID') {{ spec.bundle_id }}
 </template>
 

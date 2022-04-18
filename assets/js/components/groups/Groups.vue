@@ -12,7 +12,7 @@ div
       tr(v-for='group in groups')
         td
           p.uk-margin-remove.uk-text-bold.uk-text-emphasis {{ group.name }}
-          p.uk-margin-remove.uk-text-muted.uk-text-small {{ group.uuid }}
+          p.uk-margin-remove.uk-text-muted.uk-text-small(class='uk-visible@m') {{ group.uuid }}
 
         td.actions
           ul.uk-iconnav
