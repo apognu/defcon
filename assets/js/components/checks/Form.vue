@@ -88,23 +88,60 @@ div
             option(v-for='kind in kinds', :key='kind', :value='kind') {{ kind | checkkind() }}
 
     .uk-margin(v-if='check')
-      Http(v-if='check.spec.kind == "http"', :spec='check.spec', ref='spec')
-      Dns(v-if='check.spec.kind == "dns"', :spec='check.spec', ref='spec')
-      Tcp(v-if='check.spec.kind == "tcp"', :spec='check.spec', ref='spec')
-      Udp(v-if='check.spec.kind == "udp"', :spec='check.spec', ref='spec')
+      Http(
+        v-if='check.spec.kind == "http"',
+        :spec='check.spec',
+        ref='spec',
+        @enter='save()'
+      )
+      Dns(
+        v-if='check.spec.kind == "dns"',
+        :spec='check.spec',
+        ref='spec',
+        @enter='save()'
+      )
+      Tcp(
+        v-if='check.spec.kind == "tcp"',
+        :spec='check.spec',
+        ref='spec',
+        @enter='save()'
+      )
+      Udp(
+        v-if='check.spec.kind == "udp"',
+        :spec='check.spec',
+        ref='spec',
+        @enter='save()'
+      )
       PlayStore(
         v-if='check.spec.kind == "play_store"',
         :spec='check.spec',
-        ref='spec'
+        ref='spec',
+        @enter='save()'
       )
       AppStore(
         v-if='check.spec.kind == "app_store"',
         :spec='check.spec',
-        ref='spec'
+        ref='spec',
+        @enter='save()'
       )
-      Tls(v-if='check.spec.kind == "tls"', :spec='check.spec', ref='spec')
-      Whois(v-if='check.spec.kind == "whois"', :spec='check.spec', ref='spec')
-      Ping(v-if='check.spec.kind == "ping"', :spec='check.spec', ref='spec')
+      Tls(
+        v-if='check.spec.kind == "tls"',
+        :spec='check.spec',
+        ref='spec',
+        @enter='save()'
+      )
+      Whois(
+        v-if='check.spec.kind == "whois"',
+        :spec='check.spec',
+        ref='spec',
+        @enter='save()'
+      )
+      Ping(
+        v-if='check.spec.kind == "ping"',
+        :spec='check.spec',
+        ref='spec',
+        @enter='save()'
+      )
 
   .uk-margin-top
     button.uk-button.uk-button-primary.uk-button-small(@click='save') Save check

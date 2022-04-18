@@ -4,7 +4,11 @@ div
     .uk-margin
       label.uk-form-label Bundle ID
       .uk-form-controls
-        input.uk-input(type='text', v-model='spec.bundle_id')
+        input.uk-input(
+          type='text',
+          v-model='spec.bundle_id',
+          @keyup.enter='$emit("enter")'
+        )
 </template>
 
 <script>

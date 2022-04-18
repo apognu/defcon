@@ -4,7 +4,11 @@ div
     .uk-margin
       label.uk-form-label Host
       .uk-form-controls
-        input.uk-input(type='text', v-model='spec.host')
+        input.uk-input(
+          type='text',
+          v-model='spec.host',
+          @keyup.enter='$emit("enter")'
+        )
 </template>
 
 <script>
