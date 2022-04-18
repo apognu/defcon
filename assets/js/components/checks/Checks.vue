@@ -54,13 +54,7 @@ div
 <script>
 import axios from 'axios';
 
-import ListFilter from '@/components/partials/ListFilter.vue';
-
 export default {
-  components: {
-    ListFilter,
-  },
-
   data: () => ({
     checks: [],
     groups: [],

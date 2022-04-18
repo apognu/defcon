@@ -1,6 +1,6 @@
 <template lang="pug">
 div
-  aside.uk-card.uk-card-default.uk-card-body.uk-padding-small
+  aside#sidebar.uk-card.uk-card-default.uk-card-body.uk-padding-small
     header
       h1.uk-h3 Defcon
 
@@ -59,8 +59,11 @@ export default {
 $sidebar-width: 300px;
 $sidebar-padding: 16px;
 
-aside {
+aside#sidebar {
   display: block;
+  position: fixed;
+  top: 0;
+  bottom: 0;
   float: left;
   width: $sidebar-width;
   height: 100vh;

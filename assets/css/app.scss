@@ -1,8 +1,10 @@
 /*! purgecss start ignore */
 
-$mdi-font-path: '~@mdi/font/fonts';
+$global-font-size: 14px;
 
-@import '~@mdi/font/scss/materialdesignicons.scss';
+@import "uikit/src/scss/variables-theme.scss";
+@import "uikit/src/scss/mixins-theme.scss";
+@import "uikit/src/scss/uikit-theme.scss";
 
 html,
 body {

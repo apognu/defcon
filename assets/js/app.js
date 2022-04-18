@@ -11,8 +11,7 @@ import { extendMoment } from 'moment-range';
 import router from '@/router';
 import App from '@/components/App.vue';
 
-import 'uikit/dist/css/uikit.min.css';
-import 'vue-multiselect/dist/vue-multiselect.min.css';
+// import 'uikit/dist/css/uikit.min.css';
 
 UIkit.use(Icons);
 
