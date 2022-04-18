@@ -39,7 +39,7 @@ impl<'h> Handler for PingHandler<'h> {
       .next()
       .ok_or_else(|| anyhow!("could not parse host"))?;
 
-    let client = PingClient::new(&PingConfig::default())?;
+    let client = PingClient::new(&PingConfig::default()).await?;
     let mut pinger = client.pinger(host.ip()).await;
     pinger.timeout(Duration::from_secs(5));
 
