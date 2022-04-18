@@ -437,13 +437,13 @@ paths:
           in: query
           schema:
             type: string
-            format: date-time
+            format: date
         - name: to
           description: Display resolved outages until this date
           in: query
           schema:
             type: string
-            format: date-time
+            format: date
       responses:
         '200':
           description: List of outages

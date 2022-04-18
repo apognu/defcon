@@ -47,7 +47,6 @@ impl Outage {
     .bind(end)
     .bind(from)
     .bind(end)
-    .bind(end)
     .fetch_all(&mut *conn)
     .await
     .short()?;
