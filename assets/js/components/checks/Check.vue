@@ -43,6 +43,8 @@
 
     Spec.uk-margin-bottom(:check='check')
 
+    Timeline(:check='check.uuid')
+
     .uk-card.uk-card-default(v-if='outages.length > 0')
       .uk-card-header
         h3.uk-card-title Past outages
@@ -62,11 +64,13 @@ import UIkit from 'uikit';
 import axios from 'axios';
 
 import Spec from '@/components/checks/Spec.vue';
+import Timeline from '@/components/dashboard/Timeline.vue';
 import OutageRow from '@/components/outages/Row.vue';
 
 export default {
   components: {
     Spec,
+    Timeline,
     OutageRow,
   },
 

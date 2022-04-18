@@ -23,7 +23,7 @@ pub struct Outage {
 }
 
 impl Outage {
-  pub async fn between(conn: &mut MySqlConnection, from: NaiveDateTime, end: NaiveDateTime) -> Result<Vec<Outage>> {
+  pub async fn between(conn: &mut MySqlConnection, check: Option<Check>, from: NaiveDateTime, end: NaiveDateTime) -> Result<Vec<Outage>> {
     let outages = sqlx::query_as::<_, Outage>(
       "
         SELECT outages.id, check_id, outages.uuid, started_on, ended_on, comment
@@ -32,6 +32,7 @@ impl Outage {
         ON checks.id = outages.check_id
         WHERE
           checks.enabled = 1 AND
+          (checks.id = ? OR ? IS NULL) AND
           (
             (outages.started_on <= ? AND outages.ended_on IS NULL) OR
             (outages.started_on <= ? AND outages.ended_on >= ?) OR
@@ -40,6 +41,8 @@ impl Outage {
           )
       ",
     )
+    .bind(check.as_ref().map(|check| check.id))
+    .bind(check.as_ref().map(|check| check.id))
     .bind(end)
     .bind(from)
     .bind(from)

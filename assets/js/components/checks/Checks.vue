@@ -33,8 +33,8 @@ div
               span.uk-margin-left.uk-text-muted(v-if='check.group') {{ check.group.name }}
             p.uk-margin-remove.uk-text-muted.uk-text-small {{ check.uuid }}
 
-          td.uk-table-shrink
-            span.checkkind {{ check.spec.kind }}
+          td.uk-table-shrink.uk-text-nowrap.uk-text-right
+            span.checkkind {{ check.spec.kind | checkkind() }}
 
           td.actions
             ul.uk-iconnav

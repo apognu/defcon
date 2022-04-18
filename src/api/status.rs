@@ -34,11 +34,16 @@ pub async fn status(pool: &State<Pool<MySql>>) -> ApiResponse<Json<api::Status>>
   Ok(Json(status))
 }
 
-#[get("/api/statistics?<from>&<to>")]
-pub async fn statistics(pool: &State<Pool<MySql>>, from: api::Date, to: api::Date) -> ApiResponse<Json<HashMap<NaiveDate, Vec<api::Outage>>>> {
+#[get("/api/statistics?<check>&<from>&<to>")]
+pub async fn statistics(pool: &State<Pool<MySql>>, check: Option<String>, from: api::Date, to: api::Date) -> ApiResponse<Json<HashMap<NaiveDate, Vec<api::Outage>>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  let outages = Outage::between(&mut conn, from.and_hms(0, 0, 0), to.and_hms(23, 59, 59))
+  let check = match check {
+    Some(uuid) => Some(Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?),
+    None => None,
+  };
+
+  let outages = Outage::between(&mut conn, check, from.and_hms(0, 0, 0), to.and_hms(23, 59, 59))
     .await
     .context("could not retrieve outages")
     .short()?

@@ -10,6 +10,7 @@ import { extendMoment } from 'moment-range';
 
 import router from '@/router';
 import App from '@/components/App.vue';
+import Filters from '@/components/filters';
 
 UIkit.use(Icons);
 
@@ -22,5 +23,5 @@ Vue.use(VueMoment, { moment });
 const _app = new Vue({
   el: '#app',
   router,
-  components: { App },
+  components: { App, Filters },
 });

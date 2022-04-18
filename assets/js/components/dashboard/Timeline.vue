@@ -1,6 +1,6 @@
 <template lang="pug">
-.uk-card.uk-card-default.uk-card-body
-  h3 Timeline
+.uk-card.uk-card-default.uk-card-body.uk-margin
+  h3 {{ title }}
 
   .timeline(v-if='statistics')
     div(v-for='day in days')
@@ -19,6 +19,16 @@ import axios from 'axios';
 
 export default {
   props: {
+    title: {
+      type: String,
+      default: 'Timeline',
+    },
+
+    check: {
+      type: String,
+      default: null,
+    },
+
     period: {
       type: Number,
       default: 30,
@@ -56,9 +66,17 @@ export default {
       const from = start.format('YYYY-MM-DD');
       const to = end.format('YYYY-MM-DD');
 
-      axios.get(`/api/statistics?from=${from}&to=${to}`).then((response) => {
-        this.statistics = response.data;
-      });
+      let check = '';
+
+      if (this.check !== null) {
+        check = `check=${this.check}&`;
+      }
+
+      axios
+        .get(`/api/statistics?${check}&from=${from}&to=${to}`)
+        .then((response) => {
+          this.statistics = response.data;
+        });
     },
   },
 };
@@ -70,7 +88,8 @@ export default {
   grid-template-columns: repeat(30, 1fr);
 
   .bar {
-    height: 48px;
+    height: 32px;
+    margin: auto;
     border-radius: 8px;
 
     &.success {

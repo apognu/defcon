@@ -120,8 +120,8 @@ const config = {
         {
           from: 'static/',
           to: 'static',
-        }
-      ]
+        },
+      ],
     }),
 
     new VueLoaderPlugin(),

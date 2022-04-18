@@ -1,5 +1,5 @@
 <template lang="pug">
-div
+#app
   aside#sidebar.uk-card.uk-card-default.uk-card-body.uk-padding-small
     header
       h1.uk-h3 Defcon
@@ -11,6 +11,7 @@ div
         router-link(:to='{ name: "outages" }', active-class='active')
           span.uk-margin-right(uk-icon='icon: warning')
           | Incidents
+          span.uk-badge.uk-margin-small-left(v-if='outages > 0') {{ outages }}
         router-link(:to='{ name: "checks" }', active-class='active')
           span.uk-margin-right(uk-icon='icon: check')
           | Checks
@@ -26,15 +27,25 @@ div
 </template>
 
 <script>
+import axios from 'axios';
+
 export default {
   data: () => ({
+    refresher: undefined,
     title: '',
+    outages: 0,
   }),
 
   watch: {
     $route(to) {
       this.setTitle(to.meta.title);
     },
+  },
+
+  async mounted() {
+    this.refresh();
+
+    setInterval(this.refresh, 5000);
   },
 
   created() {
@@ -51,6 +62,12 @@ export default {
         document.title = 'Defcon';
       }
     },
+
+    refresh() {
+      axios.get('/api/status').then((response) => {
+        this.outages = response.data.outages.global;
+      });
+    },
   },
 };
 </script>
@@ -58,6 +75,10 @@ export default {
 <style lang="scss">
 $sidebar-width: 300px;
 $sidebar-padding: 16px;
+
+#app {
+  min-height: 100vh;
+}
 
 aside#sidebar {
   display: block;
@@ -71,6 +92,10 @@ aside#sidebar {
   background: white;
 
   #menu {
+    .uk-badge {
+      background: #e55039 !important;
+    }
+
     a {
       display: flex;
       align-items: center;

@@ -75,14 +75,15 @@ div
           )
 
   .uk-card.uk-card-default.uk-card-body.uk-margin
-    h3.uk-card-title Check specification
+    h3.uk-card-title(v-if='new_record') Check specification
+    h3.uk-card-title(v-else) {{ check.spec.kind | checkkind() }}
 
     .uk-grid-small(v-if='new_record', uk-grid)
       .uk-width-1-1
         label.uk-form-label Check type
         .uk-form-controls
           select.uk-select(v-model='check.spec.kind')
-            option(v-for='kind in kinds', :key='kind', :value='kind') {{ kind }}
+            option(v-for='kind in kinds', :key='kind', :value='kind') {{ kind | checkkind() }}
 
     .uk-margin(v-if='check')
       Http(v-if='check.spec.kind == "http"', :spec='check.spec', ref='spec')

@@ -23,11 +23,16 @@ pub async fn list(pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<api::Outage
   Ok(Json(outages))
 }
 
-#[get("/api/outages?<from>&<to>", rank = 5)]
-pub async fn list_between(pool: &State<Pool<MySql>>, from: api::Date, to: api::Date) -> ApiResponse<Json<Vec<api::Outage>>> {
+#[get("/api/outages?<check>&<from>&<to>", rank = 5)]
+pub async fn list_between(pool: &State<Pool<MySql>>, check: Option<String>, from: api::Date, to: api::Date) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  let outages = db::Outage::between(&mut conn, from.and_hms(0, 0, 0), to.and_hms(23, 59, 59))
+  let check = match check {
+    Some(uuid) => Some(db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?),
+    None => None,
+  };
+
+  let outages = db::Outage::between(&mut conn, check, from.and_hms(0, 0, 0), to.and_hms(23, 59, 59))
     .await
     .context("could not retrieve outages")
     .short()?

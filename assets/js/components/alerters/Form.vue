@@ -17,8 +17,8 @@ div
       label.uk-form-label Alerter type
       .uk-form-controls
         select.uk-select(v-model='alerter.kind')
-          option(value='webhook') Plain webhook
-          option(value='slack') Slack incoming webhook
+          option(value='webhook') {{ "webhook" | alerterkind() }}
+          option(value='slack') {{ "slack" | alerterkind() }}
 
     .uk-margin
       label.uk-form-label Webhook URL

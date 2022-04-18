@@ -1,7 +1,7 @@
 <template lang="pug">
 .uk-card.uk-card-default
   .uk-card-header
-    h3.uk-card-title {{ check.spec.kind }}
+    h3.uk-card-title {{ check.spec.kind | checkkind() }}
 
   .uk-card-body
     .uk-child-width-expand(uk-grid)

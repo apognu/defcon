@@ -14,8 +14,8 @@ div
           p.uk-margin-remove.uk-text-bold.uk-text-emphasis {{ alerter.name }}
           p.uk-margin-remove.uk-text-muted.uk-text-small {{ alerter.uuid }}
 
-        td.uk-table-shrink
-          span.checkkind {{ alerter.kind }}
+        td.uk-table-shrink.uk-text-nowrap.uk-text-right
+          span.checkkind {{ alerter.kind | alerterkind() }}
 
         td.actions
           ul.uk-iconnav
