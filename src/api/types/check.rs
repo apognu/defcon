@@ -33,6 +33,8 @@ impl From<Check> for RunnerCheck {
 pub struct Check {
   #[serde(flatten)]
   pub check: db::Check,
+  #[serde(skip_serializing_if = "Option::is_none", skip_deserializing)]
+  pub status: Option<bool>,
   pub spec: api::Spec,
 
   #[serde(skip_serializing_if = "Option::is_none", skip_deserializing)]
@@ -100,9 +102,11 @@ impl ApiMapper for db::Check {
     let group = self.group(&mut *conn).await;
     let alerter = self.alerter(&mut *conn).await;
     let sites = self.sites(&mut *conn).await?;
+    let status = Some(self.ok(&mut conn).await);
 
     let check = api::Check {
       check: self,
+      status,
       spec,
       group: CheckGroup::from(group),
       group_in: None,
@@ -128,9 +132,11 @@ impl ApiMapper for Vec<db::Check> {
               let group = check.group(&mut *conn).await;
               let alerter = check.alerter(&mut *conn).await;
               let sites = check.sites(&mut *conn).await.unwrap_or_default();
+              let status = Some(check.ok(&mut conn).await);
 
               let check = api::Check {
                 check,
+                status,
                 spec,
                 group: CheckGroup::from(group),
                 group_in: None,

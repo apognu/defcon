@@ -39,6 +39,7 @@ impl ApiMapper for db::Outage {
       event: Some(event),
       check: api::Check {
         check,
+        status: None,
         spec,
         group: CheckGroup::from(group),
         group_in: None,
@@ -73,6 +74,7 @@ impl ApiMapper for Vec<db::Outage> {
                   event: Some(event),
                   check: api::Check {
                     check,
+                    status: None,
                     spec,
                     group: CheckGroup::from(group),
                     group_in: None,

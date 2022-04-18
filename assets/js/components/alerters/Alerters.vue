@@ -7,7 +7,7 @@ div
       :to='{ name: "alerters.new" }'
     ) New alerter
 
-  .uk-card.uk-card-default.uk-card-body
+  .uk-card.uk-card-default.uk-card-body(v-if='alerters.length > 0')
     table.uk-table.uk-table-middle
       tr(v-for='alerter in alerters')
         td
@@ -30,6 +30,8 @@ div
                 @click='deleteAlerter(alerter.uuid)',
                 uk-icon='icon: trash'
               )
+
+  .uk-placeholder(v-else) Defcon does not have any alerters configured.
 
   #modal-delete-alerter(uk-modal, ref='modal_delete')
     .uk-modal-dialog

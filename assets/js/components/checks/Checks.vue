@@ -7,7 +7,19 @@ div
       :to='{ name: "checks.new" }'
     ) New check
 
-  .uk-child-width-1-2.uk-margin-bottom(uk-grid)
+  .uk-child-width-1-3.uk-margin-bottom(uk-grid)
+    .uk-form-stacked
+      label.uk-form-label Search
+      .uk-form-control
+        .uk-inline.uk-width-1-1
+          span.uk-form-icon(uk-icon='icon: search')
+          input.uk-input(
+            type='text',
+            placeholder='Check name',
+            v-model='terms',
+            @keyup.enter='search()'
+          )
+
     .uk-form-stacked
       label.uk-form-label Group
       .uk-form-controls
@@ -21,10 +33,14 @@ div
         select.uk-select(v-model='filters.state')
           option(v-for='option in state_options', :value='option.slug') {{ option.label }}
 
-  .uk-card.uk-card-default.uk-card-body
+  .uk-card.uk-card-default.uk-card-body(v-if='filteredChecks.length > 0')
     table.uk-table.uk-table-middle
       tbody
-        tr(v-for='check in checks')
+        tr(v-for='check in filteredChecks')
+          td.uk-table-shrink
+            .bubble.success(v-if='check.status')
+            .bubble.error(v-else)
+
           td
             p.uk-margin-remove
               span.uk-text-bold.uk-text-emphasis(
@@ -49,6 +65,8 @@ div
                 tag='li'
               )
                 a(uk-icon='icon: search')
+
+  .uk-placeholder(v-else) No checks were found for the provided filters.
 </template>
 
 <script>
@@ -58,13 +76,21 @@ export default {
   data: () => ({
     checks: [],
     groups: [],
+    terms: '',
     filters: {
+      search: '',
       group: undefined,
       state: 'enabled',
     },
   }),
 
   computed: {
+    filteredChecks() {
+      const regex = new RegExp(`.*${this.filters.search}.*`, 'gi');
+
+      return this.checks.filter((check) => check.name.match(regex));
+    },
+
     groups_options() {
       return this.groups.map((group) => ({
         slug: group.uuid,
@@ -116,6 +142,10 @@ export default {
             this.checks = response.data;
           });
       }
+    },
+
+    search() {
+      this.filters.search = this.terms;
     },
   },
 };

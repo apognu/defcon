@@ -30,6 +30,7 @@ impl ApiMapper for db::SiteOutage {
       outage: self,
       check: api::Check {
         check,
+        status: None,
         spec,
         group: CheckGroup::from(group),
         group_in: None,
@@ -62,6 +63,7 @@ impl ApiMapper for Vec<db::SiteOutage> {
                   outage,
                   check: api::Check {
                     check,
+                    status: None,
                     spec,
                     group: CheckGroup::from(group),
                     group_in: None,

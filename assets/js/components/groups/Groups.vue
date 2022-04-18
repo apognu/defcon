@@ -7,7 +7,7 @@ div
       :to='{ name: "groups.new" }'
     ) New group
 
-  .uk-card.uk-card-default.uk-card-body
+  .uk-card.uk-card-default.uk-card-body(v-if='groups.length > 0')
     table.uk-table.uk-table-middle
       tr(v-for='group in groups')
         td
@@ -27,6 +27,8 @@ div
                 uk-icon='icon: trash',
                 @click='deleteGroup(group.uuid)'
               )
+
+  .uk-placeholder(v-else) Defcon does not have any groups configured.
 </template>
 
 <script>

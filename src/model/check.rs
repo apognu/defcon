@@ -237,6 +237,10 @@ impl Check {
     Ok(())
   }
 
+  pub async fn ok(&self, conn: &mut MySqlConnection) -> bool {
+    Outage::for_check_current(conn, self).await.is_err()
+  }
+
   pub async fn last_event(&self, conn: &mut MySqlConnection) -> Result<Option<Event>> {
     let event = sqlx::query_as::<_, Event>(
       "
