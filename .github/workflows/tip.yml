@@ -133,8 +133,10 @@ jobs:
         with:
           path: target/out
       - name: Create release
-        uses: pyTooling/Actions/releaser@r0
+        uses: marvinpinto/action-automatic-releases@latest
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          automatic_release_tag: tip
+          title: Development build
+          prerelease: true
           files: target/out/*/*
-          rm: true
