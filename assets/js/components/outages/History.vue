@@ -1,8 +1,6 @@
 <template lang="pug">
 div
-  h2 Incidents
-
-  Status
+  h2 Incident history
 
   div(v-if='outages')
     .uk-card.uk-card-default.uk-card-body(v-if='outages.length > 0')
@@ -19,12 +17,10 @@ div
 <script>
 import axios from 'axios';
 
-import Status from '@/components/dashboard/Status.vue';
 import OutageRow from '@/components/outages/Row.vue';
 
 export default {
   components: {
-    Status,
     OutageRow,
   },
 
@@ -44,13 +40,13 @@ export default {
 
   methods: {
     refresh() {
-      axios.get('/api/outages').then((response) => {
-        this.outages = response.data;
+      const from = this.$moment().subtract(30, 'day').format('YYYY-MM-DD');
+      const to = this.$moment().format('YYYY-MM-DD');
+
+      axios.get(`/api/outages?from=${from}&to=${to}`).then((response) => {
+        this.outages = response.data.reverse();
       });
     },
   },
 };
 </script>
-
-<style lang="scss" scoped>
-</style>

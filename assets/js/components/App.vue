@@ -6,22 +6,7 @@
         h1.uk-h3 Defcon
 
         ul#menu.uk-nav.uk-nav-default
-          router-link(:to='{ name: "home" }', exact-active-class='active')
-            span.uk-margin-right(uk-icon='icon: home')
-            | Dashboard
-          router-link(:to='{ name: "outages" }', active-class='active')
-            span.uk-margin-right(uk-icon='icon: warning')
-            | Incidents
-            span.uk-badge.uk-margin-small-left(v-if='outages > 0') {{ outages }}
-          router-link(:to='{ name: "checks" }', active-class='active')
-            span.uk-margin-right(uk-icon='icon: check')
-            | Checks
-          router-link(:to='{ name: "groups" }', active-class='active')
-            span.uk-margin-right(uk-icon='icon: folder')
-            | Groups
-          router-link(:to='{ name: "alerters" }', active-class='active')
-            span.uk-margin-right(uk-icon='icon: bell')
-            | Alerters
+          Menu(:outages='outages')
 
     #main
       router-view.uk-container-large.uk-margin-auto.uk-padding
@@ -38,42 +23,7 @@
         #menu(uk-offcanvas='mode: reveal; overlay: true', ref='menu')
           .uk-offcanvas-bar
             ul#menu.uk-nav.uk-nav-default
-              router-link(
-                :to='{ name: "home" }',
-                exact-active-class='active',
-                @click.native='closeMenu()'
-              )
-                span.uk-margin-right(uk-icon='icon: home')
-                | Dashboard
-              router-link(
-                :to='{ name: "outages" }',
-                active-class='active',
-                @click.native='closeMenu()'
-              )
-                span.uk-margin-right(uk-icon='icon: warning')
-                | Incidents
-                span.uk-badge.uk-margin-small-left(v-if='outages > 0') {{ outages }}
-              router-link(
-                :to='{ name: "checks" }',
-                active-class='active',
-                @click.native='closeMenu()'
-              )
-                span.uk-margin-right(uk-icon='icon: check')
-                | Checks
-              router-link(
-                :to='{ name: "groups" }',
-                active-class='active',
-                @click.native='closeMenu()'
-              )
-                span.uk-margin-right(uk-icon='icon: folder')
-                | Groups
-              router-link(
-                :to='{ name: "alerters" }',
-                active-class='active',
-                @click.native='closeMenu()'
-              )
-                span.uk-margin-right(uk-icon='icon: bell')
-                | Alerters
+              Menu(:mobile='true', :outages='outages', @close='closeMenu')
 
     #main
       router-view.uk-container-large.uk-margin-auto.uk-padding
@@ -83,7 +33,13 @@
 import UIkit from 'uikit';
 import axios from 'axios';
 
+import Menu from '@/components/partials/Menu.vue';
+
 export default {
+  components: {
+    Menu,
+  },
+
   data: () => ({
     refresher: undefined,
     title: '',

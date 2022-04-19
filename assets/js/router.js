@@ -4,6 +4,7 @@ import VueRouter from 'vue-router';
 import Dashboard from '@/components/dashboard/Dashboard.vue';
 import Outages from '@/components/outages/Outages.vue';
 import Outage from '@/components/outages/Outage.vue';
+import History from '@/components/outages/History.vue';
 import Checks from '@/components/checks/Checks.vue';
 import Check from '@/components/checks/Check.vue';
 import CheckForm from '@/components/checks/Form.vue';
@@ -26,6 +27,12 @@ const routes = [
     path: '/outages',
     component: Outages,
     meta: { title: 'Outages' },
+  },
+  {
+    name: 'outages.history',
+    path: '/history',
+    component: History,
+    meta: { title: 'Incident history' },
   },
   {
     name: 'outages.view',
