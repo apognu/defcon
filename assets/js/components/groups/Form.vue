@@ -1,5 +1,5 @@
 <template lang="pug">
-div
+div(v-if='group')
   h2(v-if='new_record') New group
   template(v-else-if='group')
     p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Edit group

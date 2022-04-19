@@ -1,5 +1,5 @@
 <template lang="pug">
-div
+div(v-if='alerter')
   h2(v-if='new_record') New alerter
   template(v-else-if='alerter')
     p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Edit alerter

@@ -38,20 +38,40 @@
         #menu(uk-offcanvas='mode: reveal; overlay: true', ref='menu')
           .uk-offcanvas-bar
             ul#menu.uk-nav.uk-nav-default
-              router-link(:to='{ name: "home" }', exact-active-class='active')
+              router-link(
+                :to='{ name: "home" }',
+                exact-active-class='active',
+                @click.native='closeMenu()'
+              )
                 span.uk-margin-right(uk-icon='icon: home')
                 | Dashboard
-              router-link(:to='{ name: "outages" }', active-class='active')
+              router-link(
+                :to='{ name: "outages" }',
+                active-class='active',
+                @click.native='closeMenu()'
+              )
                 span.uk-margin-right(uk-icon='icon: warning')
                 | Incidents
                 span.uk-badge.uk-margin-small-left(v-if='outages > 0') {{ outages }}
-              router-link(:to='{ name: "checks" }', active-class='active')
+              router-link(
+                :to='{ name: "checks" }',
+                active-class='active',
+                @click.native='closeMenu()'
+              )
                 span.uk-margin-right(uk-icon='icon: check')
                 | Checks
-              router-link(:to='{ name: "groups" }', active-class='active')
+              router-link(
+                :to='{ name: "groups" }',
+                active-class='active',
+                @click.native='closeMenu()'
+              )
                 span.uk-margin-right(uk-icon='icon: folder')
                 | Groups
-              router-link(:to='{ name: "alerters" }', active-class='active')
+              router-link(
+                :to='{ name: "alerters" }',
+                active-class='active',
+                @click.native='closeMenu()'
+              )
                 span.uk-margin-right(uk-icon='icon: bell')
                 | Alerters
 
@@ -72,8 +92,6 @@ export default {
 
   watch: {
     $route(to) {
-      UIkit.offcanvas(this.$refs.menu).hide();
-
       this.setTitle(to.meta.title);
     },
   },
@@ -103,6 +121,10 @@ export default {
       axios.get('/api/status').then((response) => {
         this.outages = response.data.outages.global;
       });
+    },
+
+    closeMenu() {
+      UIkit.offcanvas(this.$refs.menu).hide();
     },
   },
 };
@@ -192,8 +214,5 @@ $sidebar-padding: 16px;
   #main {
     margin-left: $sidebar-width + (2 * $sidebar-padding);
   }
-}
-
-#app-mobile {
 }
 </style>
