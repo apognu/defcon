@@ -1,5 +1,5 @@
 <template lang="pug">
-div
+div(v-if='check')
   h2(v-if='new_record') New check
   template(v-else-if='check')
     p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Edit check
@@ -252,16 +252,26 @@ export default {
       });
 
       if (this.new_record) {
-        axios.post('/api/checks', body).then(() => {
-          this.$router.push({ name: 'checks' });
-        });
-      } else {
-        axios.put(`/api/checks/${this.$route.params.uuid}`, body).then(() => {
-          this.$router.push({
-            name: 'checks.view',
-            params: { uuid: this.$route.params.uuid },
+        axios
+          .post('/api/checks', body)
+          .then(() => {
+            this.$router.push({ name: 'checks' });
+          })
+          .catch((e) => {
+            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
           });
-        });
+      } else {
+        axios
+          .put(`/api/checks/${this.$route.params.uuid}`, body)
+          .then(() => {
+            this.$router.push({
+              name: 'checks.view',
+              params: { uuid: this.$route.params.uuid },
+            });
+          })
+          .catch((e) => {
+            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
+          });
       }
     },
   },

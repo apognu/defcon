@@ -103,6 +103,9 @@ export default {
           );
 
           this.refresh();
+        })
+        .catch((e) => {
+          this.$helpers.error(`${e.message}: ${e.response.data.details}`);
         });
     },
   },

@@ -50,13 +50,23 @@ export default {
       };
 
       if (this.new_record) {
-        axios.post('/api/groups', body).then(() => {
-          this.$router.push({ name: 'groups' });
-        });
+        axios
+          .post('/api/groups', body)
+          .then(() => {
+            this.$router.push({ name: 'groups' });
+          })
+          .catch((e) => {
+            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
+          });
       } else {
-        axios.put(`/api/groups/${this.$route.params.uuid}`, body).then(() => {
-          this.$router.push({ name: 'groups' });
-        });
+        axios
+          .put(`/api/groups/${this.$route.params.uuid}`, body)
+          .then(() => {
+            this.$router.push({ name: 'groups' });
+          })
+          .catch((e) => {
+            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
+          });
       }
     },
   },

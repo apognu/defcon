@@ -66,13 +66,23 @@ export default {
       delete body.uuid;
 
       if (this.new_record) {
-        axios.post('/api/alerters', body).then(() => {
-          this.$router.push({ name: 'alerters' });
-        });
+        axios
+          .post('/api/alerters', body)
+          .then(() => {
+            this.$router.push({ name: 'alerters' });
+          })
+          .catch((e) => {
+            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
+          });
       } else {
-        axios.put(`/api/alerters/${this.$route.params.uuid}`, body).then(() => {
-          this.$router.push({ name: 'alerters' });
-        });
+        axios
+          .put(`/api/alerters/${this.$route.params.uuid}`, body)
+          .then(() => {
+            this.$router.push({ name: 'alerters' });
+          })
+          .catch((e) => {
+            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
+          });
       }
     },
   },
