@@ -3,7 +3,7 @@ div
   h2 Dashboard
 
   Status
-  Timeline
+  Timeline(:showUptime='true')
 </template>
 
 <script>

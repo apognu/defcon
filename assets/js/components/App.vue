@@ -1,32 +1,27 @@
 <template lang="pug">
 #app
-  #app-desktop(class='uk-visible@m')
-    aside#sidebar.uk-card.uk-card-default.uk-card-body.uk-padding-small
-      header
-        h1.uk-h3 Defcon
+  aside#sidebar.uk-card.uk-card-default.uk-card-body.uk-padding-small(class='uk-visible@m')
+    header
+      h1.uk-h3 Defcon
 
-        ul#menu.uk-nav.uk-nav-default
-          Menu(:outages='outages')
+      ul#menu.uk-nav.uk-nav-default
+        Menu(:outages='outages')
 
-    #main
-      router-view.uk-container-large.uk-margin-auto.uk-padding
+  aside#sidebar.uk-card.uk-card-default.uk-card-body.uk-padding-small(class='uk-hidden@m')
+    header
+      .uk-flex.uk-flex-middle
+        a.uk-margin-right(href='#menu', uk-toggle)
+          span(uk-icon='icon: menu; ratio: 1.5')
 
-  #app-mobile(class='uk-hidden@m')
-    aside#sidebar.uk-card.uk-card-default.uk-card-body.uk-padding-small
-      header
-        .uk-flex.uk-flex-middle
-          a.uk-margin-right(href='#menu', uk-toggle)
-            span(uk-icon='icon: menu; ratio: 1.5')
+        h1.uk-margin-remove.uk-h3.uk-width-1-1 Defcon
 
-          h1.uk-margin-remove.uk-h3.uk-width-1-1 Defcon
+      #menu(uk-offcanvas='mode: reveal; overlay: true', ref='menu')
+        .uk-offcanvas-bar
+          ul#menu.uk-nav.uk-nav-default
+            Menu(:mobile='true', :outages='outages', @close='closeMenu')
 
-        #menu(uk-offcanvas='mode: reveal; overlay: true', ref='menu')
-          .uk-offcanvas-bar
-            ul#menu.uk-nav.uk-nav-default
-              Menu(:mobile='true', :outages='outages', @close='closeMenu')
-
-    #main
-      router-view.uk-container-large.uk-margin-auto.uk-padding
+  #main
+    router-view.uk-container-large.uk-margin-auto.uk-padding
 </template>
 
 <script>
@@ -41,7 +36,6 @@ export default {
   },
 
   data: () => ({
-    refresher: undefined,
     title: '',
     outages: 0,
   }),
@@ -87,6 +81,8 @@ export default {
 </script>
 
 <style lang="scss">
+@import 'uikit/src/scss/variables-theme.scss';
+
 $sidebar-width: 300px;
 $sidebar-padding: 16px;
 
@@ -124,7 +120,7 @@ $sidebar-padding: 16px;
   }
 }
 
-#app-desktop {
+@media (min-width: $breakpoint-medium) {
   aside#sidebar {
     display: block;
     position: fixed;

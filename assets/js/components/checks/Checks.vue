@@ -3,9 +3,7 @@ div
   h2 Checks
 
   p.uk-text-right
-    router-link.uk-button.uk-button-primary.uk-button-small(
-      :to='{ name: "checks.new" }'
-    ) New check
+    router-link.uk-button.uk-button-primary.uk-button-small(:to='{ name: "checks.new" }') New check
 
   .uk-margin-bottom(uk-grid, class='uk-child-width-1-3@m uk-child-width-1-1@s')
     .uk-form-stacked
@@ -13,12 +11,7 @@ div
       .uk-form-control
         .uk-inline.uk-width-1-1
           span.uk-form-icon(uk-icon='icon: search')
-          input.uk-input(
-            type='text',
-            placeholder='Check name',
-            v-model='terms',
-            @keyup.enter='search()'
-          )
+          input.uk-input(type='text', placeholder='Check name', v-model='terms', @keyup.enter='search()')
 
     .uk-form-stacked
       label.uk-form-label Group
@@ -43,13 +36,8 @@ div
 
           td
             p.uk-margin-remove
-              span.uk-text-bold.uk-text-emphasis(
-                :class='{ "uk-text-warning": !check.enabled }'
-              ) {{ check.name }}
-              span.uk-margin-left.uk-text-muted(
-                v-if='check.group',
-                class='uk-visible@m'
-              ) {{ check.group.name }}
+              span.uk-text-bold.uk-text-emphasis(:class='{ "uk-text-warning": !check.enabled }') {{ check.name }}
+              span.uk-margin-left.uk-text-muted(v-if='check.group', class='uk-visible@m') {{ check.group.name }}
             p.uk-margin-remove.uk-text-muted.uk-text-small(class='uk-visible@m') {{ check.uuid }}
 
           td.uk-table-shrink.uk-text-nowrap.uk-text-right
@@ -57,16 +45,10 @@ div
 
           td.actions
             ul.uk-iconnav
-              router-link(
-                :to='{ name: "checks.edit", params: { uuid: check.uuid } }',
-                tag='li'
-              )
+              router-link(:to='{ name: "checks.edit", params: { uuid: check.uuid } }', tag='li')
                 a(uk-icon='icon: pencil')
 
-              router-link(
-                :to='{ name: "checks.view", params: { uuid: check.uuid } }',
-                tag='li'
-              )
+              router-link(:to='{ name: "checks.view", params: { uuid: check.uuid } }', tag='li')
                 a(uk-icon='icon: search')
 
   .uk-placeholder(v-else) No checks were found for the provided filters.
@@ -77,6 +59,7 @@ import axios from 'axios';
 
 export default {
   data: () => ({
+    refresher: undefined,
     checks: [],
     groups: [],
     terms: '',
@@ -121,10 +104,15 @@ export default {
 
   async mounted() {
     this.refresh();
+    this.refresher = setInterval(this.refresh, 5000);
 
     axios.get('/api/groups').then((response) => {
       this.groups = response.data;
     });
+  },
+
+  destroyed() {
+    clearInterval(this.interval);
   },
 
   methods: {
@@ -139,11 +127,9 @@ export default {
           this.checks = response.data;
         });
       } else {
-        axios
-          .get(`/api/checks?${all}&group=${this.filters.group}`)
-          .then((response) => {
-            this.checks = response.data;
-          });
+        axios.get(`/api/checks?${all}&group=${this.filters.group}`).then((response) => {
+          this.checks = response.data;
+        });
       }
     },
 

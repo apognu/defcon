@@ -17,35 +17,17 @@
         p.uk-text-bold.uk-text-emphasis.uk-margin-remove {{ check.name }}
         p.uk-margin-remove.uk-text-muted {{ check.uuid }}
 
-      a.uk-margin-left.uk-text-success(
-        v-if='check.silent',
-        @click='silence(false)',
-        uk-tooltip='Unsilence'
-      )
+      a.uk-margin-left.uk-text-success(v-if='check.silent', @click='silence(false)', uk-tooltip='Unsilence')
         span(uk-icon='icon: bell')
-      a.uk-margin-left.uk-text-danger(
-        v-else,
-        @click='silence(true)',
-        uk-tooltip='Silence'
-      )
+      a.uk-margin-left.uk-text-danger(v-else, @click='silence(true)', uk-tooltip='Silence')
         span(uk-icon='icon: bell')
 
-      a.uk-margin-left.uk-text-danger(
-        v-if='check.enabled',
-        @click='enable(false)',
-        uk-tooltip='Disable'
-      )
+      a.uk-margin-left.uk-text-danger(v-if='check.enabled', @click='enable(false)', uk-tooltip='Disable')
         span(uk-icon='icon: ban')
-      a.uk-margin-left.uk-text-success(
-        v-else,
-        @click='enable(true)',
-        uk-tooltip='Enable'
-      )
+      a.uk-margin-left.uk-text-success(v-else, @click='enable(true)', uk-tooltip='Enable')
         span(uk-icon='icon: play')
 
-      router-link.uk-margin-left(
-        :to='{ name: "checks.edit", uuid: check.uuid }'
-      )
+      router-link.uk-margin-left(:to='{ name: "checks.edit", uuid: check.uuid }')
         span(uk-icon='icon: pencil')
 
       a.uk-margin-left.uk-text-danger(@click='deleteCheck()')
@@ -53,7 +35,7 @@
 
   Spec.uk-margin-bottom(:check='check')
 
-  Timeline(:check='check.uuid')
+  Timeline(:check='check.uuid', :showUptime='true')
 
   .uk-card.uk-card-default(v-if='outages.length > 0')
     .uk-card-header
@@ -61,12 +43,7 @@
     .uk-card-body
       table.uk-table.uk-table-middle
         tbody
-          tr(
-            v-for='outage in outages',
-            is='OutageRow',
-            :outage='outage',
-            :key='outage.uuid'
-          )
+          tr(v-for='outage in outages', is='OutageRow', :outage='outage', :key='outage.uuid')
 </template>
 
 <script>
@@ -85,18 +62,27 @@ export default {
   },
 
   data: () => ({
+    refresher: undefined,
     check: undefined,
     outages: [],
   }),
 
   async mounted() {
-    axios.get(`/api/checks/${this.$route.params.uuid}`).then((response) => {
-      this.check = response.data;
-    });
+    this.refresh();
+    this.refresher = setInterval(this.refresh, 5000);
+  },
 
-    axios
-      .get(`/api/checks/${this.$route.params.uuid}/outages`)
-      .then((response) => {
+  destroyed() {
+    clearInterval(this.refresher);
+  },
+
+  methods: {
+    refresh() {
+      axios.get(`/api/checks/${this.$route.params.uuid}`).then((response) => {
+        this.check = response.data;
+      });
+
+      axios.get(`/api/checks/${this.$route.params.uuid}/outages`).then((response) => {
         this.outages = response.data;
         this.outages.sort((left, right) => {
           if (left.ended_on === undefined) {
@@ -109,69 +95,43 @@ export default {
           return left.started_on < right.started_on;
         });
       });
-  },
-
-  methods: {
-    refresh() {
-      axios.get(`/api/checks/${this.$route.params.uuid}`).then((response) => {
-        this.check = response.data;
-      });
     },
 
     lasted(outage) {
-      return this.$moment(outage.ended_on).diff(
-        this.$moment(outage.started_on),
-      );
+      return this.$moment(outage.ended_on).diff(this.$moment(outage.started_on));
     },
 
     silence(state) {
-      axios
-        .patch(`/api/checks/${this.$route.params.uuid}`, { silent: state })
-        .then(() => {
-          this.refresh();
+      axios.patch(`/api/checks/${this.$route.params.uuid}`, { silent: state }).then(() => {
+        this.refresh();
 
-          if (state) {
-            UIkit.notification(
-              '<span class="uk-margin-small-right" uk-icon="icon: bell"></span> The check was silenced.',
-            );
-          } else {
-            UIkit.notification(
-              '<span class="uk-margin-small-right" uk-icon="icon: bell"></span> The check was unsilenced.',
-            );
-          }
-        });
+        if (state) {
+          UIkit.notification('<span class="uk-margin-small-right" uk-icon="icon: bell"></span> The check was silenced.');
+        } else {
+          UIkit.notification('<span class="uk-margin-small-right" uk-icon="icon: bell"></span> The check was unsilenced.');
+        }
+      });
     },
 
     enable(state) {
-      axios
-        .patch(`/api/checks/${this.$route.params.uuid}`, { enabled: state })
-        .then(() => {
-          this.refresh();
+      axios.patch(`/api/checks/${this.$route.params.uuid}`, { enabled: state }).then(() => {
+        this.refresh();
 
-          if (state) {
-            UIkit.notification(
-              '<span class="uk-margin-small-right" uk-icon="icon: play"></span> The check was enabled.',
-            );
-          } else {
-            UIkit.notification(
-              '<span class="uk-margin-small-right" uk-icon="icon: ban"></span> The check was disabled.',
-            );
-          }
-        });
+        if (state) {
+          UIkit.notification('<span class="uk-margin-small-right" uk-icon="icon: play"></span> The check was enabled.');
+        } else {
+          UIkit.notification('<span class="uk-margin-small-right" uk-icon="icon: ban"></span> The check was disabled.');
+        }
+      });
     },
 
     deleteCheck() {
       UIkit.modal
-        .confirm(
-          'Are you certain you want to delete this check? This will permanently delete the check. This action cannot be undone.',
-          { labels: { ok: 'Delete', cancel: 'Cancel' } },
-        )
+        .confirm('Are you certain you want to delete this check? This will permanently delete the check. This action cannot be undone.', { labels: { ok: 'Delete', cancel: 'Cancel' } })
         .then(() => {
-          axios
-            .delete(`/api/checks/${this.$route.params.uuid}?delete=true`)
-            .then(() => {
-              this.$router.push({ name: 'checks' });
-            });
+          axios.delete(`/api/checks/${this.$route.params.uuid}?delete=true`).then(() => {
+            this.$router.push({ name: 'checks' });
+          });
         });
     },
   },
