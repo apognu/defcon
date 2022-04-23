@@ -14,7 +14,7 @@
           .bar.error.uk-margin-small-right.uk-margin-small-bottom(v-if='day.format("YYYY-MM-DD") in statistics', :uk-tooltip='`title: ${day.format("YYYY-MM-DD")}`')
           .bar.success.uk-margin-small-right.uk-margin-small-bottom(v-else, :uk-tooltip='`title: ${day.format("YYYY-MM-DD")}`')
 
-  .uk-width-1-4(v-if='showUptime')
+  .uk-width-1-1(v-if='showUptime', class='uk-width-1-4@m')
     .uk-card.uk-card-default.uk-card-body.uk-margin
       h3 Uptime
       p.uk-h1.uk-margin-remove.uk-text-bold.uk-text-center(v-if='uptime') {{ formatUptime(uptime) }} %
