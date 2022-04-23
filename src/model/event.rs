@@ -28,15 +28,22 @@ pub struct Event {
 }
 
 impl Event {
-  pub async fn for_check(conn: &mut MySqlConnection, check: &Check) -> Result<Vec<Event>> {
+  pub async fn for_check(conn: &mut MySqlConnection, check: &Check, limit: Option<u8>, page: Option<u8>) -> Result<Vec<Event>> {
+    let limit = limit.unwrap_or(50);
+    let page = page.unwrap_or(1) - 1;
+
     let events = sqlx::query_as::<_, Event>(
       "
         SELECT id, check_id, outage_id, site, status, message, created_at
         FROM events
         WHERE check_id = ?
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
       ",
     )
     .bind(check.id)
+    .bind(limit)
+    .bind(limit * page)
     .fetch_all(&mut *conn)
     .await
     .short()?;
@@ -44,17 +51,24 @@ impl Event {
     Ok(events)
   }
 
-  pub async fn for_check_between(conn: &mut MySqlConnection, check: &Check, from: NaiveDateTime, to: NaiveDateTime) -> Result<Vec<Event>> {
+  pub async fn for_check_between(conn: &mut MySqlConnection, check: &Check, from: NaiveDateTime, to: NaiveDateTime, limit: Option<u8>, page: Option<u8>) -> Result<Vec<Event>> {
+    let limit = limit.unwrap_or(50);
+    let page = page.unwrap_or(1) - 1;
+
     let events = sqlx::query_as::<_, Event>(
       "
         SELECT id, check_id, outage_id, site, status, message, created_at
         FROM events
         WHERE check_id = ? AND created_at BETWEEN ? AND ?
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
       ",
     )
     .bind(check.id)
     .bind(from)
     .bind(to)
+    .bind(limit)
+    .bind(limit * page)
     .fetch_all(&mut *conn)
     .await
     .short()?;
@@ -62,7 +76,10 @@ impl Event {
     Ok(events)
   }
 
-  pub async fn for_outage(conn: &mut MySqlConnection, outage: &Outage) -> Result<Vec<Event>> {
+  pub async fn for_outage(conn: &mut MySqlConnection, outage: &Outage, limit: Option<u8>, page: Option<u8>) -> Result<Vec<Event>> {
+    let limit = limit.unwrap_or(50);
+    let page = page.unwrap_or(1) - 1;
+
     let events = sqlx::query_as::<_, Event>(
       "
         SELECT id, check_id, outage_id, site, status, message, created_at
@@ -70,12 +87,16 @@ impl Event {
         WHERE
           check_id = ? AND
           created_at >= ? AND (? IS NULL OR created_at <= ?)
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
       ",
     )
     .bind(outage.check_id)
     .bind(outage.started_on)
     .bind(outage.ended_on)
     .bind(outage.ended_on)
+    .bind(limit)
+    .bind(limit * page)
     .fetch_all(&mut *conn)
     .await
     .short()?;
@@ -172,7 +193,7 @@ mod tests {
       started_on: Some(DateTime::<Utc>::from_utc(NaiveDate::from_ymd(2019, 12, 1).and_hms(0, 0, 0), Utc)),
       ..Default::default()
     };
-    let events = Event::for_outage(&mut *conn, &outage).await?;
+    let events = Event::for_outage(&mut *conn, &outage, None, None).await?;
 
     assert_eq!(events.len(), 1);
     assert_eq!(&events[0].message, "failure");

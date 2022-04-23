@@ -7,32 +7,35 @@ use crate::{
   model as db,
 };
 
-#[get("/api/checks/<uuid>/events", rank = 10)]
-pub async fn list_for_check(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<Vec<db::Event>>> {
+#[get("/api/checks/<uuid>/events?<limit>&<page>", rank = 10)]
+pub async fn list_for_check(pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
 
-  let events = db::Event::for_check(&mut conn, &check).await.context("could not retrieve events").short()?;
+  let events = db::Event::for_check(&mut conn, &check, limit, page).await.context("could not retrieve events").short()?;
 
   Ok(Json(events))
 }
 
-#[get("/api/checks/<uuid>/events?<from>&<to>", rank = 5)]
-pub async fn list_for_check_between(pool: &State<Pool<MySql>>, uuid: String, from: api::DateTime, to: api::DateTime) -> ApiResponse<Json<Vec<db::Event>>> {
+#[get("/api/checks/<uuid>/events?<from>&<to>&<limit>&<page>", rank = 5)]
+pub async fn list_for_check_between(pool: &State<Pool<MySql>>, uuid: String, from: api::DateTime, to: api::DateTime, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
 
-  let events = db::Event::for_check_between(&mut conn, &check, *from, *to).await.context("could not retrieve events").short()?;
+  let events = db::Event::for_check_between(&mut conn, &check, *from, *to, limit, page)
+    .await
+    .context("could not retrieve events")
+    .short()?;
 
   Ok(Json(events))
 }
 
-#[get("/api/outages/<uuid>/events")]
-pub async fn list_for_outage(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<Vec<db::Event>>> {
+#[get("/api/outages/<uuid>/events?<limit>&<page>")]
+pub async fn list_for_outage(pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
 
-  let events = db::Event::for_outage(&mut conn, &outage).await.context("could not retrieve events").short()?;
+  let events = db::Event::for_outage(&mut conn, &outage, limit, page).await.context("could not retrieve events").short()?;
 
   Ok(Json(events))
 }

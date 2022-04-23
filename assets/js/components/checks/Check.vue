@@ -37,13 +37,22 @@
 
   Timeline(:check='check.uuid', :showUptime='true')
 
-  .uk-card.uk-card-default(v-if='outages.length > 0')
-    .uk-card-header
-      h3.uk-card-title Past incidents
-    .uk-card-body
-      table.uk-table.uk-table-middle
-        tbody
-          tr(v-for='outage in outages', is='OutageRow', :outage='outage', :key='outage.uuid')
+  div(uk-grid)
+    .uk-width-1-1(class='uk-width-1-2@m')
+      .uk-card.uk-card-default(v-if='outages.length > 0')
+        .uk-card-header
+          h3.uk-card-title Past incidents
+        .uk-card-body
+          table.uk-table.uk-table-middle
+            tbody
+              tr(v-for='outage in outages', is='OutageRow', :outage='outage', :key='outage.uuid')
+
+    .uk-width-1-1(class='uk-width-1-2@m')
+      .uk-card.uk-card-default(v-if='events.length > 0')
+        .uk-card-header
+          h3.uk-card-title Latest events
+        .uk-card-body
+          Events(:events='events')
 </template>
 
 <script>
@@ -53,18 +62,21 @@ import axios from 'axios';
 import Spec from '@/components/checks/Spec.vue';
 import Timeline from '@/components/dashboard/Timeline.vue';
 import OutageRow from '@/components/outages/Row.vue';
+import Events from '@/components/outages/Events.vue';
 
 export default {
   components: {
     Spec,
     Timeline,
     OutageRow,
+    Events,
   },
 
   data: () => ({
     refresher: undefined,
     check: undefined,
     outages: [],
+    events: [],
   }),
 
   async mounted() {
@@ -82,18 +94,12 @@ export default {
         this.check = response.data;
       });
 
-      axios.get(`/api/checks/${this.$route.params.uuid}/outages`).then((response) => {
+      axios.get(`/api/checks/${this.$route.params.uuid}/outages?limit=10`).then((response) => {
         this.outages = response.data;
-        this.outages.sort((left, right) => {
-          if (left.ended_on === undefined) {
-            return false;
-          }
-          if (right.ended_on === undefined) {
-            return true;
-          }
+      });
 
-          return left.started_on < right.started_on;
-        });
+      axios.get(`/api/checks/${this.$route.params.uuid}/events?limit=10`).then((response) => {
+        this.events = response.data;
       });
     },
 

@@ -43,7 +43,7 @@ pub async fn statistics(pool: &State<Pool<MySql>>, check: Option<String>, from: 
     None => None,
   };
 
-  let outages = Outage::between(&mut conn, check, from.and_hms(0, 0, 0), to.and_hms(23, 59, 59))
+  let outages = Outage::between(&mut conn, check, from.and_hms(0, 0, 0), to.and_hms(23, 59, 59), None, None)
     .await
     .context("could not retrieve outages")
     .short()?

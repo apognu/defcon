@@ -13,9 +13,7 @@ div(v-if='outage')
         p.uk-text-bold.uk-text-emphasis.uk-margin-remove {{ outage.check.name }}
         p.uk-margin-remove.uk-text-muted {{ outage.check.uuid }}
 
-      router-link.uk-margin-left(
-        :to='{ name: "checks.view", params: { uuid: outage.check.uuid } }'
-      )
+      router-link.uk-margin-left(:to='{ name: "checks.view", params: { uuid: outage.check.uuid } }')
         span(uk-icon='icon: search')
 
   .uk-child-width-expand.uk-grid-match.uk-margin-bottom(uk-grid)
@@ -37,9 +35,7 @@ div(v-if='outage')
   .uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin
     h3.uk-card-title Comment
 
-    textarea.uk-textarea.uk-form-blank.uk-margin-small-bottom(
-      v-model='outage.comment'
-    )
+    textarea.uk-textarea.uk-form-blank.uk-margin-small-bottom(v-model='outage.comment')
     .uk-text-right
       button.uk-button.uk-button-small(@click='comment') Save comment
 
@@ -79,17 +75,13 @@ export default {
         this.outage = response.data;
       });
 
-      axios
-        .get(`/api/outages/${this.$route.params.uuid}/events`)
-        .then((response) => {
-          this.events = response.data.reverse().slice(0, 10);
-        });
+      axios.get(`/api/outages/${this.$route.params.uuid}/events?limit=20`).then((response) => {
+        this.events = response.data;
+      });
     },
 
     lasted(outage) {
-      return this.$moment(outage.ended_on).diff(
-        this.$moment(outage.started_on),
-      );
+      return this.$moment(outage.ended_on).diff(this.$moment(outage.started_on));
     },
 
     comment() {
@@ -98,9 +90,7 @@ export default {
           comment: this.outage.comment,
         })
         .then(() => {
-          UIkit.notification(
-            '<span uk-icon="icon: pencil"></span> The comment for this outage was updated..',
-          );
+          UIkit.notification('<span uk-icon="icon: pencil"></span> The comment for this outage was updated..');
 
           this.refresh();
         })

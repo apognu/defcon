@@ -23,7 +23,10 @@ pub struct Outage {
 }
 
 impl Outage {
-  pub async fn between(conn: &mut MySqlConnection, check: Option<Check>, from: NaiveDateTime, end: NaiveDateTime) -> Result<Vec<Outage>> {
+  pub async fn between(conn: &mut MySqlConnection, check: Option<Check>, from: NaiveDateTime, end: NaiveDateTime, limit: Option<u8>, page: Option<u8>) -> Result<Vec<Outage>> {
+    let limit = limit.unwrap_or(50);
+    let page = page.unwrap_or(1) - 1;
+
     let outages = sqlx::query_as::<_, Outage>(
       "
         SELECT outages.id, check_id, outages.uuid, started_on, ended_on, comment
@@ -39,6 +42,8 @@ impl Outage {
             outages.started_on BETWEEN ? AND ? OR
             outages.ended_on BETWEEN ? AND ?
           )
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
       ",
     )
     .bind(check.as_ref().map(|check| check.id))
@@ -50,6 +55,8 @@ impl Outage {
     .bind(end)
     .bind(from)
     .bind(end)
+    .bind(limit)
+    .bind(limit * page)
     .fetch_all(&mut *conn)
     .await
     .short()?;
@@ -123,15 +130,22 @@ impl Outage {
     Ok(outage)
   }
 
-  pub async fn for_check(conn: &mut MySqlConnection, check: &Check) -> Result<Vec<Outage>> {
+  pub async fn for_check(conn: &mut MySqlConnection, check: &Check, limit: Option<u8>, page: Option<u8>) -> Result<Vec<Outage>> {
+    let limit = limit.unwrap_or(50);
+    let page = page.unwrap_or(1) - 1;
+
     let outages = sqlx::query_as::<_, Outage>(
       "
         SELECT id, check_id, uuid, started_on, ended_on, comment
         FROM outages
         WHERE check_id = ?
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
       ",
     )
     .bind(check.id)
+    .bind(limit)
+    .bind(limit * page)
     .fetch_all(&mut *conn)
     .await
     .short()?;
@@ -139,19 +153,27 @@ impl Outage {
     Ok(outages)
   }
 
-  pub async fn for_check_between(conn: &mut MySqlConnection, check: &Check, from: NaiveDateTime, to: NaiveDateTime) -> Result<Vec<Outage>> {
+  pub async fn for_check_between(conn: &mut MySqlConnection, check: &Check, from: NaiveDateTime, to: NaiveDateTime, limit: Option<u8>, page: Option<u8>) -> Result<Vec<Outage>> {
+    let limit = limit.unwrap_or(50);
+    let page = page.unwrap_or(1) - 1;
+
     let outages = sqlx::query_as::<_, Outage>(
       "
         SELECT id, check_id, uuid, started_on, ended_on, comment
         FROM outages
-        WHERE check_id = ? AND
-        (outages.started_on BETWEEN ? AND ? AND (outages.ended_on IS NULL OR outages.ended_on <= ?))
+        WHERE
+          check_id = ? AND
+          (outages.started_on BETWEEN ? AND ? AND (outages.ended_on IS NULL OR outages.ended_on <= ?))
+        ORDER BY id DESC
+        LIMIT ? OFFSET ?
       ",
     )
     .bind(check.id)
     .bind(from)
     .bind(to)
     .bind(to)
+    .bind(limit)
+    .bind(limit * page)
     .fetch_all(&mut *conn)
     .await
     .short()?;
