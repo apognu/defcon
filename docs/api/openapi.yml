@@ -190,13 +190,23 @@ paths:
           in: query
           schema:
             type: string
-            format: date-time
+            format: date
         - name: to
           description: Display outages until this date
           in: query
           schema:
             type: string
-            format: date-time
+            format: date
+        - name: limit
+          description: Number of items per page of results
+          in: query
+          schema:
+            type: int
+        - name: page
+          description: Page number to return
+          in: query
+          schema:
+            type: int
       responses:
         '200':
           description: List of outages
@@ -228,6 +238,16 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: limit
+          description: Number of items per page of results
+          in: query
+          schema:
+            type: int
+        - name: page
+          description: Page number to return
+          in: query
+          schema:
+            type: int
       responses:
         '200':
           description: List of handler events
@@ -316,7 +336,7 @@ paths:
         '204':
           description: Group was deleted successfully
         '404':
-          description: Provided UUID does not match a known check
+          description: Provided UUID does not match a known group
 
   /api/alerters:
     get:
@@ -401,6 +421,24 @@ paths:
         '404':
           description: Provided UUID does not match a known alerter
 
+    delete:
+      summary: Delete an alerter
+      description: Delete an existing alerter, will be unassigned to all checks this alerter is assigned to.
+      tags: ['Alerters']
+      parameters:
+        - name: uuid
+          description: Unique identifier
+          in: path
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '204':
+          description: Alerter was deleted successfully
+        '404':
+          description: Provided UUID does not match a known alerter
+
     patch:
       summary: Update alerter attributes
       tags: ['Alerters']
@@ -432,6 +470,12 @@ paths:
       summary: List current outages
       tags: ['Outages']
       parameters:
+        - name: check
+          description: UUID for a check to list outages for
+          in: query
+          schema:
+            type: string
+            format: uuid
         - name: from
           description: Display resolved outages from this date
           in: query
@@ -444,6 +488,16 @@ paths:
           schema:
             type: string
             format: date
+        - name: limit
+          description: Number of items per page of results
+          in: query
+          schema:
+            type: int
+        - name: page
+          description: Page number to return
+          in: query
+          schema:
+            type: int
       responses:
         '200':
           description: List of outages
@@ -465,6 +519,16 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: limit
+          description: Number of items per page of results
+          in: query
+          schema:
+            type: int
+        - name: page
+          description: Page number to return
+          in: query
+          schema:
+            type: int
       responses:
         '200':
           description: List of handler events
@@ -513,13 +577,13 @@ paths:
           in: query
           schema:
             type: string
-            format: date-time
+            format: date
         - name: to
           description: Display resolved outages until this date
           in: query
           schema:
             type: string
-            format: date-time
+            format: date
       responses:
         '200':
           description: List of site outages
@@ -584,9 +648,11 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/outage/Outage'
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/outage/Outage'
 
 components:
   schemas:
