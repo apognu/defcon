@@ -2,7 +2,11 @@
 
 Defcon is a tool allows you to define and periodically run monitoring checks (also called _uptime checks_) against external services.
 
+It optionally includes a web interface to manage and visualize operations.
+
 You can find more extensive documentation in the [user manual](https://apognu.github.io/defcon/).
+
+![Screenshot oh Defcon's homepage](contrib/screenshot.png?raw=true)
 
 ## How to run
 

@@ -11,6 +11,7 @@ The controller has a few configuration knobs you can tweak to adjust its overall
 | `PUBLIC_KEY`         | Yes      |                | Path to an PEM-encoded ECDSA public key                |
 | `API_ENABLE`         |          | 1              | Enable or disable the API process                      |
 | `API_LISTEN`         |          | 127.0.0.1:8000 | Set the listen address and port of the API process     |
+| `WEB_ENABLE`         |          | 0              | Enable or disable the Web administration interface     |
 | `HANDLER_ENABLE`     |          | 1              | Enable or disable the handler process                  |
 | `HANDLER_INTERVAL`   |          | 1s             | Interval between handler loop iterations               |
 | `HANDLER_SPREAD`     |          | 0s             | Maximum random delay applied when a check needs to run |
@@ -48,6 +49,10 @@ A value of `0` or `1` respectively disables and enables the API process bundled 
 ### `API_LISTEN`
 
 A string representing an IP address and port on which the API process will bind its process. By default, the API is only reachable by the local host on port 8000.
+
+### `WEB_ENABLE`
+
+A value of `0` or `1` respectively disables and enabled the Web administration interface to manage and visualization Defcon's operations.
 
 ### `HANDLER_ENABLE`
 
