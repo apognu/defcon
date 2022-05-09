@@ -172,6 +172,7 @@
 <tr><td><code>PUBLIC_KEY</code></td><td>Yes</td><td></td><td>Path to an PEM-encoded ECDSA public key</td></tr>
 <tr><td><code>API_ENABLE</code></td><td></td><td>1</td><td>Enable or disable the API process</td></tr>
 <tr><td><code>API_LISTEN</code></td><td></td><td>127.0.0.1:8000</td><td>Set the listen address and port of the API process</td></tr>
+<tr><td><code>WEB_ENABLE</code></td><td></td><td>0</td><td>Enable or disable the Web administration interface</td></tr>
 <tr><td><code>HANDLER_ENABLE</code></td><td></td><td>1</td><td>Enable or disable the handler process</td></tr>
 <tr><td><code>HANDLER_INTERVAL</code></td><td></td><td>1s</td><td>Interval between handler loop iterations</td></tr>
 <tr><td><code>HANDLER_SPREAD</code></td><td></td><td>0s</td><td>Maximum random delay applied when a check needs to run</td></tr>
@@ -196,6 +197,8 @@ $ openssl ec -in defcon-private.pem -pubout -out defcon-public.pem
 <p>A value of <code>0</code> or <code>1</code> respectively disables and enables the API process bundled within Defcon.</p>
 <h3><a class="header" href="#api_listen" id="api_listen"><code>API_LISTEN</code></a></h3>
 <p>A string representing an IP address and port on which the API process will bind its process. By default, the API is only reachable by the local host on port 8000.</p>
+<h3><a class="header" href="#web_enable" id="web_enable"><code>WEB_ENABLE</code></a></h3>
+<p>A value of <code>0</code> or <code>1</code> respectively disables and enabled the Web administration interface to manage and visualization Defcon's operations.</p>
 <h3><a class="header" href="#handler_enable" id="handler_enable"><code>HANDLER_ENABLE</code></a></h3>
 <p>A value of <code>0</code> here disables check handling on the controller. If it is disabled, no check will run on this node. This is particularly useful if all your checks are configured to run on off-site runners and you would prefer to use the controller only as Defcon's control plane.</p>
 <h3><a class="header" href="#handler_interval" id="handler_interval"><code>HANDLER_INTERVAL</code></a></h3>
