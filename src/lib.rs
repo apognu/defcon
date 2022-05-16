@@ -1,6 +1,6 @@
 #![feature(async_closure, try_find)]
 #![deny(clippy::all)]
-#![allow(clippy::unit_arg)]
+#![allow(clippy::let_unit_value)]
 
 #[macro_use]
 extern crate serde;

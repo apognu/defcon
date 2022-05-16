@@ -17,7 +17,7 @@ jobs:
           key: cargo-clippy-cache-${{ matrix.arch.target }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-04-17
+          toolchain: nightly-2022-05-15
           override: true
           components: clippy
       - uses: actions-rs/cargo@v1
@@ -48,7 +48,7 @@ jobs:
           key: cargo-test-cache-${{ matrix.arch.target }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-04-17
+          toolchain: nightly-2022-05-15
           override: true
       - name: Test suite
         run: |
@@ -81,7 +81,7 @@ jobs:
           yarn --cwd assets build
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-04-17
+          toolchain: nightly-2022-05-15
           override: true
       - name: Build
         uses: actions-rs/cargo@v1
