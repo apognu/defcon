@@ -21,18 +21,15 @@ tr
     span.checkkind {{ outage.check.spec.kind | checkkind() }}
 
   td.uk-table-shrink.uk-text-nowrap(class='uk-visible@m')
-    p {{ outage.started_on | moment("from") }}
+    p(:uk-tooltip='`title: ${$helpers.datetime(outage.started_on)}`') {{ outage.started_on | moment("from") }}
 
   td.uk-table-shrink.uk-text-nowrap(class='uk-visible@m')
-    p(v-if='outage.ended_on') {{ lasted(outage) | duration("humanize") }}
+    p(v-if='outage.ended_on', :uk-tooltip='`title: ${$helpers.datetime(outage.ended_on)}`') {{ lasted(outage) | duration("humanize") }}
     p.uk-text-bold.uk-text-warning(v-else) Ongoing
 
   td.actions
     ul.uk-iconnav
-      router-link(
-        :to='{ name: "outages.view", params: { uuid: outage.uuid } }',
-        tag='li'
-      )
+      router-link(:to='{ name: "outages.view", params: { uuid: outage.uuid } }', tag='li')
         a(uk-icon='icon: search')
 </template>
 
@@ -47,9 +44,7 @@ export default {
 
   methods: {
     lasted(outage) {
-      return this.$moment(outage.ended_on).diff(
-        this.$moment(outage.started_on),
-      );
+      return this.$moment(outage.ended_on).diff(this.$moment(outage.started_on));
     },
   },
 };

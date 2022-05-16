@@ -10,6 +10,9 @@ pub struct DeadManSwitch {
   #[serde(skip)]
   pub check_id: u64,
   pub stale_after: Duration,
+  #[serde(skip_deserializing)]
+  #[sqlx(default)]
+  pub checkin_url: String,
 }
 
 impl SpecMeta for DeadManSwitch {
@@ -24,7 +27,7 @@ impl SpecMeta for DeadManSwitch {
 
 impl DeadManSwitch {
   pub async fn for_check(conn: &mut MySqlConnection, check: &Check) -> Result<DeadManSwitch> {
-    let spec = sqlx::query_as::<_, DeadManSwitch>(
+    let mut spec = sqlx::query_as::<_, DeadManSwitch>(
       "
         SELECT id, check_id, stale_after
         FROM deadmanswitch_specs
@@ -34,6 +37,8 @@ impl DeadManSwitch {
     .bind(check.id)
     .fetch_one(&mut *conn)
     .await?;
+
+    spec.checkin_url = format!("/checkin/{}", check.uuid);
 
     Ok(spec)
   }

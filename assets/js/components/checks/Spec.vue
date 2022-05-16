@@ -5,7 +5,7 @@
 
   .uk-card-body
     div(uk-grid, class='uk-child-width-1-2@s uk-child-width-1-4@m')
-      Attribute(label='Interval') {{ check.interval | duration("humanize") }}
+      Attribute(label='Interval', :uk-tooltip='check.interval') {{ check.interval | duration("humanize") }}
       Attribute(label='Failing threshold') {{ check.failing_threshold }}
       Attribute(label='Passing threshold') {{ check.passing_threshold }}
       Attribute(label='Site threshold') {{ check.site_threshold }}
@@ -21,6 +21,7 @@
     Tls(v-if='check.spec.kind == "tls"', :spec='check.spec')
     Whois(v-if='check.spec.kind == "whois"', :spec='check.spec')
     Ping(v-if='check.spec.kind == "ping"', :spec='check.spec')
+    DeadManSwitch(v-if='check.spec.kind == "deadmanswitch"', :spec='check.spec')
 </template>
 
 <script>
@@ -34,6 +35,7 @@ import AppStore from '@/components/checks/specs/AppStore.vue';
 import Tls from '@/components/checks/specs/Tls.vue';
 import Whois from '@/components/checks/specs/Whois.vue';
 import Ping from '@/components/checks/specs/Ping.vue';
+import DeadManSwitch from '@/components/checks/specs/DeadManSwitch.vue';
 
 export default {
   components: {
@@ -47,6 +49,7 @@ export default {
     Tls,
     Whois,
     Ping,
+    DeadManSwitch,
   },
 
   props: {

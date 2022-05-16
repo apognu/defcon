@@ -78,7 +78,7 @@ async fn main() -> Result<()> {
       let pool = pool.clone();
 
       async move {
-        deadmanswitch::run(pool, config).await;
+        deadmanswitch::run(pool, config).await.unwrap();
       }
     });
   }
@@ -107,7 +107,7 @@ async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Option<Keys>) -> 
     ..RocketConfig::release_default()
   };
 
-  api::server(provider, config, pool, keys)
+  let _ = api::server(provider, config, pool, keys)
     .attach(ApiLogger::new())
     .launch()
     .await

@@ -2,8 +2,8 @@
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
-    "build": "webpack --mode production",
-    "watch": "webpack --mode development --watch",
+    "build": "webpack --mode production --config webpack.config.js",
+    "watch": "webpack --mode development --watch --config webpack.config.dev.js",
     "lint": "eslint --ext '.js,.vue' js"
   },
   "devDependencies": {

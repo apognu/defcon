@@ -11,6 +11,7 @@ Vue.filter('checkkind', (value) => {
     case 'tls': return 'TLS';
     case 'udp': return 'UDP';
     case 'whois': return 'Domain';
+    case 'deadmanswitch': return 'Dead Man Switch';
     default: return 'Unknown';
   }
 });

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
+use kvlogger::*;
 use rocket::{get, http::Status, response::status::Custom, routes, Config as RocketConfig, Route, State};
 use sqlx::{MySql, Pool};
 
@@ -9,14 +10,20 @@ use defcon::{
   model::{Check, DeadManSwitchLog},
 };
 
-pub async fn run(pool: Pool<MySql>, config: Arc<Config>) {
+pub async fn run(pool: Pool<MySql>, config: Arc<Config>) -> Result<()> {
   let provider = RocketConfig {
     address: config.dms.listen.ip(),
     port: config.dms.listen.port(),
     ..RocketConfig::release_default()
   };
 
-  rocket::custom(provider).manage(pool).mount("/", routes()).launch().await.unwrap();
+  kvlog!(Info, "starting dead man switch process", {
+    "listen" => config.dms.listen
+  });
+
+  let _ = rocket::custom(provider).manage(pool).mount("/", routes()).launch().await?;
+
+  Ok(())
 }
 
 fn routes() -> Vec<Route> {

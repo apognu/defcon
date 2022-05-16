@@ -1,7 +1,7 @@
 <template lang="pug">
 div(v-if='outage')
   p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Incident
-  h2.uk-margin-remove-top {{ outage.check.name }} - {{ outage.started_on | moment("MMMM Do YYYY, h:mm:ss a") }}
+  h2.uk-margin-remove-top {{ outage.check.name }}
 
   .heading.uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin-bottom
     .uk-flex.uk-flex-middle
@@ -22,14 +22,14 @@ div(v-if='outage')
         .uk-card-header
           h3.uk-h6.uk-text-uppercase.uk-text-muted Started at
         .uk-card-body
-          p.uk-text.bold.uk-text-emphasis {{ outage.started_on | moment("from") }}
+          p.uk-text.bold.uk-text-emphasis(:uk-tooltip='`title: ${$helpers.datetime(outage.started_on)}`') {{ outage.started_on | moment("from") }}
 
     div
       .uk-card.uk-card-default.uk-card-small.uk-text-center
         .uk-card-header
           h3.uk-h6.uk-text-uppercase.uk-text-muted Lasted
         .uk-card-body
-          p.uk-text-bold.uk-text-success(v-if='outage.ended_on') {{ lasted(outage) | duration("humanize") }}
+          p.uk-text-bold.uk-text-success(v-if='outage.ended_on', :uk-tooltip='`title: ${$helpers.datetime(outage.ended_on)}`') {{ lasted(outage) | duration("humanize") }}
           p.uk-text-bold.uk-text-warning(v-else) Ongoing
 
   .uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin

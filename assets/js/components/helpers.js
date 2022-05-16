@@ -5,6 +5,8 @@ const helpers = {
   error: (message) => {
     UIkit.notification(message);
   },
+
+  datetime: (dt) => Vue.prototype.$moment(dt).format('MMMM Do, YYYY [at] HH:mm:ss ZZ'),
 };
 
 export default {

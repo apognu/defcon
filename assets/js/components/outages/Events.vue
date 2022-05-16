@@ -10,7 +10,7 @@ table.uk-table.uk-table-middle.uk-table-divider
       p.uk-margin-remove: span.checkkind {{ event.site }}
 
     td.uk-table-shrink.uk-text-nowrap(class='uk-visible@m')
-      p {{ event.created_at | moment("from") }}
+      p(:uk-tooltip='`title: ${$helpers.datetime(event.created_at)}`') {{ event.created_at | moment("from") }}
 
     td.uk-table-shrink(class='uk-visible@m')
       span.checkkind {{ event.site }}
