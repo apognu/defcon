@@ -56,7 +56,7 @@ export default {
 
   async mounted() {
     this.refresh();
-    this.refresher = setInterval(this.refresh, 5000);
+    this.refresher = setInterval(this.refresh, 30000);
   },
 
   destroyed() {
@@ -84,11 +84,11 @@ export default {
         check = `check=${this.check}&`;
       }
 
-      axios.get(`/api/statistics?${check}&from=${from}&to=${to}`).then((response) => {
+      axios.get(`/api/statistics?${check}from=${from}&to=${to}`).then((response) => {
         this.statistics = response.data;
       });
 
-      axios.get(`/api/outages?${check}&from=${from}&to=${to}`).then((response) => {
+      axios.get(`/api/outages?${check}from=${from}&to=${to}`).then((response) => {
         const outages = response.data;
 
         if (outages.length === 0) {
