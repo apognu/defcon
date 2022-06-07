@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="../03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="../05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="../06-groups.html"><strong aria-hidden="true">6.</strong> Groups</a></li><li class="chapter-item expanded "><a href="../07-handlers.html"><strong aria-hidden="true">7.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../07-handlers/ping.html"><strong aria-hidden="true">7.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="../07-handlers/tcp.html"><strong aria-hidden="true">7.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="../07-handlers/udp.html"><strong aria-hidden="true">7.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="../07-handlers/http.html"><strong aria-hidden="true">7.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="../07-handlers/dns.html" class="active"><strong aria-hidden="true">7.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="../07-handlers/whois.html"><strong aria-hidden="true">7.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="../07-handlers/tls.html"><strong aria-hidden="true">7.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="../07-handlers/appstores.html"><strong aria-hidden="true">7.8.</strong> App stores</a></li><li class="chapter-item expanded "><a href="../07-handlers/deadmanswitch.html"><strong aria-hidden="true">7.9.</strong> Dead Man Switch</a></li></ol></li><li class="chapter-item expanded "><a href="../08-alerters.html"><strong aria-hidden="true">8.</strong> Alerters</a></li><li class="chapter-item expanded "><a href="../api.html"><strong aria-hidden="true">9.</strong> REST API</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../02-getting-started.html"><strong aria-hidden="true">2.</strong> Getting started</a></li><li class="chapter-item expanded "><a href="../03-configuration.html"><strong aria-hidden="true">3.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="../04-runner.html"><strong aria-hidden="true">4.</strong> Off-site runner</a></li><li class="chapter-item expanded "><a href="../05-checks.html"><strong aria-hidden="true">5.</strong> Checks</a></li><li class="chapter-item expanded "><a href="../06-groups.html"><strong aria-hidden="true">6.</strong> Groups</a></li><li class="chapter-item expanded "><a href="../07-handlers.html"><strong aria-hidden="true">7.</strong> Handlers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../07-handlers/ping.html"><strong aria-hidden="true">7.1.</strong> Ping</a></li><li class="chapter-item expanded "><a href="../07-handlers/tcp.html"><strong aria-hidden="true">7.2.</strong> TCP connection</a></li><li class="chapter-item expanded "><a href="../07-handlers/udp.html"><strong aria-hidden="true">7.3.</strong> UDP datagram</a></li><li class="chapter-item expanded "><a href="../07-handlers/http.html"><strong aria-hidden="true">7.4.</strong> HTTP request</a></li><li class="chapter-item expanded "><a href="../07-handlers/dns.html" class="active"><strong aria-hidden="true">7.5.</strong> DNS</a></li><li class="chapter-item expanded "><a href="../07-handlers/whois.html"><strong aria-hidden="true">7.6.</strong> Domain expiration</a></li><li class="chapter-item expanded "><a href="../07-handlers/tls.html"><strong aria-hidden="true">7.7.</strong> TLS expiration</a></li><li class="chapter-item expanded "><a href="../07-handlers/appstores.html"><strong aria-hidden="true">7.8.</strong> App stores</a></li><li class="chapter-item expanded "><a href="../07-handlers/python.html"><strong aria-hidden="true">7.9.</strong> Python</a></li><li class="chapter-item expanded "><a href="../07-handlers/deadmanswitch.html"><strong aria-hidden="true">7.10.</strong> Dead Man Switch</a></li></ol></li><li class="chapter-item expanded "><a href="../08-alerters.html"><strong aria-hidden="true">8.</strong> Alerters</a></li><li class="chapter-item expanded "><a href="../api.html"><strong aria-hidden="true">9.</strong> REST API</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -164,6 +164,24 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#dns" id="dns">DNS</a></h1>
+<p>The DNS handler will retrieve DNS records of a specific type, for a specific domain, and check if one of the values matches the specification. Only the following DNS record types are supported:</p>
+<ul>
+<li>NS</li>
+<li>MX</li>
+<li>A</li>
+<li>AAAA</li>
+<li>CNAME</li>
+<li>CAA</li>
+</ul>
+<h2><a class="header" href="#attributes" id="attributes">Attributes</a></h2>
+<table><thead><tr><th>Attribute</th><th>Type</th><th>Example</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>kind</code></td><td>string</td><td><code>&quot;dns&quot;</code></td><td>-</td></tr>
+<tr><td><code>record</code></td><td>string</td><td><code>&quot;A&quot;</code></td><td>Type of DNS record to verify</td></tr>
+<tr><td><code>domain</code></td><td>string</td><td><code>&quot;example.com&quot;</code></td><td>Domain name for which the retrieve the records</td></tr>
+<tr><td><code>value</code></td><td>string</td><td><code>&quot;1.2.3.4&quot;</code></td><td>Value to compare to each retrieved record, must match exactly</td></tr>
+</tbody></table>
+<h2><a class="header" href="#configuration" id="configuration">Configuration</a></h2>
+<p>You can change the DNS resolver used to resolve DNS records by using the <code>DNS_RESOLVER</code> environment variable when starting the controller and the runners, like so: <code>DNS_RESOLVER=1.2.3.4</code>. By default, <code>1.1.1.1</code> is used.</p>
 
                     </main>
 
