@@ -39,6 +39,7 @@
     "webpack-cli": "^4.9.2"
   },
   "dependencies": {
+    "@johmun/vue-tags-input": "^2.1.0",
     "axios": "^0.26.0",
     "moment": "^2.29.3",
     "moment-range": "^4.0.2",

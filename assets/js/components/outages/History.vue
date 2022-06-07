@@ -2,11 +2,13 @@
 div
   h2 Incident history
 
-  div(v-if='outages')
+  div(v-if='outages && outages.length > 0')
     .uk-card.uk-card-default.uk-card-body(v-if='outages.length > 0')
       table.uk-table.uk-table-middle
         tbody
           tr(v-for='outage in outages', is='OutageRow', :outage='outage', :key='outage.uuid')
+  
+  .uk-placeholder(v-else) There are no incidents in recorded history.
 </template>
 
 <script>

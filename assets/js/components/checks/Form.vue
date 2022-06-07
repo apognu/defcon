@@ -78,6 +78,12 @@ div(v-if='check')
               @keyup.enter='save()'
             )
 
+      .uk-grid-small(uk-grid, class='uk-child-width-1-1@m uk-child-width-1-1@s')
+        div
+          label.uk-form-label Site labels
+          .uk-form-controls
+            vue-tags-input(v-model='site', :tags='check.sites', @tags-changed='(data) => sites = data')
+
   .uk-card.uk-card-default.uk-card-body.uk-margin
     h3.uk-card-title(v-if='new_record') Check specification
     h3.uk-card-title(v-else) {{ check.spec.kind | checkkind() }}
@@ -158,6 +164,8 @@ div(v-if='check')
 <script>
 import axios from 'axios';
 
+import VueTagsInput from '@johmun/vue-tags-input';
+
 import Http from '@/components/checks/forms/Http.vue';
 import Dns from '@/components/checks/forms/Dns.vue';
 import Tcp from '@/components/checks/forms/Tcp.vue';
@@ -171,6 +179,7 @@ import DeadManSwitch from '@/components/checks/forms/DeadManSwitch.vue';
 
 export default {
   components: {
+    VueTagsInput,
     Http,
     Dns,
     Tcp,
@@ -187,6 +196,8 @@ export default {
     check: undefined,
     groups: [],
     alerters: [],
+    sites: [],
+    site: '',
     kinds: [
       'http',
       'tls',
@@ -252,6 +263,8 @@ export default {
         body.alerter = null;
       }
 
+      body.sites = this.sites.map((site) => site.text);
+
       delete body.uuid;
 
       Object.keys(body.spec).forEach((key) => {
@@ -286,3 +299,14 @@ export default {
   },
 };
 </script>
+
+<style lang="scss">
+.vue-tags-input {
+  max-width: none !important;
+
+  .ti-tag {
+    padding: 6px 8px !important;
+    background: #1e87f0 !important;
+  }
+}
+</style>
