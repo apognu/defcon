@@ -42,8 +42,6 @@ impl<'h> Handler for PythonHandler<'h> {
       PyResult::Ok((status, message))
     })?;
 
-    println!("Result: {status} ({message})");
-
     let event = Event {
       check_id: self.check.id,
       site: site.to_string(),

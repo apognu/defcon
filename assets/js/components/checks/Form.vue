@@ -150,6 +150,12 @@ div(v-if='check')
         ref='spec',
         @enter='save()'
       )
+      Python(
+        v-if='check.spec.kind == "python"',
+        :spec='check.spec',
+        ref='spec',
+        @enter='save()'
+      )
       DeadManSwitch(
         v-if='check.spec.kind == "deadmanswitch"',
         :spec='check.spec',
@@ -175,6 +181,7 @@ import AppStore from '@/components/checks/forms/AppStore.vue';
 import Tls from '@/components/checks/forms/Tls.vue';
 import Whois from '@/components/checks/forms/Whois.vue';
 import Ping from '@/components/checks/forms/Ping.vue';
+import Python from '@/components/checks/forms/Python.vue';
 import DeadManSwitch from '@/components/checks/forms/DeadManSwitch.vue';
 
 export default {
@@ -189,6 +196,7 @@ export default {
     Tls,
     Whois,
     Ping,
+    Python,
     DeadManSwitch,
   },
 

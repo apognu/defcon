@@ -21,6 +21,7 @@
     Tls(v-if='check.spec.kind == "tls"', :spec='check.spec')
     Whois(v-if='check.spec.kind == "whois"', :spec='check.spec')
     Ping(v-if='check.spec.kind == "ping"', :spec='check.spec')
+    Python(v-if='check.spec.kind == "python"', :spec='check.spec')
     DeadManSwitch(v-if='check.spec.kind == "deadmanswitch"', :spec='check.spec')
 </template>
 
@@ -35,6 +36,7 @@ import AppStore from '@/components/checks/specs/AppStore.vue';
 import Tls from '@/components/checks/specs/Tls.vue';
 import Whois from '@/components/checks/specs/Whois.vue';
 import Ping from '@/components/checks/specs/Ping.vue';
+import Python from '@/components/checks/specs/Python.vue';
 import DeadManSwitch from '@/components/checks/specs/DeadManSwitch.vue';
 
 export default {
@@ -49,6 +51,7 @@ export default {
     Tls,
     Whois,
     Ping,
+    Python,
     DeadManSwitch,
   },
 
