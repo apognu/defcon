@@ -9,6 +9,7 @@ ReadSpec:
     - $ref: '#/whois/ReadSpecWhois'
     - $ref: '#/app_store/ReadSpecAppStore'
     - $ref: '#/play_store/ReadSpecPlayStore'
+    - $ref: '#/python/ReadSpecPython'
 
 WriteSpec:
   oneOf:
@@ -21,6 +22,7 @@ WriteSpec:
     - $ref: '#/whois/WriteSpecWhois'
     - $ref: '#/app_store/WriteSpecAppStore'
     - $ref: '#/play_store/WriteSpecPlayStore'
+    - $ref: '#/python/WriteSpecPython'
 
 ping:
   $ref: './ping.yml'
@@ -40,4 +42,5 @@ app_store:
   $ref: './app_store.yml'
 play_store:
   $ref: './play_store.yml'
-
+python:
+  $ref: './python.yml'

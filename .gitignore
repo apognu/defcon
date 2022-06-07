@@ -1,4 +1,5 @@
 /.vscode
+/.env
 /target
 /assets/node_modules
 /dist

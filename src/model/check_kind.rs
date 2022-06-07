@@ -11,7 +11,7 @@ use sqlx::{
   Decode, Encode, MySql,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum CheckKind {
   #[cfg(feature = "ping")]
   Ping,
@@ -23,6 +23,8 @@ pub enum CheckKind {
   PlayStore,
   AppStore,
   Whois,
+  #[cfg(feature = "python")]
+  Python,
   DeadManSwitch,
   Unsupported,
 }
@@ -48,6 +50,8 @@ impl Display for CheckKind {
       PlayStore => "play_store",
       AppStore => "app_store",
       Whois => "domain",
+      #[cfg(feature = "python")]
+      Python => "python",
       DeadManSwitch => "deadmanswitch",
       Unsupported => "unsupported",
     };
@@ -76,6 +80,8 @@ impl TryFrom<String> for CheckKind {
       "play_store" => Ok(PlayStore),
       "app_store" => Ok(AppStore),
       "domain" => Ok(Whois),
+      #[cfg(feature = "python")]
+      "python" => Ok(Python),
       "deadmanswitch" => Ok(DeadManSwitch),
       _ => Err(anyhow!("invalid value for kind")),
     }

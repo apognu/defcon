@@ -8,7 +8,7 @@ use sqlx::{
   Decode, Encode, MySql,
 };
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct HttpHeaders(pub HashMap<String, String>);
 
 impl Deref for HttpHeaders {

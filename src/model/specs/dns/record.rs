@@ -12,7 +12,7 @@ use sqlx::{
 };
 use trust_dns_client::rr::RecordType;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DnsRecord {
   NS,
   MX,

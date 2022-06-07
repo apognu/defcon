@@ -5,6 +5,8 @@ mod http;
 #[cfg(feature = "ping")]
 mod ping;
 mod play_store;
+#[cfg(feature = "python")]
+mod python;
 mod tcp;
 mod tls;
 mod udp;
@@ -19,6 +21,8 @@ use sqlx::MySqlConnection;
 
 #[cfg(feature = "ping")]
 pub use crate::handlers::ping::PingHandler;
+#[cfg(feature = "python")]
+pub use crate::handlers::python::PythonHandler;
 pub use crate::{
   config::Config,
   handlers::{

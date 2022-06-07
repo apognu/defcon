@@ -1,0 +1,33 @@
+SpecPython:
+  type: object
+  properties:
+    kind:
+      type: string
+      enum: ["python"]
+    script:
+      type: string
+
+ReadSpecPython:
+  title: Python
+  type: object
+  allOf:
+    - $ref: '../check.yml#/ReadCheck'
+    - type: object
+      properties:
+        spec:
+          $ref: '#/SpecPython'
+
+WriteSpecPython:
+  title: Python
+  type: object
+  allOf:
+    - $ref: '../check.yml#/WriteCheck'
+    - type: object
+      properties:
+        spec:
+          allOf:
+            - $ref: '#/SpecPython'
+            - type: object
+              required:
+                - kind
+                - script

@@ -19,6 +19,7 @@ Defcon requires the following infrastructure to be run:
  * Libraries we're dynamically linked to:
    * `libcap` (when compiled with the `ping` feature)
    * `libjq1` and `libonig5` (when compiled with the `jq` feature)
+ * A Python distribution (>= 3.7) for external scripts (when compiled with the `python` feature)
 
 Provided binaries in the [Releases](https://github.com/apognu/defcon/releases) section are compiled with all optional features.
 
@@ -134,6 +135,7 @@ $ PRIVATE_KEY=./defcon-private.pem \
 | TLS expiration    | `tls`           | Verify the expiration date for a TLS certificate                               |
 | UDP datagram      | `udp`           | Verify the response from a host on a UDP port                                  |
 | Domain expiration | `whois`         | Verify the expiration date for a domain registration                           |
+| Python            | `python`        | Execute an external script to perform other checks                             |
 | Dead man switch   | `deadmanswitch` | Trigger an alert if a provided HTTP endpoint is not check in on in some time   |
 
 You can find detailed explanations about how to configure each of those handlers in the [user manual](https://apognu.github.io/defcon/).
@@ -172,6 +174,6 @@ $ sudo capsh \
 
 ## What's next?
 
- * More check types (ideas and PRs are welcome)?
- * Statistics API
- * Site registration and specific runner authentication
+* More check types (ideas and PRs are welcome)?
+* Statistics API
+* Site registration and specific runner authentication

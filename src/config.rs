@@ -39,7 +39,6 @@ pub struct ApiConfig {
   pub listen: SocketAddr,
 }
 
-
 impl ApiConfig {
   pub fn new() -> Result<ApiConfig> {
     let enable = env::var("API_ENABLE").or_string("1") == "1";
@@ -130,6 +129,8 @@ impl DmsConfig {
 #[derive(Debug, Clone)]
 pub struct ChecksConfig {
   pub dns_resolver: IpAddr,
+  #[cfg(feature = "python")]
+  pub scripts_path: String,
 }
 
 impl ChecksConfig {
@@ -139,7 +140,14 @@ impl ChecksConfig {
       Err(_) => SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 53),
     };
 
-    Ok(ChecksConfig { dns_resolver: resolver.ip() })
+    #[cfg(feature = "python")]
+    let scripts_path = env::var("SCRIPTS_PATH").or_string("/var/lib/defcon/scripts");
+
+    Ok(ChecksConfig {
+      dns_resolver: resolver.ip(),
+      #[cfg(feature = "python")]
+      scripts_path,
+    })
   }
 }
 

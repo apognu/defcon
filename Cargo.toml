@@ -18,6 +18,7 @@ path = "src/bin/runner/main.rs"
 web = ["rust-embed"]
 ping = ["surge-ping"]
 jq = ["jq-rs"]
+python = ["pyo3"]
 
 [dependencies]
 anyhow = "^1.0"
@@ -53,6 +54,7 @@ whois2 = "^0.0.1"
 jq-rs = { version = "0.4", optional = true }
 rust-embed = { version = "^6.4", optional = true }
 surge-ping = { version = "^0.5", optional = true }
+pyo3 = { version = "0.15.1", features = ["auto-initialize"], optional = true }
 
 [dev-dependencies]
 serial_test = "0.6"

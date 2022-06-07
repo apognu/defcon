@@ -1,0 +1,7 @@
+CREATE TABLE python_specs (
+  `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  `check_id` BIGINT UNSIGNED NOT NULL,
+  `script` VARCHAR(255) NOT NULL,
+
+  CONSTRAINT fk_python_check FOREIGN KEY (check_id) REFERENCES checks (id) ON DELETE CASCADE
+);

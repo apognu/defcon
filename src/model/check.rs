@@ -323,6 +323,8 @@ impl Check {
       PlayStore => specs::PlayStore::for_check(conn, self).await.map(Spec::PlayStore),
       AppStore => specs::AppStore::for_check(conn, self).await.map(Spec::AppStore),
       Whois => specs::Whois::for_check(conn, self).await.map(Spec::Whois),
+      #[cfg(feature = "python")]
+      Python => specs::Python::for_check(conn, self).await.map(Spec::Python),
       DeadManSwitch => specs::DeadManSwitch::for_check(conn, self).await.map(Spec::DeadManSwitch),
       Unsupported => Ok(Spec::Unsupported),
     }
@@ -351,6 +353,15 @@ impl Check {
       PlayStore => PlayStoreHandler { check: self }.check(conn, config, site, stash).await,
       AppStore => AppStoreHandler { check: self }.check(conn, config, site, stash).await,
       Whois => WhoisHandler { check: self }.check(conn, config, site, stash).await,
+      #[cfg(feature = "python")]
+      Python => {
+        PythonHandler {
+          check: self,
+          path: config.checks.scripts_path.clone(),
+        }
+        .check(conn, config, site, stash)
+        .await
+      }
       DeadManSwitch => {
         let last = DeadManSwitchLog::last(conn, self.id).await.unwrap_or_default();
 

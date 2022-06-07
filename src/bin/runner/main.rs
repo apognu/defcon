@@ -104,6 +104,17 @@ async fn run_check(config: Arc<Config>, stash: Stash, mut inhibitor: Inhibitor, 
     Spec::PlayStore(ref spec) => PlayStoreHandler { check: &dummy }.run(spec, &config.site, stash).await,
     Spec::AppStore(ref spec) => AppStoreHandler { check: &dummy }.run(spec, &config.site, stash).await,
     Spec::Whois(ref spec) => WhoisHandler { check: &dummy }.run(spec, &config.site, stash).await,
+
+    #[cfg(feature = "python")]
+    Spec::Python(ref spec) => {
+      PythonHandler {
+        check: &dummy,
+        path: config.checks.scripts_path.clone(),
+      }
+      .run(spec, &config.site, stash)
+      .await
+    }
+
     Spec::DeadManSwitch(_) => Err(anyhow!("deadmanswitch check cannot be run")),
     Spec::Unsupported => Err(anyhow!("cannot run check")),
   };

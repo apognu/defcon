@@ -5,6 +5,8 @@ mod http;
 #[cfg(feature = "ping")]
 mod ping;
 mod play_store;
+#[cfg(feature = "ping")]
+mod python;
 mod tcp;
 mod tls;
 mod udp;
@@ -13,6 +15,8 @@ mod whois;
 
 #[cfg(feature = "ping")]
 pub use self::ping::Ping;
+#[cfg(feature = "python")]
+pub use self::python::Python;
 pub use self::{
   app_store::AppStore,
   deadmanswitch::DeadManSwitch,
