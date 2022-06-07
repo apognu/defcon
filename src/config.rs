@@ -262,6 +262,8 @@ mod tests {
     env::set_var("CLEANER_ENABLE", "1");
     env::set_var("CLEANER_INTERVAL", "10s");
     env::set_var("CLEANER_THRESHOLD", "10s");
+    #[cfg(feature = "python")]
+    env::set_var("SCRIPTS_PATH", "/custom/path");
 
     let config = Config::parse()?;
 
@@ -280,6 +282,8 @@ mod tests {
     assert_eq!(config.cleaner.enable, true);
     assert_eq!(config.cleaner.interval, Duration::from_secs(10));
     assert_eq!(config.cleaner.threshold, Duration::from_secs(10));
+    #[cfg(feature = "python")]
+    assert_eq!(&config.checks.scripts_path, "/custom/path");
 
     env::remove_var("API_ENABLE");
     env::remove_var("API_LISTEN");
@@ -294,6 +298,8 @@ mod tests {
     env::remove_var("CLEANER_ENABLE");
     env::remove_var("CLEANER_INTERVAL");
     env::remove_var("CLEANER_THRESHOLD");
+    #[cfg(feature = "python")]
+    env::remove_var("SCRIPTS_PATH");
 
     Ok(())
   }

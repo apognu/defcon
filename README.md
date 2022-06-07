@@ -156,7 +156,7 @@ You can check the continuous integration suite for more information on how to bu
 
 ```shell
 $ rustup override set nightly-2021-01-21
-$ JQ_LIB_DIR=/usr/lib cargo build --release
+$ JQ_LIB_DIR=/usr/lib cargo build --all-features --release
 ```
 
 ## Running tests
@@ -169,7 +169,7 @@ $ sudo capsh \
   --keep=1 \
   --user="$(whoami)" \
   --addamb=cap_net_raw -- -c \
-  'DSN=mysql://defcon:password@mysql.host/information_schema?ssl-mode=DISABLED cargo test'
+  'JQ_LIB_DIR=/usr/lib DSN=mysql://defcon:password@mysql.host/information_schema?ssl-mode=DISABLED cargo test --all-features'
 ```
 
 ## What's next?

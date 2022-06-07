@@ -53,6 +53,8 @@ pub fn config() -> Arc<Config> {
     },
     checks: ChecksConfig {
       dns_resolver: IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)),
+      #[cfg(feature = "python")]
+      scripts_path: "/tmp".to_string(),
     },
     alerters: AlertersConfig { default: None, fallback: None },
     key: None,
