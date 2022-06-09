@@ -20,8 +20,10 @@ use crate::{
   model::{Alerter, Check, CheckKind, Group},
 };
 
+use super::auth::Auth;
+
 #[get("/api/checks?<all>&<group>&<kind>&<site>")]
-pub async fn list(pool: &State<Pool<MySql>>, all: Option<bool>, group: Option<String>, kind: Option<String>, site: Option<String>) -> ApiResponse<Json<Vec<api::Check>>> {
+pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>, all: Option<bool>, group: Option<String>, kind: Option<String>, site: Option<String>) -> ApiResponse<Json<Vec<api::Check>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let group = match group {
@@ -46,7 +48,7 @@ pub async fn list(pool: &State<Pool<MySql>>, all: Option<bool>, group: Option<St
 }
 
 #[get("/api/checks/<uuid>")]
-pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Check>> {
+pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Check>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?.map(&*pool).await.short()?;
 
@@ -54,7 +56,7 @@ pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<ap
 }
 
 #[post("/api/checks", data = "<payload>")]
-pub async fn create(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<Created<String>> {
+pub async fn create(_auth: Auth, config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<Created<String>> {
   let payload = check_json(payload).short()?.0;
   let uuid = Uuid::new_v4().to_string();
 
@@ -107,7 +109,7 @@ pub async fn create(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, payl
 }
 
 #[put("/api/checks/<uuid>", data = "<payload>")]
-pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?.0;
 
   let sites = match payload.sites {
@@ -159,7 +161,7 @@ pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Jso
 }
 
 #[patch("/api/checks/<uuid>", data = "<payload>")]
-pub async fn patch(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::CheckPatch>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn patch(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::CheckPatch>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?.0;
 
   let mut txn = pool.begin().await.context("could not start transaction").short()?;
@@ -214,7 +216,7 @@ pub async fn patch(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json
 }
 
 #[delete("/api/checks/<uuid>?<delete>")]
-pub async fn delete(pool: &State<Pool<MySql>>, uuid: String, delete: Option<bool>) -> ApiResponse<NoContent> {
+pub async fn delete(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, delete: Option<bool>) -> ApiResponse<NoContent> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   match delete.unwrap_or(false) {

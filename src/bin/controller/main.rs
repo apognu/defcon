@@ -8,8 +8,9 @@ extern crate anyhow;
 mod cleaner;
 mod deadmanswitch;
 mod handler;
+mod util;
 
-use std::{env, sync::Arc, time::Instant};
+use std::{env, process, sync::Arc, time::Instant};
 
 use anyhow::{Context, Result};
 use futures::future;
@@ -44,6 +45,12 @@ async fn main() -> Result<()> {
 
   if let (true, _) = migrations::migrate(&dsn, false)? {
     return Ok(());
+  }
+
+  match util::process(config.clone(), pool.clone()).await {
+    Ok(true) => process::exit(0),
+    Ok(false) => {}
+    Err(err) => return Err(err),
   }
 
   if !config.handler.enable && !config.cleaner.enable && !config.api.enable {
@@ -85,6 +92,10 @@ async fn main() -> Result<()> {
 
   match config.api.enable {
     true => {
+      if config.api.jwt_signing_key.is_empty() {
+        return Err(anyhow!("the JWT signing key must be provided"));
+      }
+
       if let Err(err) = run_api(pool, config, keys).await {
         log::error!("{:#}", err);
       }

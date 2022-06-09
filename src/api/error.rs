@@ -26,6 +26,7 @@ impl ErrorResponse {
   fn status(&self) -> &'static str {
     match self.code().code {
       400 => "bad_request",
+      401 => "unauthorized",
       404 => "not_found",
       500 => "server_error",
       _ => "unknown_error",
@@ -59,11 +60,18 @@ impl<'r> Responder<'r, 'static> for ErrorResponse {
     let error = self.error();
     let details = error.chain().skip(1).map(ToString::to_string).collect::<Vec<_>>().join(": ");
 
-    let payload = json!({
-      "status": status,
-      "message": error.to_string(),
-      "details": details
-    });
+    let payload = if details.is_empty() {
+      json!({
+        "status": status,
+        "message": error.to_string(),
+      })
+    } else {
+      json!({
+        "status": status,
+        "message": error.to_string(),
+        "details": details
+      })
+    };
 
     Response::build_from(payload.respond_to(request)?).status(code).ok()
   }
@@ -81,7 +89,7 @@ impl<'a, T> Shortable<'a, T> for Result<T, Error> {
   fn short(self) -> Self::Output {
     self.map_err(|err| match err.downcast_ref::<AppError>() {
       Some(AppError::BadRequest) => ErrorResponse(Custom(Status::BadRequest, err)),
-      Some(AppError::InvalidCredentials) => ErrorResponse(Custom(Status::Unauthorized, err)),
+      Some(AppError::InvalidCredentials) => ErrorResponse(Custom(Status::Unauthorized, anyhow!("provided credentials are invalid"))),
       Some(AppError::ResourceNotFound) => ErrorResponse(Custom(Status::NotFound, err)),
       Some(AppError::ServerError) => ErrorResponse(Custom(Status::InternalServerError, err)),
       Some(AppError::DatabaseError) => ErrorResponse(Custom(Status::InternalServerError, err)),

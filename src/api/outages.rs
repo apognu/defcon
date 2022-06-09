@@ -7,6 +7,7 @@ use sqlx::{MySql, Pool};
 
 use crate::{
   api::{
+    auth::Auth,
     error::{check_json, Shortable},
     types::{self as api, ApiMapper},
     ApiResponse,
@@ -15,7 +16,7 @@ use crate::{
 };
 
 #[get("/api/outages", rank = 10)]
-pub async fn list(pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<api::Outage>>> {
+pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let outages = db::Outage::current(&mut conn).await.context("could not retrieve outages").short()?.map(&*pool).await.short()?;
@@ -24,7 +25,7 @@ pub async fn list(pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<api::Outage
 }
 
 #[get("/api/outages?<check>&<from>&<to>&<limit>&<page>", rank = 5)]
-pub async fn list_between(pool: &State<Pool<MySql>>, check: Option<String>, from: api::Date, to: api::Date, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<api::Outage>>> {
+pub async fn list_between(_auth: Auth, pool: &State<Pool<MySql>>, check: Option<String>, from: api::Date, to: api::Date, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let check = match check {
@@ -44,7 +45,7 @@ pub async fn list_between(pool: &State<Pool<MySql>>, check: Option<String>, from
 }
 
 #[get("/api/outages/<uuid>")]
-pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Outage>> {
+pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Outage>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?.map(&*pool).await.short()?;
@@ -53,7 +54,7 @@ pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<ap
 }
 
 #[get("/api/checks/<uuid>/outages?<limit>&<page>", rank = 10)]
-pub async fn list_for_check(pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<api::Outage>>> {
+pub async fn list_for_check(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
 
@@ -69,7 +70,15 @@ pub async fn list_for_check(pool: &State<Pool<MySql>>, uuid: String, limit: Opti
 }
 
 #[get("/api/checks/<uuid>/outages?<from>&<to>&<limit>&<page>", rank = 5)]
-pub async fn list_for_check_between(pool: &State<Pool<MySql>>, uuid: String, from: api::DateTime, to: api::DateTime, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<api::Outage>>> {
+pub async fn list_for_check_between(
+  _auth: Auth,
+  pool: &State<Pool<MySql>>,
+  uuid: String,
+  from: api::DateTime,
+  to: api::DateTime,
+  limit: Option<u8>,
+  page: Option<u8>,
+) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
 
@@ -85,7 +94,7 @@ pub async fn list_for_check_between(pool: &State<Pool<MySql>>, uuid: String, fro
 }
 
 #[put("/api/outages/<uuid>/comment", data = "<payload>")]
-pub async fn comment(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::OutageComment>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn comment(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::OutageComment>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;

@@ -97,7 +97,7 @@ mod tests {
 
     pool.create_check(None, None, "outages_are_created()", None, Some(&[CONTROLLER_ID, "eu-1"])).await?;
 
-    let config = tests::config();
+    let config = tests::config(false);
     let check = Check::by_id(&mut *conn, 1).await?;
     let mut event = Event {
       check_id: 1,
@@ -135,7 +135,7 @@ mod tests {
 
     pool.create_check(None, None, "outages_are_resolved()", None, None).await?;
 
-    let config = tests::config();
+    let config = tests::config(false);
     let check = Check::by_id(&mut *conn, 1).await?;
     let mut event = Event {
       check_id: 1,

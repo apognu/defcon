@@ -7,9 +7,11 @@ mod groups;
 pub mod middlewares;
 mod outages;
 mod runner;
+mod session;
 mod site_outages;
 mod status;
 pub mod types;
+mod users;
 
 use std::sync::Arc;
 
@@ -77,6 +79,12 @@ pub fn routes() -> Vec<Route> {
     alerters::delete,
     status::status,
     status::statistics,
+    session::token,
+    session::refresh,
+    session::userinfo,
+    users::list,
+    users::get,
+    users::create,
   ]
 }
 

@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use crate::{
   api::{
+    auth::Auth,
     error::{check_json, Shortable},
     ApiResponse,
   },
@@ -16,7 +17,7 @@ use crate::{
 };
 
 #[get("/api/alerters")]
-pub async fn list(pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<db::Alerter>>> {
+pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<db::Alerter>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerters = db::Alerter::all(&mut conn).await.context("could not retrieve alerters").short()?;
 
@@ -24,7 +25,7 @@ pub async fn list(pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<db::Alerter
 }
 
 #[get("/api/alerters/<uuid>")]
-pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<db::Alerter>> {
+pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<db::Alerter>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.context("could not find alerter").short()?;
 
@@ -32,7 +33,7 @@ pub async fn get(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<db
 }
 
 #[post("/api/alerters", data = "<payload>")]
-pub async fn add(pool: &State<Pool<MySql>>, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<Created<String>> {
+pub async fn add(_auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<Created<String>> {
   let payload = check_json(payload).short()?.0;
   let uuid = Uuid::new_v4().to_string();
 
@@ -53,7 +54,7 @@ pub async fn add(pool: &State<Pool<MySql>>, payload: Result<Json<db::Alerter>, J
 }
 
 #[put("/api/alerters/<uuid>", data = "<payload>")]
-pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?.0;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.context("could not find alerter").short()?;
@@ -73,7 +74,7 @@ pub async fn update(pool: &State<Pool<MySql>>, uuid: String, payload: Result<Jso
 }
 
 #[delete("/api/alerters/<uuid>")]
-pub async fn delete(pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
+pub async fn delete(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   db::Alerter::delete(&mut conn, &uuid).await.context("could not delete alerter").short()?;

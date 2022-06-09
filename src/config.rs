@@ -37,14 +37,22 @@ pub struct Config {
 pub struct ApiConfig {
   pub enable: bool,
   pub listen: SocketAddr,
+  pub skip_authentication: bool,
+  pub jwt_signing_key: String,
 }
 
 impl ApiConfig {
   pub fn new() -> Result<ApiConfig> {
     let enable = env::var("API_ENABLE").or_string("1") == "1";
     let listen = env::var("API_LISTEN").or_string("127.0.0.1:8000").parse::<SocketAddr>().context("could not parse API listen address")?;
+    let jwt_signing_key = env::var("API_JWT_SIGNING_KEY").unwrap_or_default();
 
-    Ok(ApiConfig { enable, listen })
+    Ok(ApiConfig {
+      enable,
+      listen,
+      skip_authentication: false,
+      jwt_signing_key,
+    })
   }
 }
 

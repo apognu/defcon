@@ -9,7 +9,7 @@ use rand::Rng;
 
 use defcon::{
   api::{
-    auth::Claims,
+    auth::RunnerClaims,
     types::{self as api, Spec},
   },
   handlers::*,
@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
   let stash = Stash::new();
   let mut inhibitor = Inhibitor::new();
 
-  let claims = Claims {
+  let claims = RunnerClaims {
     site: config.site.clone(),
     ..Default::default()
   };
@@ -81,7 +81,7 @@ async fn main() -> Result<()> {
   }
 }
 
-async fn run_check(config: Arc<Config>, stash: Stash, mut inhibitor: Inhibitor, claims: &Claims, check: api::RunnerCheck) -> Result<()> {
+async fn run_check(config: Arc<Config>, stash: Stash, mut inhibitor: Inhibitor, claims: &RunnerClaims, check: api::RunnerCheck) -> Result<()> {
   let dummy = Check { id: check.id, ..Default::default() };
 
   let result = match check.spec {

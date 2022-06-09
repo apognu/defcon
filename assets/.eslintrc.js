@@ -1,36 +1,26 @@
 module.exports = {
   env: {
-    browser: true,
-    es6: true,
+    node: true,
   },
   extends: [
-    'eslint:recommended',
-    'plugin:vue/recommended',
-    'airbnb-base',
+    'plugin:vue/vue3-essential',
+    '@vue/airbnb',
   ],
-  globals: {
-    Atomics: 'readonly',
-    SharedArrayBuffer: 'readonly',
-  },
   parserOptions: {
-    ecmaVersion: 2018,
-    sourceType: 'module',
+    parser: '@babel/eslint-parser',
   },
-  plugins: [
-    'vue',
-  ],
   rules: {
     'no-unused-vars': [
       'error',
       {
-        varsIgnorePattern: '^_'
-      }
+        varsIgnorePattern: '^_.*',
+      },
     ],
     'no-param-reassign': [
       'error',
       {
-        'props': true,
-        'ignorePropertyModificationsFor': [
+        props: true,
+        ignorePropertyModificationsFor: [
           'state',
           'acc',
           'e',
@@ -39,22 +29,17 @@ module.exports = {
           'request',
           'res',
           'response',
-          '$scope'
-        ]
-      }
+          '$scope',
+        ],
+      },
     ],
     'no-underscore-dangle': 'off',
     'max-len': [
       'error',
       {
-        'code': 200,
+        code: 200,
       },
     ],
-  },
-  settings: {
-    'import/resolver': 'webpack'
-  },
-  globals: {
-    '_': true,
+    'vue/multi-word-component-names': 'off',
   },
 };

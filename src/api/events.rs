@@ -3,12 +3,12 @@ use rocket::{serde::json::Json, State};
 use sqlx::{MySql, Pool};
 
 use crate::{
-  api::{error::Shortable, types as api, ApiResponse},
+  api::{auth::Auth, error::Shortable, types as api, ApiResponse},
   model as db,
 };
 
 #[get("/api/checks/<uuid>/events?<limit>&<page>", rank = 10)]
-pub async fn list_for_check(pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<db::Event>>> {
+pub async fn list_for_check(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
 
@@ -18,7 +18,15 @@ pub async fn list_for_check(pool: &State<Pool<MySql>>, uuid: String, limit: Opti
 }
 
 #[get("/api/checks/<uuid>/events?<from>&<to>&<limit>&<page>", rank = 5)]
-pub async fn list_for_check_between(pool: &State<Pool<MySql>>, uuid: String, from: api::DateTime, to: api::DateTime, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<db::Event>>> {
+pub async fn list_for_check_between(
+  _auth: Auth,
+  pool: &State<Pool<MySql>>,
+  uuid: String,
+  from: api::DateTime,
+  to: api::DateTime,
+  limit: Option<u8>,
+  page: Option<u8>,
+) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
 
@@ -31,7 +39,7 @@ pub async fn list_for_check_between(pool: &State<Pool<MySql>>, uuid: String, fro
 }
 
 #[get("/api/outages/<uuid>/events?<limit>&<page>")]
-pub async fn list_for_outage(pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<db::Event>>> {
+pub async fn list_for_outage(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
 

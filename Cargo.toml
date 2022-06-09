@@ -22,6 +22,7 @@ python = ["pyo3"]
 
 [dependencies]
 anyhow = "^1.0"
+argon2 = "^0.4"
 async-trait = "^0.1"
 base64 = "^0.13"
 caps = "^0.5"
@@ -43,7 +44,8 @@ serde = "^1.0"
 serde_json = "^1.0"
 sha2 = "^0.10"
 slack-hook = "^0.8"
-sqlx = { version = "^0.5", default_features = false, features = ["macros", "mysql", "runtime-tokio-rustls", "chrono", "all-types"] }
+# Stick to 0.5.11 until https://github.com/launchbadge/sqlx/issues/1824 is fixed
+sqlx = { version = "=0.5.11", default_features = false, features = ["macros", "mysql", "runtime-tokio-rustls", "chrono", "all-types"] }
 ssl-expiration2 = "^0.4"
 thiserror = "^1.0"
 tokio = { version = "^1.2", default_features = false, features = ["time", "net"] }

@@ -12,6 +12,7 @@ mod group;
 mod outage;
 mod site;
 mod site_outage;
+mod user;
 
 pub mod specs;
 
@@ -28,4 +29,5 @@ pub use self::{
   outage::Outage,
   site::Site,
   site_outage::SiteOutage,
+  user::User,
 };

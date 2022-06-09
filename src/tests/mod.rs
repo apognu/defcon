@@ -3,6 +3,7 @@ mod checks;
 mod db;
 mod groups;
 mod outages;
+mod users;
 
 use std::{
   env,
@@ -26,11 +27,15 @@ use crate::{
 
 pub use self::{alerters::*, checks::*, db::*, outages::*};
 
-pub fn config() -> Arc<Config> {
+pub const JWT_SIGNING_KEY: &str = "dummysigningkey";
+
+pub fn config(auth: bool) -> Arc<Config> {
   let config = Config {
     api: ApiConfig {
       enable: true,
       listen: "127.0.0.1:1234".parse::<SocketAddr>().unwrap(),
+      skip_authentication: !auth,
+      jwt_signing_key: JWT_SIGNING_KEY.to_string(),
     },
     #[cfg(feature = "web")]
     web: WebConfig {
@@ -79,7 +84,28 @@ pub async fn api_client() -> Result<(TestConnection, Client)> {
     "-----BEGIN PUBLIC KEY-----MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMUdYFmfbi57NV7pTIht38+w8yPly7rmrD1MPXenlCOu8Mu5623/ztsGeTV9uatuMQeMS+a7NEFzPGjMIKiR3AA==-----END PUBLIC KEY-----".as_bytes(),
   )?;
 
-  let server = api::server(RocketConfig::default(), config(), pool.clone(), Some(keys));
+  let server = api::server(RocketConfig::default(), config(false), pool.clone(), Some(keys));
+
+  Ok((TestConnection(pool, database), Client::untracked(server).await?))
+}
+
+pub async fn authenticated_api_client() -> Result<(TestConnection, Client)> {
+  let database = format!("defcon_test_{}", Uuid::new_v4().to_simple());
+  let mut dsn = Url::parse(&env::var("DSN")?)?;
+
+  let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
+  sqlx::query(&format!("CREATE DATABASE {}", &database)).execute(&pool).await?;
+
+  dsn.set_path(&format!("/{}", database));
+  let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
+
+  migrations::migrate(&dsn.to_string(), true)?;
+
+  let keys = Keys::new_public(
+    "-----BEGIN PUBLIC KEY-----MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMUdYFmfbi57NV7pTIht38+w8yPly7rmrD1MPXenlCOu8Mu5623/ztsGeTV9uatuMQeMS+a7NEFzPGjMIKiR3AA==-----END PUBLIC KEY-----".as_bytes(),
+  )?;
+
+  let server = api::server(RocketConfig::default(), config(true), pool.clone(), Some(keys));
 
   Ok((TestConnection(pool, database), Client::untracked(server).await?))
 }

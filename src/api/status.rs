@@ -7,6 +7,7 @@ use sqlx::{MySql, Pool};
 
 use crate::{
   api::{
+    auth::Auth,
     error::Shortable,
     types::{self as api, ApiMapper},
     ApiResponse,
@@ -15,7 +16,7 @@ use crate::{
 };
 
 #[get("/api/status")]
-pub async fn status(pool: &State<Pool<MySql>>) -> ApiResponse<Json<api::Status>> {
+pub async fn status(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<api::Status>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let checks = Check::count(&mut *conn).await.short()?;
@@ -35,7 +36,7 @@ pub async fn status(pool: &State<Pool<MySql>>) -> ApiResponse<Json<api::Status>>
 }
 
 #[get("/api/statistics?<check>&<from>&<to>")]
-pub async fn statistics(pool: &State<Pool<MySql>>, check: Option<String>, from: api::Date, to: api::Date) -> ApiResponse<Json<HashMap<NaiveDate, Vec<api::Outage>>>> {
+pub async fn statistics(_auth: Auth, pool: &State<Pool<MySql>>, check: Option<String>, from: api::Date, to: api::Date) -> ApiResponse<Json<HashMap<NaiveDate, Vec<api::Outage>>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let check = match check {
