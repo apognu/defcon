@@ -3,7 +3,10 @@ use std::sync::Arc;
 use anyhow::Context;
 use chrono::Duration;
 use jsonwebtoken::{DecodingKey, Validation};
-use rocket::{serde::json::Json, State};
+use rocket::{
+  serde::json::{Error as JsonError, Json},
+  State,
+};
 use sqlx::{MySql, Pool};
 
 use crate::{
@@ -16,7 +19,7 @@ use crate::{
   model::User,
 };
 
-use super::error::AppError;
+use super::error::{check_json, AppError};
 
 #[derive(Serialize, Deserialize)]
 pub struct Credentials {
@@ -58,13 +61,35 @@ pub async fn userinfo(auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json
   Ok(Json(user))
 }
 
+#[derive(Deserialize)]
+pub struct NewPassword {
+  pub password: String,
+  pub new_password: String,
+}
+
+#[post("/api/-/password", data = "<payload>")]
+pub async fn password(auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json<NewPassword>, JsonError<'_>>) -> ApiResponse<()> {
+  let passwords = check_json(payload).short()?.0;
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let user = User::by_email(&mut *conn, &auth.sub).await.short()?;
+
+  user.check_password(&passwords.password).await.context(AppError::InvalidCredentials).short()?;
+  user.update_password(&mut *conn, &passwords.new_password).await.context("could not change password").short()?;
+
+  Ok(())
+}
+
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
   use chrono::{Duration, Utc};
   use jsonwebtoken::{self, EncodingKey, Header as JwtHeader};
-  use rocket::http::{Header, Status};
+  use rocket::{
+    http::{Header, Status},
+    serde::json::json,
+  };
 
+  use super::*;
   use crate::{
     api::auth::Claims,
     tests::{self, JWT_SIGNING_KEY},
@@ -266,6 +291,96 @@ mod tests {
 
     let response = client.post("/api/-/refresh").body(format!(r#"{{ "refresh_token": "{token}" }}"#)).dispatch().await;
     assert_eq!(response.status(), Status::Unauthorized);
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn change_password_succeeds() -> Result<()> {
+    let (pool, client) = tests::authenticated_api_client().await.unwrap();
+
+    pool.create_user().await?;
+
+    {
+      let mut conn = pool.acquire().await?;
+
+      let now = Utc::now();
+      let exp = now + Duration::hours(1);
+
+      let claims = Claims {
+        aud: "urn:defcon:access".to_string(),
+        iat: now.timestamp(),
+        exp: exp.timestamp(),
+        sub: "noreply@example.com".to_string(),
+      };
+
+      let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
+
+      let payload = json!({
+        "password": "password",
+        "new_password": "newpassword",
+      });
+
+      let response = client
+        .post("/api/-/password")
+        .header(Header::new("authorization", format!("Bearer {token}")))
+        .body(payload.to_string())
+        .dispatch()
+        .await;
+
+      assert_eq!(response.status(), Status::Ok);
+
+      let user = User::by_email(&mut *conn, "noreply@example.com").await?;
+
+      assert!(matches!(user.check_password("newpassword").await, Ok(())));
+    }
+
+    pool.cleanup().await;
+
+    Ok(())
+  }
+
+  #[tokio::test]
+  async fn change_password_fails() -> Result<()> {
+    let (pool, client) = tests::authenticated_api_client().await.unwrap();
+
+    pool.create_user().await?;
+
+    {
+      let mut conn = pool.acquire().await?;
+
+      let now = Utc::now();
+      let exp = now + Duration::hours(1);
+
+      let claims = Claims {
+        aud: "urn:defcon:access".to_string(),
+        iat: now.timestamp(),
+        exp: exp.timestamp(),
+        sub: "noreply@example.com".to_string(),
+      };
+
+      let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
+
+      let payload = json!({
+        "password": "wrongpassword",
+        "new_password": "newpassword",
+      });
+
+      let response = client
+        .post("/api/-/password")
+        .header(Header::new("authorization", format!("Bearer {token}")))
+        .body(payload.to_string())
+        .dispatch()
+        .await;
+
+      assert_eq!(response.status(), Status::Unauthorized);
+
+      let user = User::by_email(&mut *conn, "noreply@example.com").await?;
+
+      assert!(matches!(user.check_password("password").await, Ok(())));
+    }
 
     pool.cleanup().await;
 

@@ -61,6 +61,7 @@ export default {
       { label: 'Groups', icon: 'folder', route: 'groups' },
       { label: 'Alerters', icon: 'bell', route: 'alerters' },
       'divider',
+      { label: 'Settings', icon: 'cog', route: 'settings' },
       { label: 'Sign out', icon: 'sign-out', route: 'logout' },
     ],
   }),

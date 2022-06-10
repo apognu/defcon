@@ -13,6 +13,7 @@ import Groups from '~/components/groups/Groups.vue';
 import GroupForm from '~/components/groups/Form.vue';
 import Alerters from '~/components/alerters/Alerters.vue';
 import AlerterForm from '~/components/alerters/Form.vue';
+import Settings from '~/components/login/Settings.vue';
 
 const routes = [
   {
@@ -98,6 +99,12 @@ const routes = [
     path: '/alerters/:uuid',
     component: AlerterForm,
     meta: { title: 'Edit alerter', action: 'edit' },
+  },
+  {
+    name: 'settings',
+    path: '/settings',
+    component: Settings,
+    meta: { title: 'Settings' },
   },
   {
     name: 'logout',

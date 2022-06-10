@@ -1,6 +1,6 @@
 <template lang="pug">
 div(v-if='store.status !== undefined')
-  .uk-alert-success.uk-margin.uk-padding.uk-border-rounded(v-if='store.status')
+  .uk-alert-success.uk-alert-callout.uk-margin.uk-padding.uk-border-rounded(v-if='store.status')
     h3.uk-margin-remove.uk-text-center
       span.uk-margin-right(uk-icon='icon: check; ratio: 2')
       | Everything is fine

@@ -3,7 +3,7 @@ import axios from 'axios';
 
 import { store } from '~/store';
 
-const http = () => {
+const http = (noRetry) => {
   const defconStore = store();
 
   const client = axios.create({
@@ -14,33 +14,35 @@ const http = () => {
     },
   });
 
-  client.interceptors.response.use(
-    null,
-    (error) => {
-      const request = error.config;
+  if (noRetry !== true) {
+    client.interceptors.response.use(
+      null,
+      (error) => {
+        const request = error.config;
 
-      if (error.response.status === 401 && !request._retry) {
-        request._retry = true;
+        if (error.response.status === 401 && !request._retry) {
+          request._retry = true;
 
-        const body = {
-          refresh_token: defconStore.refreshToken,
-        };
+          const body = {
+            refresh_token: defconStore.refreshToken,
+          };
 
-        axios.post('/api/-/refresh', body)
-          .then((response) => {
-            store.setToken(response.data.access_token, response.data.refresh_token);
+          axios.post('/api/-/refresh', body)
+            .then((response) => {
+              store.setToken(response.data.access_token, response.data.refresh_token);
 
-            request.headers.Authorization = `Bearer ${defconStore.accessToken}`;
+              request.headers.Authorization = `Bearer ${defconStore.accessToken}`;
 
-            return axios(request);
-          }).catch(() => {
-            store.revokeToken();
-          });
-      }
+              return axios(request);
+            }).catch(() => {
+              store.revokeToken();
+            });
+        }
 
-      return Promise.reject(error);
-    },
-  );
+        return Promise.reject(error);
+      },
+    );
+  }
 
   return client;
 };

@@ -3,11 +3,12 @@ import { defineStore, storeToRefs } from 'pinia';
 export const store = defineStore('defcon', {
   state: () => ({
     title: '',
+
+    authenticated: undefined,
     identity: undefined,
-    email: window.localStorage.getItem('email'),
-    password: window.localStorage.getItem('password'),
     accessToken: window.localStorage.getItem('access_token'),
     refreshToken: window.localStorage.getItem('refresh_token'),
+
     status: undefined,
     incidents: 0,
   }),
@@ -37,6 +38,7 @@ export const store = defineStore('defcon', {
     },
 
     setToken(accessToken, refreshToken) {
+      this.authenticated = true;
       this.accessToken = accessToken;
       this.refreshToken = refreshToken;
 
@@ -45,9 +47,10 @@ export const store = defineStore('defcon', {
     },
 
     revokeToken() {
+      this.authenticated = false;
+      this.identity = undefined;
       this.accessToken = undefined;
       this.refreshToken = undefined;
-      this.identity = undefined;
 
       window.localStorage.removeItem('email');
       window.localStorage.removeItem('password');

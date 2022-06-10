@@ -1,6 +1,7 @@
 <template lang="pug">
-App(v-if='store.accessToken')
-Login(v-else)
+div(v-if='store.authenticated !== undefined')
+  App(v-if='store.authenticated')
+  Login(v-else)
 </template>
 
 <script>
@@ -13,7 +14,7 @@ export default {
     Login,
   },
 
-  inject: ['store'],
+  inject: ['store', '$http'],
 
   watch: {
     'store.getTitle': function watchTitle(title) {
@@ -27,6 +28,16 @@ export default {
 
   created() {
     this.store.setTitle(this.$route.meta.title);
+  },
+
+  async mounted() {
+    this.$http().get('/api/-/me')
+      .then(() => {
+        this.store.authenticated = true;
+      })
+      .catch(() => {
+        this.store.revokeToken();
+      });
   },
 };
 </script>
