@@ -57,17 +57,20 @@ mod tests {
   #[tokio::test]
   async fn insert_and_last() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(Some(1), None, "insert()", Some(true), None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    DeadManSwitchLog::insert(&mut conn, 1).await?;
-    DeadManSwitchLog::insert(&mut conn, 1).await?;
+      pool.create_check(Some(1), None, "insert()", Some(true), None).await?;
 
-    let log = DeadManSwitchLog::last(&mut conn, 1).await?;
+      DeadManSwitchLog::insert(&mut conn, 1).await?;
+      DeadManSwitchLog::insert(&mut conn, 1).await?;
 
-    assert!(matches!(log, Some(_)));
-    assert_eq!(log.unwrap().id, 2);
+      let log = DeadManSwitchLog::last(&mut conn, 1).await?;
+
+      assert!(matches!(log, Some(_)));
+      assert_eq!(log.unwrap().id, 2);
+    }
 
     pool.cleanup().await;
 

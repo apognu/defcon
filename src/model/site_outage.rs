@@ -298,29 +298,32 @@ mod tests {
   #[tokio::test]
   async fn between() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "between()", None, None).await?;
-    pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
-    pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let start = NaiveDate::from_ymd(2021, 1, 1).and_hms(0, 0, 0);
-    let end = NaiveDate::from_ymd(2021, 2, 1).and_hms(0, 0, 0);
-    let outages = SiteOutage::between(&mut *conn, start, end).await?;
+      pool.create_check(None, None, "between()", None, None).await?;
+      pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
+      pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
-    assert_eq!(outages.len(), 2);
+      let start = NaiveDate::from_ymd(2021, 1, 1).and_hms(0, 0, 0);
+      let end = NaiveDate::from_ymd(2021, 2, 1).and_hms(0, 0, 0);
+      let outages = SiteOutage::between(&mut *conn, start, end).await?;
 
-    let start = NaiveDate::from_ymd(2021, 1, 1).and_hms(0, 0, 0);
-    let end = NaiveDate::from_ymd(2021, 1, 5).and_hms(0, 0, 0);
-    let outages = SiteOutage::between(&mut *conn, start, end).await?;
+      assert_eq!(outages.len(), 2);
 
-    assert_eq!(outages.len(), 1);
+      let start = NaiveDate::from_ymd(2021, 1, 1).and_hms(0, 0, 0);
+      let end = NaiveDate::from_ymd(2021, 1, 5).and_hms(0, 0, 0);
+      let outages = SiteOutage::between(&mut *conn, start, end).await?;
 
-    let start = NaiveDate::from_ymd(2020, 12, 1).and_hms(0, 0, 0);
-    let end = NaiveDate::from_ymd(2020, 12, 2).and_hms(0, 0, 0);
-    let outages = SiteOutage::between(&mut *conn, start, end).await?;
+      assert_eq!(outages.len(), 1);
 
-    assert_eq!(outages.len(), 0);
+      let start = NaiveDate::from_ymd(2020, 12, 1).and_hms(0, 0, 0);
+      let end = NaiveDate::from_ymd(2020, 12, 2).and_hms(0, 0, 0);
+      let outages = SiteOutage::between(&mut *conn, start, end).await?;
+
+      assert_eq!(outages.len(), 0);
+    }
 
     pool.cleanup().await;
 
@@ -330,15 +333,18 @@ mod tests {
   #[tokio::test]
   async fn by_uuid() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "by_uuid()", None, None).await?;
-    pool.create_unresolved_site_outage(None, None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let outage = SiteOutage::by_uuid(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+      pool.create_check(None, None, "by_uuid()", None, None).await?;
+      pool.create_unresolved_site_outage(None, None).await?;
 
-    assert_eq!(outage.id, 1);
-    assert_eq!(outage.uuid, "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string());
+      let outage = SiteOutage::by_uuid(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+
+      assert_eq!(outage.id, 1);
+      assert_eq!(outage.uuid, "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string());
+    }
 
     pool.cleanup().await;
 
@@ -348,19 +354,22 @@ mod tests {
   #[tokio::test]
   async fn for_check() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "by_uuid()", None, None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let check = Check { id: 1, ..Default::default() };
+      pool.create_check(None, None, "by_uuid()", None, None).await?;
 
-    let outage = SiteOutage::for_check(&mut *conn, &check, CONTROLLER_ID).await?;
-    assert!(matches!(outage, OutageRef::New));
+      let check = Check { id: 1, ..Default::default() };
 
-    pool.create_unresolved_site_outage(None, None).await?;
+      let outage = SiteOutage::for_check(&mut *conn, &check, CONTROLLER_ID).await?;
+      assert!(matches!(outage, OutageRef::New));
 
-    let outage = SiteOutage::for_check(&mut *conn, &check, CONTROLLER_ID).await?;
-    assert!(matches!(outage, OutageRef::Existing(SiteOutage { id: 1, ref uuid, .. }) if uuid == "dd9a531a-1b0b-4a12-bc09-e5637f916261" ));
+      pool.create_unresolved_site_outage(None, None).await?;
+
+      let outage = SiteOutage::for_check(&mut *conn, &check, CONTROLLER_ID).await?;
+      assert!(matches!(outage, OutageRef::Existing(SiteOutage { id: 1, ref uuid, .. }) if uuid == "dd9a531a-1b0b-4a12-bc09-e5637f916261" ));
+    }
 
     pool.cleanup().await;
 
@@ -370,58 +379,61 @@ mod tests {
   #[tokio::test]
   async fn insert() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "insert()", None, None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let check = Check {
-      id: 1,
-      failing_threshold: 2,
-      passing_threshold: 2,
-      ..Default::default()
-    };
+      pool.create_check(None, None, "insert()", None, None).await?;
 
-    let event = Event {
-      check_id: 1,
-      status: 1,
-      message: "failure".to_string(),
-      ..Default::default()
-    };
+      let check = Check {
+        id: 1,
+        failing_threshold: 2,
+        passing_threshold: 2,
+        ..Default::default()
+      };
 
-    SiteOutage::insert(&mut *conn, &check, &event).await?;
-    let outage = sqlx::query_as::<_, (u8,)>("SELECT failing_strikes FROM site_outages WHERE id = 1").fetch_one(&*pool).await?;
-    assert_eq!(outage, (1,));
+      let event = Event {
+        check_id: 1,
+        status: 1,
+        message: "failure".to_string(),
+        ..Default::default()
+      };
 
-    SiteOutage::insert(&mut *conn, &check, &event).await?;
-    let outage = sqlx::query_as::<_, (u8,)>("SELECT failing_strikes FROM site_outages WHERE id = 1").fetch_one(&*pool).await?;
-    assert_eq!(outage, (2,));
+      SiteOutage::insert(&mut *conn, &check, &event).await?;
+      let outage = sqlx::query_as::<_, (u8,)>("SELECT failing_strikes FROM site_outages WHERE id = 1").fetch_one(&*pool).await?;
+      assert_eq!(outage, (1,));
 
-    SiteOutage::insert(&mut *conn, &check, &event).await?;
-    let outage = sqlx::query_as::<_, (u8,)>("SELECT failing_strikes FROM site_outages WHERE id = 1").fetch_one(&*pool).await?;
-    assert_eq!(outage, (2,));
+      SiteOutage::insert(&mut *conn, &check, &event).await?;
+      let outage = sqlx::query_as::<_, (u8,)>("SELECT failing_strikes FROM site_outages WHERE id = 1").fetch_one(&*pool).await?;
+      assert_eq!(outage, (2,));
 
-    let event = Event {
-      check_id: 1,
-      status: 0,
-      message: "success".to_string(),
-      ..Default::default()
-    };
+      SiteOutage::insert(&mut *conn, &check, &event).await?;
+      let outage = sqlx::query_as::<_, (u8,)>("SELECT failing_strikes FROM site_outages WHERE id = 1").fetch_one(&*pool).await?;
+      assert_eq!(outage, (2,));
 
-    SiteOutage::insert(&mut *conn, &check, &event).await?;
+      let event = Event {
+        check_id: 1,
+        status: 0,
+        message: "success".to_string(),
+        ..Default::default()
+      };
 
-    let outage = sqlx::query_as::<_, (u8, u8)>("SELECT passing_strikes, failing_strikes FROM site_outages WHERE id = 1")
-      .fetch_one(&*pool)
-      .await?;
+      SiteOutage::insert(&mut *conn, &check, &event).await?;
 
-    assert_eq!(outage, (1, 2));
+      let outage = sqlx::query_as::<_, (u8, u8)>("SELECT passing_strikes, failing_strikes FROM site_outages WHERE id = 1")
+        .fetch_one(&*pool)
+        .await?;
 
-    SiteOutage::insert(&mut *conn, &check, &event).await?;
+      assert_eq!(outage, (1, 2));
 
-    let outage = sqlx::query_as::<_, (u8, u8)>("SELECT passing_strikes, failing_strikes FROM site_outages WHERE id = 1")
-      .fetch_one(&*pool)
-      .await?;
+      SiteOutage::insert(&mut *conn, &check, &event).await?;
 
-    assert_eq!(outage, (2, 2));
+      let outage = sqlx::query_as::<_, (u8, u8)>("SELECT passing_strikes, failing_strikes FROM site_outages WHERE id = 1")
+        .fetch_one(&*pool)
+        .await?;
+
+      assert_eq!(outage, (2, 2));
+    }
 
     pool.cleanup().await;
 
@@ -431,16 +443,19 @@ mod tests {
   #[tokio::test]
   async fn current() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "between()", None, None).await?;
-    pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
-    pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let outages = SiteOutage::current(&mut *conn).await?;
+      pool.create_check(None, None, "between()", None, None).await?;
+      pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
+      pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
-    assert_eq!(outages.len(), 1);
-    assert_eq!(outages[0].id, 1);
+      let outages = SiteOutage::current(&mut *conn).await?;
+
+      assert_eq!(outages.len(), 1);
+      assert_eq!(outages[0].id, 1);
+    }
 
     pool.cleanup().await;
 
@@ -450,20 +465,23 @@ mod tests {
   #[tokio::test]
   async fn delete_before() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "delete_before()", None, None).await?;
-    pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
-    pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let epoch = NaiveDate::from_ymd(2021, 2, 1).and_hms(0, 0, 0);
-    Event::delete_before(&mut *conn, &epoch).await?;
-    SiteOutage::delete_before(&mut *conn, &epoch).await?;
+      pool.create_check(None, None, "delete_before()", None, None).await?;
+      pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
+      pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
-    let events = sqlx::query_as::<_, (u64,)>(r#"SELECT id FROM events"#).fetch_all(&*pool).await?;
+      let epoch = NaiveDate::from_ymd(2021, 2, 1).and_hms(0, 0, 0);
+      Event::delete_before(&mut *conn, &epoch).await?;
+      SiteOutage::delete_before(&mut *conn, &epoch).await?;
 
-    assert_eq!(events.len(), 1);
-    assert_eq!(events[0].0, 1);
+      let events = sqlx::query_as::<_, (u64,)>(r#"SELECT id FROM events"#).fetch_all(&*pool).await?;
+
+      assert_eq!(events.len(), 1);
+      assert_eq!(events[0].0, 1);
+    }
 
     pool.cleanup().await;
 

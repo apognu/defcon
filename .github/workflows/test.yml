@@ -46,6 +46,9 @@ jobs:
         with:
           path: target/
           key: cargo-test-cache-${{ matrix.arch.target }}
+      - name: Create necessary directories
+        run: |
+          mkdir dist/
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly-2022-05-15

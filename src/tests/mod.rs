@@ -72,8 +72,10 @@ pub async fn api_client() -> Result<(TestConnection, Client)> {
   let database = format!("defcon_test_{}", Uuid::new_v4().to_simple());
   let mut dsn = Url::parse(&env::var("DSN")?)?;
 
-  let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
-  sqlx::query(&format!("CREATE DATABASE {}", &database)).execute(&pool).await?;
+  {
+    let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
+    sqlx::query(&format!("CREATE DATABASE {}", &database)).execute(&pool).await?;
+  }
 
   dsn.set_path(&format!("/{}", database));
   let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
@@ -93,8 +95,10 @@ pub async fn authenticated_api_client() -> Result<(TestConnection, Client)> {
   let database = format!("defcon_test_{}", Uuid::new_v4().to_simple());
   let mut dsn = Url::parse(&env::var("DSN")?)?;
 
-  let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
-  sqlx::query(&format!("CREATE DATABASE {}", &database)).execute(&pool).await?;
+  {
+    let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
+    sqlx::query(&format!("CREATE DATABASE {}", &database)).execute(&pool).await?;
+  }
 
   dsn.set_path(&format!("/{}", database));
   let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
@@ -114,8 +118,10 @@ pub async fn db_client() -> Result<TestConnection> {
   let database = format!("defcon_test_{}", Uuid::new_v4().to_simple());
   let mut dsn = Url::parse(&env::var("DSN")?)?;
 
-  let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
-  sqlx::query(&format!("CREATE DATABASE {}", &database)).execute(&pool).await?;
+  {
+    let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;
+    sqlx::query(&format!("CREATE DATABASE {}", &database)).execute(&pool).await?;
+  }
 
   dsn.set_path(&format!("/{}", database));
   let pool = MySqlPoolOptions::new().connect(&dsn.to_string()).await?;

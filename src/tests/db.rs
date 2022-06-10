@@ -22,5 +22,7 @@ impl DerefMut for TestConnection {
 impl TestConnection {
   pub async fn cleanup(self) {
     sqlx::query(&format!("DROP DATABASE {}", self.1)).execute(&self.0).await.unwrap();
+
+    self.close().await;
   }
 }

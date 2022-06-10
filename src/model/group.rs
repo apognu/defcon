@@ -122,14 +122,17 @@ mod tests {
   #[tokio::test]
   async fn list() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_group(None, None, "list()").await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let groups = Group::all(&mut *conn).await?;
+      pool.create_group(None, None, "list()").await?;
 
-    assert_eq!(groups.len(), 1);
-    assert_eq!(&groups[0].name, "list()");
+      let groups = Group::all(&mut *conn).await?;
+
+      assert_eq!(groups.len(), 1);
+      assert_eq!(&groups[0].name, "list()");
+    }
 
     pool.cleanup().await;
 
@@ -139,13 +142,16 @@ mod tests {
   #[tokio::test]
   async fn by_id() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_group(None, None, "by_id()").await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let group = Group::by_id(&mut *conn, 1).await?;
+      pool.create_group(None, None, "by_id()").await?;
 
-    assert_eq!(group.name, "by_id()");
+      let group = Group::by_id(&mut *conn, 1).await?;
+
+      assert_eq!(group.name, "by_id()");
+    }
 
     pool.cleanup().await;
 
@@ -155,13 +161,16 @@ mod tests {
   #[tokio::test]
   async fn by_uuid() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_group(None, None, "by_uuid()").await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let group = Group::by_uuid(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+      pool.create_group(None, None, "by_uuid()").await?;
 
-    assert_eq!(group.name, "by_uuid()");
+      let group = Group::by_uuid(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+
+      assert_eq!(group.name, "by_uuid()");
+    }
 
     pool.cleanup().await;
 
@@ -171,21 +180,24 @@ mod tests {
   #[tokio::test]
   async fn insert() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    let group = Group {
-      id: 1,
-      uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
-      name: "insert()".to_string(),
-    };
+    {
+      let mut conn = pool.acquire().await?;
 
-    group.insert(&mut *conn).await?;
+      let group = Group {
+        id: 1,
+        uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
+        name: "insert()".to_string(),
+      };
 
-    let group = sqlx::query_as::<_, (String,)>(r#"SELECT name FROM groups WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
-      .fetch_one(&*pool)
-      .await?;
+      group.insert(&mut *conn).await?;
 
-    assert_eq!(&group.0, "insert()");
+      let group = sqlx::query_as::<_, (String,)>(r#"SELECT name FROM groups WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+        .fetch_one(&*pool)
+        .await?;
+
+      assert_eq!(&group.0, "insert()");
+    }
 
     pool.cleanup().await;
 
@@ -195,23 +207,26 @@ mod tests {
   #[tokio::test]
   async fn update() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_group(None, None, "update()").await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let update = Group {
-      id: 1,
-      uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
-      name: "new_update()".to_string(),
-    };
+      pool.create_group(None, None, "update()").await?;
 
-    update.update(&mut *conn).await?;
+      let update = Group {
+        id: 1,
+        uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
+        name: "new_update()".to_string(),
+      };
 
-    let group = sqlx::query_as::<_, (String,)>(r#"SELECT name FROM groups WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
-      .fetch_one(&*pool)
-      .await?;
+      update.update(&mut *conn).await?;
 
-    assert_eq!(&group.0, "new_update()");
+      let group = sqlx::query_as::<_, (String,)>(r#"SELECT name FROM groups WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+        .fetch_one(&*pool)
+        .await?;
+
+      assert_eq!(&group.0, "new_update()");
+    }
 
     pool.cleanup().await;
 
@@ -221,14 +236,17 @@ mod tests {
   #[tokio::test]
   async fn delete() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_group(None, None, "delete()").await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    Group::delete(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+      pool.create_group(None, None, "delete()").await?;
 
-    let count = sqlx::query_as::<_, (i64,)>(r#"SELECT COUNT(*) FROM groups"#).fetch_one(&*pool).await?;
-    assert_eq!(count.0, 0);
+      Group::delete(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+
+      let count = sqlx::query_as::<_, (i64,)>(r#"SELECT COUNT(*) FROM groups"#).fetch_one(&*pool).await?;
+      assert_eq!(count.0, 0);
+    }
 
     pool.cleanup().await;
 

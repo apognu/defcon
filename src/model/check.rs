@@ -439,20 +439,23 @@ mod tests {
   #[tokio::test]
   async fn list() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "all()", None, None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let checks = Check::list(&mut *conn, true, None, None, None).await?;
+      pool.create_check(None, None, "all()", None, None).await?;
 
-    assert_eq!(checks.len(), 1);
-    assert_eq!(&checks[0].name, "all()");
-    assert_eq!(checks[0].kind, CheckKind::Tcp);
-    assert_eq!(checks[0].enabled, true);
-    assert_eq!(*checks[0].interval, *Duration::from(10));
-    assert_eq!(checks[0].passing_threshold, 2);
-    assert_eq!(checks[0].failing_threshold, 2);
-    assert_eq!(checks[0].silent, false);
+      let checks = Check::list(&mut *conn, true, None, None, None).await?;
+
+      assert_eq!(checks.len(), 1);
+      assert_eq!(&checks[0].name, "all()");
+      assert_eq!(checks[0].kind, CheckKind::Tcp);
+      assert_eq!(checks[0].enabled, true);
+      assert_eq!(*checks[0].interval, *Duration::from(10));
+      assert_eq!(checks[0].passing_threshold, 2);
+      assert_eq!(checks[0].failing_threshold, 2);
+      assert_eq!(checks[0].silent, false);
+    }
 
     pool.cleanup().await;
 
@@ -462,14 +465,17 @@ mod tests {
   #[tokio::test]
   async fn enabled() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "enabled()", Some(true), None).await?;
-    pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "enabled()", Some(false), None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let checks = Check::list(&mut *conn, false, None, None, None).await?;
+      pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "enabled()", Some(true), None).await?;
+      pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "enabled()", Some(false), None).await?;
 
-    assert_eq!(checks.len(), 1);
+      let checks = Check::list(&mut *conn, false, None, None, None).await?;
+
+      assert_eq!(checks.len(), 1);
+    }
 
     pool.cleanup().await;
 
@@ -479,17 +485,20 @@ mod tests {
   #[tokio::test]
   async fn list_by_kind() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "list_by_kind()", None, None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let checks = Check::list(&mut *conn, true, None, Some(CheckKind::Tcp), None).await?;
+      pool.create_check(None, None, "list_by_kind()", None, None).await?;
 
-    assert_eq!(checks.len(), 1);
+      let checks = Check::list(&mut *conn, true, None, Some(CheckKind::Tcp), None).await?;
 
-    let checks = Check::list(&mut *conn, true, None, Some(CheckKind::Http), None).await?;
+      assert_eq!(checks.len(), 1);
 
-    assert_eq!(checks.len(), 0);
+      let checks = Check::list(&mut *conn, true, None, Some(CheckKind::Http), None).await?;
+
+      assert_eq!(checks.len(), 0);
+    }
 
     pool.cleanup().await;
 
@@ -499,17 +508,20 @@ mod tests {
   #[tokio::test]
   async fn list_by_site() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "list_by_site()", None, Some(&["eu-1"])).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let checks = Check::list(&mut *conn, true, None, None, Some("eu-1".to_string())).await?;
+      pool.create_check(None, None, "list_by_site()", None, Some(&["eu-1"])).await?;
 
-    assert_eq!(checks.len(), 1);
+      let checks = Check::list(&mut *conn, true, None, None, Some("eu-1".to_string())).await?;
 
-    let checks = Check::list(&mut *conn, true, None, None, Some("nosite".to_string())).await?;
+      assert_eq!(checks.len(), 1);
 
-    assert_eq!(checks.len(), 0);
+      let checks = Check::list(&mut *conn, true, None, None, Some("nosite".to_string())).await?;
+
+      assert_eq!(checks.len(), 0);
+    }
 
     pool.cleanup().await;
 
@@ -519,16 +531,19 @@ mod tests {
   #[tokio::test]
   async fn by_uuid() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "by_uuid()", None, None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let check = Check::by_uuid(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+      pool.create_check(None, None, "by_uuid()", None, None).await?;
 
-    assert_eq!(check.name, "by_uuid()");
-    assert_eq!(check.kind, CheckKind::Tcp);
-    assert_eq!(check.enabled, true);
-    assert_eq!(check.interval.as_secs(), 10);
+      let check = Check::by_uuid(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+
+      assert_eq!(check.name, "by_uuid()");
+      assert_eq!(check.kind, CheckKind::Tcp);
+      assert_eq!(check.enabled, true);
+      assert_eq!(check.interval.as_secs(), 10);
+    }
 
     pool.cleanup().await;
 
@@ -538,16 +553,19 @@ mod tests {
   #[tokio::test]
   async fn by_id() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "by_id()", None, None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let check = Check::by_id(&mut *conn, 1).await?;
+      pool.create_check(None, None, "by_id()", None, None).await?;
 
-    assert_eq!(check.name, "by_id()");
-    assert_eq!(check.kind, CheckKind::Tcp);
-    assert_eq!(check.enabled, true);
-    assert_eq!(check.interval.as_secs(), 10);
+      let check = Check::by_id(&mut *conn, 1).await?;
+
+      assert_eq!(check.name, "by_id()");
+      assert_eq!(check.kind, CheckKind::Tcp);
+      assert_eq!(check.enabled, true);
+      assert_eq!(check.interval.as_secs(), 10);
+    }
 
     pool.cleanup().await;
 
@@ -557,32 +575,35 @@ mod tests {
   #[tokio::test]
   async fn insert() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    let check = Check {
-      id: 1,
-      group_id: None,
-      alerter_id: None,
-      uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
-      name: "create()".to_string(),
-      kind: CheckKind::Tcp,
-      enabled: false,
-      interval: Duration::from(10),
-      site_threshold: 2,
-      passing_threshold: 10,
-      failing_threshold: 10,
-      silent: false,
-    };
+    {
+      let mut conn = pool.acquire().await?;
 
-    check.insert(&mut *conn).await?;
+      let check = Check {
+        id: 1,
+        group_id: None,
+        alerter_id: None,
+        uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
+        name: "create()".to_string(),
+        kind: CheckKind::Tcp,
+        enabled: false,
+        interval: Duration::from(10),
+        site_threshold: 2,
+        passing_threshold: 10,
+        failing_threshold: 10,
+        silent: false,
+      };
 
-    let check = sqlx::query_as::<_, (String, bool, u64)>(r#"SELECT name, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
-      .fetch_one(&*pool)
-      .await?;
+      check.insert(&mut *conn).await?;
 
-    assert_eq!(&check.0, "create()");
-    assert_eq!(check.1, false);
-    assert_eq!(check.2, 10);
+      let check = sqlx::query_as::<_, (String, bool, u64)>(r#"SELECT name, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+        .fetch_one(&*pool)
+        .await?;
+
+      assert_eq!(&check.0, "create()");
+      assert_eq!(check.1, false);
+      assert_eq!(check.2, 10);
+    }
 
     pool.cleanup().await;
 
@@ -592,34 +613,37 @@ mod tests {
   #[tokio::test]
   async fn update() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "update()", None, None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    let update = Check {
-      id: 1,
-      group_id: None,
-      alerter_id: None,
-      uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
-      name: "new_update()".to_string(),
-      kind: CheckKind::Tcp,
-      enabled: false,
-      interval: Duration::from(10),
-      site_threshold: 2,
-      passing_threshold: 10,
-      failing_threshold: 10,
-      silent: false,
-    };
+      pool.create_check(None, None, "update()", None, None).await?;
 
-    update.update(&mut *conn).await?;
+      let update = Check {
+        id: 1,
+        group_id: None,
+        alerter_id: None,
+        uuid: "dd9a531a-1b0b-4a12-bc09-e5637f916261".to_string(),
+        name: "new_update()".to_string(),
+        kind: CheckKind::Tcp,
+        enabled: false,
+        interval: Duration::from(10),
+        site_threshold: 2,
+        passing_threshold: 10,
+        failing_threshold: 10,
+        silent: false,
+      };
 
-    let check = sqlx::query_as::<_, (String, bool, u64)>(r#"SELECT name, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
-      .fetch_one(&*pool)
-      .await?;
+      update.update(&mut *conn).await?;
 
-    assert_eq!(&check.0, "new_update()");
-    assert_eq!(check.1, false);
-    assert_eq!(check.2, 10);
+      let check = sqlx::query_as::<_, (String, bool, u64)>(r#"SELECT name, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
+        .fetch_one(&*pool)
+        .await?;
+
+      assert_eq!(&check.0, "new_update()");
+      assert_eq!(check.1, false);
+      assert_eq!(check.2, 10);
+    }
 
     pool.cleanup().await;
 
@@ -629,14 +653,17 @@ mod tests {
   #[tokio::test]
   async fn disbale() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "disable()", None, None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    Check::disable(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+      pool.create_check(None, None, "disable()", None, None).await?;
 
-    let deleted = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE id = 1"#).fetch_one(&*pool).await?;
-    assert_eq!(deleted.0, false);
+      Check::disable(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+
+      let deleted = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE id = 1"#).fetch_one(&*pool).await?;
+      assert_eq!(deleted.0, false);
+    }
 
     pool.cleanup().await;
 
@@ -646,14 +673,17 @@ mod tests {
   #[tokio::test]
   async fn delete() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    pool.create_check(None, None, "delete()", None, None).await?;
+    {
+      let mut conn = pool.acquire().await?;
 
-    Check::delete(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+      pool.create_check(None, None, "delete()", None, None).await?;
 
-    let deleted = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE id = 1"#).fetch_one(&*pool).await;
-    assert!(matches!(&deleted, Err(_)));
+      Check::delete(&mut *conn, "dd9a531a-1b0b-4a12-bc09-e5637f916261").await?;
+
+      let deleted = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE id = 1"#).fetch_one(&*pool).await;
+      assert!(matches!(&deleted, Err(_)));
+    }
 
     pool.cleanup().await;
 
@@ -663,41 +693,44 @@ mod tests {
   #[tokio::test]
   async fn last_event() -> Result<()> {
     let pool = tests::db_client().await?;
-    let mut conn = pool.acquire().await?;
 
-    let check = Check {
-      uuid: Uuid::new_v4().to_string(),
-      name: "Test check".to_string(),
-      kind: CheckKind::Tcp,
-      enabled: true,
-      interval: Duration::from(5),
-      passing_threshold: 1,
-      failing_threshold: 1,
-      silent: true,
-      ..Default::default()
-    };
+    {
+      let mut conn = pool.acquire().await?;
 
-    let check = check.insert(&mut *conn).await?;
+      let check = Check {
+        uuid: Uuid::new_v4().to_string(),
+        name: "Test check".to_string(),
+        kind: CheckKind::Tcp,
+        enabled: true,
+        interval: Duration::from(5),
+        passing_threshold: 1,
+        failing_threshold: 1,
+        silent: true,
+        ..Default::default()
+      };
 
-    let mut event = Event {
-      check_id: check.id,
-      site: CONTROLLER_ID.to_string(),
-      status: 0,
-      message: "First event".to_string(),
-      ..Default::default()
-    };
+      let check = check.insert(&mut *conn).await?;
 
-    event.insert(&mut *conn, None).await?;
+      let mut event = Event {
+        check_id: check.id,
+        site: CONTROLLER_ID.to_string(),
+        status: 0,
+        message: "First event".to_string(),
+        ..Default::default()
+      };
 
-    tokio::time::sleep(StdDuration::from_secs(1)).await;
+      event.insert(&mut *conn, None).await?;
 
-    event.message = "Last event".to_string();
-    event.insert(&mut *conn, None).await?;
+      tokio::time::sleep(StdDuration::from_secs(1)).await;
 
-    let last = check.last_event_for_site(&mut *conn, CONTROLLER_ID).await?;
+      event.message = "Last event".to_string();
+      event.insert(&mut *conn, None).await?;
 
-    assert_eq!(last.is_some(), true);
-    assert_eq!(&last.unwrap().message, "Last event");
+      let last = check.last_event_for_site(&mut *conn, CONTROLLER_ID).await?;
+
+      assert_eq!(last.is_some(), true);
+      assert_eq!(&last.unwrap().message, "Last event");
+    }
 
     pool.cleanup().await;
 
