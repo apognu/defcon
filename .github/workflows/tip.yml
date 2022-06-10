@@ -61,6 +61,7 @@ jobs:
       matrix:
         arch:
           - { name: 'x86_64', os: 'ubuntu-20.04', target: 'x86_64-unknown-linux-gnu', cross: false }
+        python: ["3.8", "3.9", "3.10"]
     runs-on: ${{ matrix.arch.os }}
     steps:
       - name: Install dependencies
@@ -83,6 +84,12 @@ jobs:
         with:
           toolchain: nightly-2022-05-15
           override: true
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - run: |
+          which python
+          python --version
       - name: Build
         uses: actions-rs/cargo@v1
         with:
@@ -93,15 +100,15 @@ jobs:
           JQ_LIB_DIR: /usr/lib/x86_64-linux-gnu
       - name: Rename artifact
         run: |
-          mv target/${{ matrix.arch.target }}/release/defcon target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}
-          mv target/${{ matrix.arch.target }}/release/defcon-runner target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}
+          mv target/${{ matrix.arch.target }}/release/defcon target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}-${{ matrix.python }}
+          mv target/${{ matrix.arch.target }}/release/defcon-runner target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}-${{ matrix.python }}
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: defcon-tip-${{ matrix.arch.name }}
           path: |
-            target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}
-            target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}
+            target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}-${{ matrix.python }}
+            target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}-${{ matrix.python }}
 
   doc:
     runs-on: ubuntu-20.04
