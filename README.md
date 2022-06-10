@@ -20,6 +20,7 @@ Defcon requires the following infrastructure to be run:
    * `libcap` (when compiled with the `ping` feature)
    * `libjq1` and `libonig5` (when compiled with the `jq` feature)
  * A Python distribution (>= 3.7) for external scripts (when compiled with the `python` feature)
+   * *Note:* the same version of libpython must be installed on the machine running Defcon
 
 Provided binaries in the [Releases](https://github.com/apognu/defcon/releases) section are compiled with all optional features.
 
@@ -153,6 +154,7 @@ You can check the continuous integration suite for more information on how to bu
  * `libssl-dev`
  * `libcap-dev` (for the ping handler, with the `ping` feature)
  * `libjq-dev` and `libonig-dev` (for JQ bindings, with the `jq` feature, `jq` 1.6 is required)
+ * `python` >= 3.7 (for the Python handle, with the `python` feature)
 
 ```shell
 $ rustup override set nightly-2021-01-21

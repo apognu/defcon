@@ -100,15 +100,15 @@ jobs:
           JQ_LIB_DIR: /usr/lib/x86_64-linux-gnu
       - name: Rename artifact
         run: |
-          mv target/${{ matrix.arch.target }}/release/defcon target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}-${{ matrix.python }}
-          mv target/${{ matrix.arch.target }}/release/defcon-runner target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}-${{ matrix.python }}
+          mv target/${{ matrix.arch.target }}/release/defcon target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}-py${{ matrix.python }}
+          mv target/${{ matrix.arch.target }}/release/defcon-runner target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}-py${{ matrix.python }}
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
           name: defcon-tip-${{ matrix.arch.name }}
           path: |
-            target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}-${{ matrix.python }}
-            target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}-${{ matrix.python }}
+            target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}-py${{ matrix.python }}
+            target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}-py${{ matrix.python }}
 
   doc:
     runs-on: ubuntu-20.04
