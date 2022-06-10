@@ -88,6 +88,26 @@ impl User {
     Ok(user)
   }
 
+  pub async fn update_password(&self, conn: &mut MySqlConnection, password: &str) -> Result<()> {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon = Argon2::default();
+    let hash = argon.hash_password(password.as_bytes(), &salt).map_err(|_| AppError::ServerError)?;
+
+    sqlx::query(
+      "
+        UPDATE users
+        SET password = ?
+        WHERE email = ?
+      ",
+    )
+    .bind(hash.to_string())
+    .bind(&self.email)
+    .execute(&mut *conn)
+    .await?;
+
+    Ok(())
+  }
+
   pub async fn check_password(&self, password: &str) -> Result<()> {
     let hash = PasswordHash::new(&self.password).map_err(|_| AppError::ServerError)?;
     let argon = Argon2::default();
