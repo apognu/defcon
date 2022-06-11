@@ -1,3 +1,9 @@
+#[derive(Serialize, Deserialize)]
+pub struct Credentials {
+  pub email: String,
+  pub password: String,
+}
+
 #[derive(Deserialize)]
 pub struct UserPatch {
   pub name: Option<String>,
@@ -9,4 +15,9 @@ pub struct UserPatch {
 pub struct NewPassword {
   pub password: String,
   pub new_password: String,
+}
+
+#[derive(Serialize)]
+pub struct ApiKey {
+  pub api_key: String,
 }

@@ -83,6 +83,7 @@ pub fn routes() -> Vec<Route> {
     session::refresh,
     session::userinfo,
     session::password,
+    session::api_key,
     users::list,
     users::get,
     users::create,

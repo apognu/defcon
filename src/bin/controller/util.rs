@@ -28,6 +28,7 @@ async fn create_admin(pool: Pool<MySql>) -> Result<bool> {
     email: email.clone(),
     password: password.clone(),
     name,
+    api_key: None,
   };
 
   user.insert(&mut *conn).await.context("could not create user")?;

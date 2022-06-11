@@ -15,13 +15,15 @@ pub struct User {
   #[serde(skip_serializing)]
   pub password: String,
   pub name: String,
+  #[serde(skip)]
+  pub api_key: Option<String>,
 }
 
 impl User {
   pub async fn list(conn: &mut MySqlConnection) -> Result<Vec<User>> {
     let users = sqlx::query_as::<_, User>(
       "
-        SELECT id, uuid, email, password, name
+        SELECT id, uuid, email, password, name, api_key
         FROM users
       ",
     )
@@ -35,7 +37,7 @@ impl User {
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<User> {
     let user = sqlx::query_as::<_, User>(
       "
-        SELECT id, uuid, email, password, name
+        SELECT id, uuid, email, password, name, api_key
         FROM users
         WHERE uuid = ?
       ",
@@ -51,7 +53,7 @@ impl User {
   pub async fn by_email(conn: &mut MySqlConnection, email: &str) -> Result<User> {
     let user = sqlx::query_as::<_, User>(
       "
-        SELECT id, uuid, email, password, name
+        SELECT id, uuid, email, password, name, api_key
         FROM users
         WHERE email = ?
       ",
@@ -133,6 +135,27 @@ impl User {
     Ok(())
   }
 
+  pub async fn generate_api_key(&self, conn: &mut MySqlConnection) -> Result<String> {
+    let api_key = base64::encode((0..48).map(|_| rand::random::<u8>()).collect::<Vec<u8>>());
+    let salt = SaltString::generate(&mut OsRng);
+    let argon = Argon2::default();
+    let hash = argon.hash_password(api_key.as_bytes(), &salt).map_err(|_| AppError::ServerError)?;
+
+    sqlx::query(
+      "
+        UPDATE users
+        SET api_key = ?
+        WHERE uuid = ?
+      ",
+    )
+    .bind(&hash.to_string())
+    .bind(&self.uuid)
+    .execute(&mut *conn)
+    .await?;
+
+    Ok(api_key)
+  }
+
   pub async fn update_password(&self, conn: &mut MySqlConnection, password: &str) -> Result<()> {
     let salt = SaltString::generate(&mut OsRng);
     let argon = Argon2::default();
@@ -142,11 +165,11 @@ impl User {
       "
         UPDATE users
         SET password = ?
-        WHERE email = ?
+        WHERE uuid = ?
       ",
     )
     .bind(hash.to_string())
-    .bind(&self.email)
+    .bind(&self.uuid)
     .execute(&mut *conn)
     .await?;
 
@@ -154,11 +177,20 @@ impl User {
   }
 
   pub async fn check_password(&self, password: &str) -> Result<()> {
-    let hash = PasswordHash::new(&self.password).map_err(|_| AppError::ServerError)?;
     let argon = Argon2::default();
 
-    argon.verify_password(password.as_bytes(), &hash).map_err(|_| AppError::InvalidCredentials)?;
+    let password_hash = PasswordHash::new(&self.password).map_err(|_| AppError::ServerError)?;
+    if argon.verify_password(password.as_bytes(), &password_hash).is_ok() {
+      return Ok(());
+    }
 
-    Ok(())
+    if let Some(ref api_key) = self.api_key {
+      let api_key_hash = PasswordHash::new(api_key).map_err(|_| AppError::ServerError)?;
+      if argon.verify_password(password.as_bytes(), &api_key_hash).is_ok() {
+        return Ok(());
+      }
+    }
+
+    Err(AppError::InvalidCredentials)?
   }
 }

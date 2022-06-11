@@ -13,7 +13,7 @@ use crate::{
   api::{
     auth::{Auth, Claims, RefreshToken, Tokens},
     error::Shortable,
-    types::NewPassword,
+    types::{ApiKey, Credentials, NewPassword},
     ApiResponse,
   },
   config::Config,
@@ -21,12 +21,6 @@ use crate::{
 };
 
 use super::error::{check_json, AppError};
-
-#[derive(Serialize, Deserialize)]
-pub struct Credentials {
-  pub email: String,
-  pub password: String,
-}
 
 #[post("/api/-/token", data = "<payload>")]
 pub async fn token(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, payload: Json<Credentials>) -> ApiResponse<Json<Tokens>> {
@@ -72,6 +66,16 @@ pub async fn password(auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Jso
   user.update_password(&mut *conn, &passwords.new_password).await.context("could not change password").short()?;
 
   Ok(())
+}
+
+#[post("/api/-/apikey")]
+pub async fn api_key(auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<ApiKey>> {
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let user = User::by_uuid(&mut *conn, &auth.sub).await.short()?;
+
+  let api_key = user.generate_api_key(&mut *conn).await.context("could not generate API key").short()?;
+
+  Ok(Json(ApiKey { api_key }))
 }
 
 #[cfg(test)]

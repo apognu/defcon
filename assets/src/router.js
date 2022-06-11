@@ -112,13 +112,13 @@ const routes = [
     name: 'users.new',
     path: '/users/new',
     component: UserForm,
-    meta: { title: 'Users', action: 'new' },
+    meta: { title: 'New user', action: 'new' },
   },
   {
     name: 'users.edit',
     path: '/users/:uuid',
     component: UserForm,
-    meta: { title: 'Users', action: 'edit' },
+    meta: { title: 'Edit user', action: 'edit' },
   },
   {
     name: 'settings',
