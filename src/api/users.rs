@@ -85,7 +85,7 @@ pub async fn patch(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload
 pub async fn delete(auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  if uuid == auth.sub {
+  if uuid == auth.user.uuid {
     Err(AppError::BadRequest).context("cannot delete your own user").short()?;
   }
 

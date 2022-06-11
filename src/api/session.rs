@@ -49,21 +49,17 @@ pub async fn refresh(config: &State<Arc<Config>>, refresh: Json<RefreshToken>, p
 }
 
 #[get("/api/-/me")]
-pub async fn userinfo(auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<User>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let user = User::by_uuid(&mut *conn, &auth.sub).await.context("could not retrieve user").short()?;
-
-  Ok(Json(user))
+pub async fn userinfo(auth: Auth) -> ApiResponse<Json<User>> {
+  Ok(Json(auth.user))
 }
 
 #[post("/api/-/password", data = "<payload>")]
 pub async fn password(auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json<NewPassword>, JsonError<'_>>) -> ApiResponse<()> {
   let passwords = check_json(payload).short()?.0;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let user = User::by_uuid(&mut *conn, &auth.sub).await.short()?;
 
-  user.check_password(&passwords.password).await.context(AppError::InvalidCredentials).short()?;
-  user.update_password(&mut *conn, &passwords.new_password).await.context("could not change password").short()?;
+  auth.user.check_password(&passwords.password).await.context(AppError::InvalidCredentials).short()?;
+  auth.user.update_password(&mut *conn, &passwords.new_password).await.context("could not change password").short()?;
 
   Ok(())
 }
@@ -71,9 +67,8 @@ pub async fn password(auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Jso
 #[post("/api/-/apikey")]
 pub async fn api_key(auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<ApiKey>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let user = User::by_uuid(&mut *conn, &auth.sub).await.short()?;
 
-  let api_key = user.generate_api_key(&mut *conn).await.context("could not generate API key").short()?;
+  let api_key = auth.user.generate_api_key(&mut *conn).await.context("could not generate API key").short()?;
 
   Ok(Json(ApiKey { api_key }))
 }

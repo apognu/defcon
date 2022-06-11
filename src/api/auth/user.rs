@@ -57,7 +57,7 @@ impl Tokens {
 }
 
 pub struct Auth {
-  pub sub: String,
+  pub user: User,
 }
 
 pub struct RefreshAuth {
@@ -78,7 +78,14 @@ impl<'r> FromRequest<'r> for Auth {
     if let Outcome::Success(config) = request.guard::<&State<Arc<Config>>>().await {
       if config.api.skip_authentication {
         return Outcome::Success(Auth {
-          sub: "dummy-7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
+          user: User {
+            id: 0,
+            uuid: "7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
+            email: "noreply@example.com".to_string(),
+            password: "".to_string(),
+            name: "".to_string(),
+            api_key: None,
+          },
         });
       }
 
@@ -90,8 +97,8 @@ impl<'r> FromRequest<'r> for Auth {
           if claims.claims.aud == "urn:defcon:access" {
             if let Outcome::Success(pool) = request.guard::<&State<Pool<MySql>>>().await {
               if let Ok(mut conn) = pool.acquire().await {
-                if User::by_uuid(&mut *conn, &claims.claims.sub).await.is_ok() {
-                  return Outcome::Success(Auth { sub: claims.claims.sub });
+                if let Ok(user) = User::by_uuid(&mut *conn, &claims.claims.sub).await {
+                  return Outcome::Success(Auth { user });
                 }
               }
             }
