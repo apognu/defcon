@@ -6,7 +6,7 @@ div(v-if='store.authenticated !== undefined')
 
 <script>
 import App from '~/components/App.vue';
-import Login from '~/components/login/Form.vue';
+import Login from '~/components/session/Form.vue';
 
 export default {
   components: {

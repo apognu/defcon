@@ -13,6 +13,7 @@ use crate::{
   api::{
     auth::{Auth, Claims, RefreshToken, Tokens},
     error::Shortable,
+    types::NewPassword,
     ApiResponse,
   },
   config::Config,
@@ -34,7 +35,7 @@ pub async fn token(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, paylo
 
   user.check_password(&payload.password).await.context(AppError::InvalidCredentials).short()?;
 
-  Ok(Json(Tokens::generate(config.as_ref(), &user.email, Duration::hours(1)).context(AppError::ServerError).short()?))
+  Ok(Json(Tokens::generate(config.as_ref(), &user.uuid, Duration::hours(1)).context(AppError::ServerError).short()?))
 }
 
 #[post("/api/-/refresh", data = "<refresh>")]
@@ -48,30 +49,24 @@ pub async fn refresh(config: &State<Arc<Config>>, refresh: Json<RefreshToken>, p
   }
 
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let user = User::by_email(&mut *conn, &claims.claims.sub).await.context(AppError::InvalidCredentials).short()?;
+  let user = User::by_uuid(&mut *conn, &claims.claims.sub).await.context(AppError::InvalidCredentials).short()?;
 
-  Ok(Json(Tokens::generate(config.as_ref(), &user.email, Duration::hours(1)).context(AppError::ServerError).short()?))
+  Ok(Json(Tokens::generate(config.as_ref(), &user.uuid, Duration::hours(1)).context(AppError::ServerError).short()?))
 }
 
 #[get("/api/-/me")]
 pub async fn userinfo(auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<User>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let user = User::by_email(&mut *conn, &auth.sub).await.context("could not retrieve user").short()?;
+  let user = User::by_uuid(&mut *conn, &auth.sub).await.context("could not retrieve user").short()?;
 
   Ok(Json(user))
-}
-
-#[derive(Deserialize)]
-pub struct NewPassword {
-  pub password: String,
-  pub new_password: String,
 }
 
 #[post("/api/-/password", data = "<payload>")]
 pub async fn password(auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json<NewPassword>, JsonError<'_>>) -> ApiResponse<()> {
   let passwords = check_json(payload).short()?.0;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let user = User::by_email(&mut *conn, &auth.sub).await.short()?;
+  let user = User::by_uuid(&mut *conn, &auth.sub).await.short()?;
 
   user.check_password(&passwords.password).await.context(AppError::InvalidCredentials).short()?;
   user.update_password(&mut *conn, &passwords.new_password).await.context("could not change password").short()?;
@@ -101,12 +96,12 @@ mod tests {
 
     pool.create_user().await?;
 
-    let body = r#"{
+    let body = json!({
       "email": "noreply@example.com",
       "password": "password"
-    }"#;
+    });
 
-    let response = client.post("/api/-/token").body(body).dispatch().await;
+    let response = client.post("/api/-/token").body(body.to_string()).dispatch().await;
     assert_eq!(response.status(), Status::Ok);
 
     pool.cleanup().await;
@@ -120,12 +115,12 @@ mod tests {
 
     pool.create_user().await?;
 
-    let body = r#"{
+    let body = json!({
       "email": "noreply@example.com",
       "password": "wrongpassword"
-    }"#;
+    });
 
-    let response = client.post("/api/-/token").body(body).dispatch().await;
+    let response = client.post("/api/-/token").body(body.to_string()).dispatch().await;
     assert_eq!(response.status(), Status::Unauthorized);
 
     pool.cleanup().await;
@@ -134,28 +129,38 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn unauthorized_without_token() {
+  async fn unauthorized_without_token() -> Result<()> {
     let (pool, client) = tests::authenticated_api_client().await.unwrap();
+
+    pool.create_user().await?;
 
     let response = client.get("/api/checks").dispatch().await;
     assert_eq!(response.status(), Status::Unauthorized);
 
     pool.cleanup().await;
+
+    Ok(())
   }
 
   #[tokio::test]
-  async fn unauthorized_with_invalid_token() {
+  async fn unauthorized_with_invalid_token() -> Result<()> {
     let (pool, client) = tests::authenticated_api_client().await.unwrap();
+
+    pool.create_user().await?;
 
     let response = client.get("/api/checks").header(Header::new("authorization", "Bearer invalid")).dispatch().await;
     assert_eq!(response.status(), Status::Unauthorized);
 
     pool.cleanup().await;
+
+    Ok(())
   }
 
   #[tokio::test]
-  async fn unauthorized_with_token_invalid_key() {
+  async fn unauthorized_with_token_invalid_key() -> Result<()> {
     let (pool, client) = tests::authenticated_api_client().await.unwrap();
+
+    pool.create_user().await?;
 
     let now = Utc::now();
     let exp = now + Duration::hours(1);
@@ -164,7 +169,7 @@ mod tests {
       aud: "urn:defcon:access".to_string(),
       iat: now.timestamp(),
       exp: exp.timestamp(),
-      sub: "dummy".to_string(),
+      sub: "7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
     };
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret("invalidkey".as_ref())).unwrap();
@@ -173,11 +178,15 @@ mod tests {
     assert_eq!(response.status(), Status::Unauthorized);
 
     pool.cleanup().await;
+
+    Ok(())
   }
 
   #[tokio::test]
-  async fn unauthorized_with_expired_token() {
+  async fn unauthorized_with_expired_token() -> Result<()> {
     let (pool, client) = tests::authenticated_api_client().await.unwrap();
+
+    pool.create_user().await?;
 
     let now = Utc::now() - Duration::hours(2);
     let exp = now - Duration::hours(1);
@@ -186,7 +195,7 @@ mod tests {
       aud: "urn:defcon:access".to_string(),
       iat: now.timestamp(),
       exp: exp.timestamp(),
-      sub: "dummy".to_string(),
+      sub: "7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
     };
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
@@ -195,11 +204,15 @@ mod tests {
     assert_eq!(response.status(), Status::Unauthorized);
 
     pool.cleanup().await;
+
+    Ok(())
   }
 
   #[tokio::test]
-  async fn authorized_with_token() {
+  async fn authorized_with_token() -> Result<()> {
     let (pool, client) = tests::authenticated_api_client().await.unwrap();
+
+    pool.create_user().await?;
 
     let now = Utc::now();
     let exp = now + Duration::hours(1);
@@ -208,7 +221,7 @@ mod tests {
       aud: "urn:defcon:access".to_string(),
       iat: now.timestamp(),
       exp: exp.timestamp(),
-      sub: "dummy".to_string(),
+      sub: "7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
     };
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
@@ -217,6 +230,8 @@ mod tests {
     assert_eq!(response.status(), Status::Ok);
 
     pool.cleanup().await;
+
+    Ok(())
   }
 
   #[tokio::test]
@@ -232,7 +247,7 @@ mod tests {
       aud: "urn:defcon:refresh".to_string(),
       iat: now.timestamp(),
       exp: exp.timestamp(),
-      sub: "noreply@example.com".to_string(),
+      sub: "7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
     };
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
@@ -258,7 +273,7 @@ mod tests {
       aud: "urn:defcon:refresh".to_string(),
       iat: now.timestamp(),
       exp: exp.timestamp(),
-      sub: "noreply@example.com".to_string(),
+      sub: "7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
     };
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret("invalidkey".as_ref())).unwrap();
@@ -284,7 +299,7 @@ mod tests {
       aud: "urn:defcon:access".to_string(),
       iat: now.timestamp(),
       exp: exp.timestamp(),
-      sub: "noreply@example.com".to_string(),
+      sub: "7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
     };
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
@@ -313,7 +328,7 @@ mod tests {
         aud: "urn:defcon:access".to_string(),
         iat: now.timestamp(),
         exp: exp.timestamp(),
-        sub: "noreply@example.com".to_string(),
+        sub: "7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
       };
 
       let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
@@ -358,7 +373,7 @@ mod tests {
         aud: "urn:defcon:access".to_string(),
         iat: now.timestamp(),
         exp: exp.timestamp(),
-        sub: "noreply@example.com".to_string(),
+        sub: "7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
       };
 
       let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();

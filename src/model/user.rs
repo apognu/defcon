@@ -88,6 +88,51 @@ impl User {
     Ok(user)
   }
 
+  pub async fn update(&self, conn: &mut MySqlConnection, update_password: bool) -> Result<User> {
+    let hash = if update_password {
+      let salt = SaltString::generate(&mut OsRng);
+      let argon = Argon2::default();
+
+      argon.hash_password(self.password.as_bytes(), &salt).map_err(|_| AppError::ServerError)?.to_string()
+    } else {
+      self.password.clone()
+    };
+
+    sqlx::query(
+      "
+        UPDATE users
+        SET email = ?, name = ?, password = ?
+        WHERE uuid = ?
+      ",
+    )
+    .bind(&self.email)
+    .bind(&self.name)
+    .bind(&hash)
+    .bind(&self.uuid)
+    .execute(&mut *conn)
+    .await
+    .short()?;
+
+    let user = User::by_uuid(&mut *conn, &self.uuid).await?;
+
+    Ok(user)
+  }
+
+  pub async fn delete(conn: &mut MySqlConnection, uuid: &str) -> Result<()> {
+    sqlx::query(
+      "
+        DELETE FROM users
+        WHERE uuid = ?
+      ",
+    )
+    .bind(uuid)
+    .execute(conn)
+    .await
+    .short()?;
+
+    Ok(())
+  }
+
   pub async fn update_password(&self, conn: &mut MySqlConnection, password: &str) -> Result<()> {
     let salt = SaltString::generate(&mut OsRng);
     let argon = Argon2::default();

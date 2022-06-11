@@ -73,6 +73,10 @@ export default {
 
   methods: {
     submit() {
+      if (this.submitDisabled) {
+        return;
+      }
+
       const body = {
         password: this.password,
         new_password: this.new_password,

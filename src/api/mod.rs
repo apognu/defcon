@@ -86,6 +86,9 @@ pub fn routes() -> Vec<Route> {
     users::list,
     users::get,
     users::create,
+    users::update,
+    users::patch,
+    users::delete,
   ]
 }
 

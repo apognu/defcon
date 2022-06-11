@@ -16,7 +16,7 @@ impl TestConnection {
         VALUES ( 1, ?, ?, ?, ? )
       ",
     )
-    .bind("uuid")
+    .bind("7fc3989e-baea-4c7b-99a9-9210d2a3422c")
     .bind("noreply@example.com")
     .bind(hash.to_string())
     .bind("Bob User")

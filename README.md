@@ -143,9 +143,15 @@ You can find detailed explanations about how to configure each of those handlers
 
 ## API
 
-Defcon exposes an **unauthenticated** API used to manipulate and retrieve the data it uses internally. The available endpoints are documented in the [API documentation](https://apognu.github.io/defcon/api.html).
+Defcon exposes an authenticated API used to manipulate and retrieve the data it uses internally. The available endpoints are documented in the [API documentation](https://apognu.github.io/defcon/api.html).
 
-Did you pay attention to the fact that this API is **NOT AUTHENTICATED** and should therefore be used behind some kind of reverse proxy that will add some semblance of security to it?
+Initially, you can use a subcommand of `defcon` to create an admin user authorized to use the API.
+
+```shell
+$ DSN=<DSN> defcon create-admin apognu@example.com 'Antoine POPINEAU'
+Admin user 'apognu@example.com' was created with password 'nWlF5oXllaYUuKGe'...
+```
+
 
 ## Building from source
 

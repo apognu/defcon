@@ -9,8 +9,9 @@ use rocket::{
   request::{self, FromRequest, Request},
   State,
 };
+use sqlx::{MySql, Pool};
 
-use crate::{api::error::AppError, config::Config};
+use crate::{api::error::AppError, config::Config, model::User};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -74,18 +75,26 @@ impl<'r> FromRequest<'r> for Auth {
 
   async fn from_request(request: &'r Request<'_>) -> request::Outcome<Auth, Error> {
     #[allow(unused_variables)]
-    if let Outcome::Success(guard) = request.guard::<&State<Arc<Config>>>().await {
-      if guard.api.skip_authentication {
-        return Outcome::Success(Auth { sub: "dummy".to_string() });
+    if let Outcome::Success(config) = request.guard::<&State<Arc<Config>>>().await {
+      if config.api.skip_authentication {
+        return Outcome::Success(Auth {
+          sub: "dummy-7fc3989e-baea-4c7b-99a9-9210d2a3422c".to_string(),
+        });
       }
 
       let headers: Vec<_> = request.headers().get("authorization").collect();
       let token = headers.get(0).and_then(|value| value.strip_prefix("Bearer "));
 
       if let Some(token) = token {
-        if let Ok(claims) = jsonwebtoken::decode::<Claims>(token, &DecodingKey::from_secret(guard.api.jwt_signing_key.as_ref()), &Validation::default()) {
+        if let Ok(claims) = jsonwebtoken::decode::<Claims>(token, &DecodingKey::from_secret(config.api.jwt_signing_key.as_ref()), &Validation::default()) {
           if claims.claims.aud == "urn:defcon:access" {
-            return Outcome::Success(Auth { sub: claims.claims.sub });
+            if let Outcome::Success(pool) = request.guard::<&State<Pool<MySql>>>().await {
+              if let Ok(mut conn) = pool.acquire().await {
+                if let Ok(_) = User::by_uuid(&mut *conn, &claims.claims.sub).await {
+                  return Outcome::Success(Auth { sub: claims.claims.sub });
+                }
+              }
+            }
           }
         }
       }

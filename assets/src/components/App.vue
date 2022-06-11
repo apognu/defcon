@@ -34,7 +34,7 @@ export default {
     Sidenav,
   },
 
-  inject: ['store', '$http'],
+  inject: ['store', '$http', '$helpers'],
 
   data: () => ({
     title: '',
