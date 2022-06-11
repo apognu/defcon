@@ -90,7 +90,7 @@ impl<'r> FromRequest<'r> for Auth {
           if claims.claims.aud == "urn:defcon:access" {
             if let Outcome::Success(pool) = request.guard::<&State<Pool<MySql>>>().await {
               if let Ok(mut conn) = pool.acquire().await {
-                if let Ok(_) = User::by_uuid(&mut *conn, &claims.claims.sub).await {
+                if User::by_uuid(&mut *conn, &claims.claims.sub).await.is_ok() {
                   return Outcome::Success(Auth { sub: claims.claims.sub });
                 }
               }
