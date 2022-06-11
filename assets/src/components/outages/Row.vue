@@ -24,7 +24,7 @@ tr
     p(:uk-tooltip='`title: ${$helpers.datetime(outage.started_on)}`') {{ $helpers.ago(outage.started_on) }}
 
   td.uk-table-shrink.uk-text-nowrap(class='uk-visible@m')
-    p(v-if='outage.ended_on', :uk-tooltip='`title: ${this.$helpers.datetime(outage.ended_on)}`') {{ $helpers.humanize(lasted(outage)) }}
+    p(v-if='outage.ended_on', :uk-tooltip='`title: ${this.$helpers.datetime(outage.ended_on)}`') {{ this.$helpers.humanize(lasted(outage)) }}
     p.uk-text-bold.uk-text-warning(v-else) Ongoing
 
   td.actions
@@ -46,7 +46,7 @@ export default {
 
   methods: {
     lasted(outage) {
-      return this.$moment(outage.ended_on).diff(this.$moment(outage.started_on));
+      return this.$moment.duration(this.$moment(outage.ended_on).diff(this.$moment(outage.started_on)));
     },
   },
 };

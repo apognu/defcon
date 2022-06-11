@@ -54,7 +54,7 @@ const helpers = (app) => ({
 
   datetime: (dt) => app.config.globalProperties.$moment(dt).format('MMMM Do, YYYY [at] HH:mm:ss ZZ'),
   ago: (dt) => app.config.globalProperties.$moment(dt).fromNow(),
-  humanize: (duration) => app.config.globalProperties.$moment(duration, 'seconds').fromNow(),
+  humanize: (duration) => duration.humanize(),
 });
 
 const filters = {

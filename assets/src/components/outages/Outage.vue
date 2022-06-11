@@ -82,7 +82,7 @@ export default {
     },
 
     lasted(outage) {
-      return this.$moment(outage.ended_on).diff(this.$moment(outage.started_on));
+      return this.$moment.duration(this.$moment(outage.ended_on).diff(this.$moment(outage.started_on)));
     },
 
     comment() {
