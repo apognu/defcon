@@ -122,13 +122,13 @@ export default {
         this.$http()
           .patch(`/api/users/${this.$route.params.uuid}`, body)
           .then(() => {
-            if (this.user.uuid == this.store.identity.uuid) {
+            if (this.user.uuid === this.store.identity.uuid) {
               this.$http().get('/api/-/me').then((response) => {
                 this.store.setIdentity(response.data);
 
                 this.$router.push({ name: 'users' });
               });
-            } {
+            } else {
               this.$router.push({ name: 'users' });
             }
           })
