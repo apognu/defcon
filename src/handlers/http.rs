@@ -32,7 +32,7 @@ impl<'h> Handler for HttpHandler<'h> {
 
   async fn run(&self, spec: &Http, site: &str, _stash: Stash) -> Result<Event> {
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
-    let headers: HeaderMap = spec
+    let mut headers: HeaderMap = spec
       .headers
       .iter()
       .map(|(name, value)| (HeaderName::from_str(name), HeaderValue::from_str(value)))
@@ -41,6 +41,8 @@ impl<'h> Handler for HttpHandler<'h> {
         _ => None,
       })
       .collect();
+
+    headers.append("user-agent", HeaderValue::from_str("defcon").unwrap());
 
     let client = HttpClient::builder().timeout(*timeout).build()?;
     let response = client.get(&spec.url).headers(headers).send().await;
@@ -163,12 +165,12 @@ mod tests {
     let spec = Http {
       id: 0,
       check_id: 0,
-      url: "https://example.com".to_string(),
+      url: "https://httpbin.org/user-agent".to_string(),
       headers: Default::default(),
       timeout: None,
       code: Some(200),
-      content: Some("Example Domain".to_string()),
-      digest: Some("d06b93c883f8126a04589937a884032df031b05518eed9d433efb6447834df2596aebd500d69b8283e5702d988ed49655ae654c1683c7a4ae58bfa6b92f2b73a".to_string()),
+      content: Some(r#""user-agent": "defcon""#.to_string()),
+      digest: Some("2d3cb778b29b905457d6b87b3a4258202bfdbe883251523f7e479e5505b7df6bedbc25f5061e5a677e9e92bf3560a993d5cd88ba5918cc1b5bed1db23b060c84".to_string()),
       json_query: None,
     };
 
@@ -186,7 +188,7 @@ mod tests {
     let spec = Http {
       id: 0,
       check_id: 0,
-      url: "https://example.com".to_string(),
+      url: "https://httpbin.org/status/200".to_string(),
       headers: Default::default(),
       timeout: None,
       code: Some(201),
@@ -209,7 +211,7 @@ mod tests {
     let spec = Http {
       id: 0,
       check_id: 0,
-      url: "https://example.com".to_string(),
+      url: "http://httpbin.org/anything/helloworld".to_string(),
       headers: Default::default(),
       code: None,
       timeout: None,
@@ -232,7 +234,7 @@ mod tests {
     let spec = Http {
       id: 0,
       check_id: 0,
-      url: "https://example.com".to_string(),
+      url: "https://httpbin.org/status/200".to_string(),
       headers: Default::default(),
       code: None,
       timeout: None,

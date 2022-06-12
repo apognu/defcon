@@ -82,7 +82,7 @@ mod tests {
     let spec = Tcp {
       id: 0,
       check_id: 0,
-      host: "example.com".to_string(),
+      host: "github.com".to_string(),
       port: 81,
       timeout: Some(Duration::from(1)),
     };
