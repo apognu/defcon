@@ -7,7 +7,7 @@
 
     p Generating a new API key will invalidate the previous one, please note this API key carefully, it will not be shown again.
 
-    button.uk-button.uk-button-primary.uk-button-small(@click='generateApiKey') Generate a new API key
+    button.uk-button.uk-button-primary.uk-button-small(@click='generateApiKey', :disabled='apiKeyDisabled') Generate a new API key
 
     div.uk-margin-top.uk-margin-bottom(v-if='apiKey')
       .uk-form-controls
@@ -68,6 +68,7 @@ export default {
       error: undefined,
     },
     disabled: false,
+    apiKeyDisabled: false,
     apiKey: undefined,
     password: '',
     new_password: '',
@@ -90,8 +91,11 @@ export default {
 
   methods: {
     generateApiKey() {
+      this.apiKeyDisabled = true;
+
       this.$http().post('/api/-/apikey').then((response) => {
         this.apiKey = response.data.api_key;
+        this.apiKeyDisabled = false;
       });
     },
 

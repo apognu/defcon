@@ -16,8 +16,7 @@ export const store = defineStore('defcon', {
   getters: {
     getTitle: (state) => {
       if (state.title !== undefined) {
-        /* eslint no-irregular-whitespace: "off" */
-        return `Defcon • ${state.title}`;
+        return `Defcon • ${state.title}`;
       }
 
       return 'Defcon';

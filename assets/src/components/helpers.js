@@ -29,13 +29,13 @@ const http = (noRetry) => {
 
           axios.post('/api/-/refresh', body)
             .then((response) => {
-              store.setToken(response.data.access_token, response.data.refresh_token);
+              defconStore.setToken(response.data.access_token, response.data.refresh_token);
 
               request.headers.Authorization = `Bearer ${defconStore.accessToken}`;
 
               return axios(request);
             }).catch(() => {
-              store.revokeToken();
+              defconStore.revokeToken();
             });
         }
 

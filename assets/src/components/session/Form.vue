@@ -11,6 +11,7 @@
       label.uk-form-label Email address
       .uk-form-controls
         input.uk-input(
+          ref='email'
           type='text',
           v-model='email',
           @keyup.enter='authenticate()'
@@ -43,6 +44,10 @@ export default {
     password: '',
     disabled: false,
   }),
+
+  async mounted() {
+    this.$refs.email.focus();
+  },
 
   methods: {
     authenticate() {
