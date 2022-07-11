@@ -150,13 +150,13 @@ mod tests {
     let payload = json!({
       "name": "My Alerter",
       "kind": "webhook",
-      "webhook": "https://hooks.example.com/1"
+      "url": "https://hooks.example.com/1"
     });
 
     let response = client.post("/api/alerters").body(payload.to_string().as_bytes()).dispatch().await;
     assert_eq!(response.status(), Status::Created);
 
-    let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, webhook, username, password FROM alerters")
+    let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, url, username, password FROM alerters")
       .fetch_one(&*pool)
       .await?;
 
@@ -178,7 +178,7 @@ mod tests {
     let payload = json!({
       "name": "My Alerter",
       "kind": "webhook",
-      "webhook": "https://hooks.example.com/1",
+      "url": "https://hooks.example.com/1",
       "username": "bob",
       "password": "password"
     });
@@ -186,7 +186,7 @@ mod tests {
     let response = client.post("/api/alerters").body(payload.to_string().as_bytes()).dispatch().await;
     assert_eq!(response.status(), Status::Created);
 
-    let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, webhook, username, password FROM alerters")
+    let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, url, username, password FROM alerters")
       .fetch_one(&*pool)
       .await?;
 
@@ -210,14 +210,14 @@ mod tests {
     let payload = json!({
       "name": "My Alerter",
       "kind": "webhook",
-      "webhook": "https://hooks.example.com/2",
+      "url": "https://hooks.example.com/2",
       "username": "bob",
     });
 
     let response = client.put("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(payload.to_string().as_bytes()).dispatch().await;
     assert_eq!(response.status(), Status::Ok);
 
-    let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, webhook, username, password FROM alerters")
+    let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, url, username, password FROM alerters")
       .fetch_one(&*pool)
       .await?;
 
@@ -240,7 +240,7 @@ mod tests {
 
     let payload = json!({
       "kind": "hello",
-      "webhook": "https://hooks.example.com/2"
+      "url": "https://hooks.example.com/2"
     });
 
     let response = client.put("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(payload.to_string().as_bytes()).dispatch().await;

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::{Context, Result};
 use pagerduty_rs::{
   eventsv2async::EventsV2,
@@ -8,6 +10,7 @@ use time::OffsetDateTime;
 
 use crate::{
   alerters::Webhook,
+  config::Config,
   model::{status::*, Alerter, Check, Event, Outage},
 };
 
@@ -15,7 +18,7 @@ pub struct PagerdutyAlerter(pub Alerter);
 
 #[async_trait]
 impl Webhook for PagerdutyAlerter {
-  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
+  async fn alert(&self, config: Arc<Config>, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
     let key = match self.0.password {
       Some(ref key) => key,
       None => return Err(anyhow!("could not retrieve Pagerduty integration key")),
@@ -50,8 +53,7 @@ impl Webhook for PagerdutyAlerter {
         images: None,
         links: None,
         client: Some("Defcon".to_string()),
-        // TODO: add the actual domain for the current Defcon instance
-        client_url: Some(format!("/outages/{}", outage.uuid)),
+        client_url: Some(format!("https://{}/outages/{}", config.domain, outage.uuid)),
       }),
 
       false => PagerdutyEvent::AlertResolve::<()>(AlertResolve { dedup_key: outage.uuid.clone() }),

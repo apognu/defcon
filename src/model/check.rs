@@ -398,7 +398,7 @@ impl Check {
         };
 
         if let Some(alerter) = alerter {
-          alerter.webhook().alert(&mut *conn, self, &outage).await?;
+          alerter.webhook().alert(config, &mut *conn, self, &outage).await?;
         }
 
         Ok(())

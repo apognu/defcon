@@ -1,9 +1,12 @@
+use std::sync::Arc;
+
 use anyhow::{Context, Result};
 use sqlx::MySqlConnection;
 
 use crate::{
   alerters::Webhook,
   api::types as api,
+  config::Config,
   model::{status::*, Alerter, Check, Event, Outage},
 };
 
@@ -20,7 +23,7 @@ pub struct WebhookAlerter(pub Alerter);
 
 #[async_trait]
 impl Webhook for WebhookAlerter {
-  async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
+  async fn alert(&self, _config: Arc<Config>, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
     let url = match self.0.url {
       Some(ref url) => url,
       None => return Err(anyhow!("could not retrieve Pagerduty integration key")),

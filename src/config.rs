@@ -22,6 +22,7 @@ pub static PUBLIC_KEY: Lazy<Option<Vec<u8>>> = Lazy::new(|| {
 
 #[derive(Debug, Clone)]
 pub struct Config {
+  pub domain: String,
   pub api: ApiConfig,
   #[cfg(feature = "web")]
   pub web: WebConfig,
@@ -185,6 +186,7 @@ impl Config {
 
   pub fn parse() -> Result<Arc<Config>> {
     let config = Config {
+      domain: env::var("DOMAIN").unwrap_or_default(),
       api: ApiConfig::new()?,
       #[cfg(feature = "web")]
       web: WebConfig::new()?,

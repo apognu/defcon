@@ -31,6 +31,7 @@ pub const JWT_SIGNING_KEY: &str = "dummysigningkey";
 
 pub fn config(auth: bool) -> Arc<Config> {
   let config = Config {
+    domain: "test-decon.example.com".to_string(),
     api: ApiConfig {
       enable: true,
       listen: "127.0.0.1:1234".parse::<SocketAddr>().unwrap(),
