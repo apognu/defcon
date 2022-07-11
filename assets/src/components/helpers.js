@@ -91,8 +91,10 @@ const filters = {
         return { url: 'Webhook URL' };
       case 'pagerduty':
         return { password: 'Integration key' };
+      default:
+        return {};
     }
-  }
+  },
 };
 
 export default {

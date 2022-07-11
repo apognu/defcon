@@ -79,7 +79,7 @@ export default {
           fields.password = true;
           break;
         default:
-          return {}
+          return {};
       }
 
       return fields;
