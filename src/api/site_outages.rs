@@ -15,7 +15,7 @@ use crate::{
 #[get("/api/sites/outages", rank = 10)]
 pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let outages = SiteOutage::current(&mut conn).await.context("could not retrieve outages").short()?.map(&*pool).await.short()?;
+  let outages = SiteOutage::current(&mut conn).await.context("could not retrieve outages").short()?.map(pool).await.short()?;
 
   Ok(Json(outages))
 }
@@ -28,7 +28,7 @@ pub async fn list_between(_auth: Auth, pool: &State<Pool<MySql>>, from: api::Dat
     .await
     .context("could not retrieve outages")
     .short()?
-    .map(&*pool)
+    .map(pool)
     .await
     .short()?;
 
@@ -38,7 +38,7 @@ pub async fn list_between(_auth: Auth, pool: &State<Pool<MySql>>, from: api::Dat
 #[get("/api/sites/outages/<uuid>")]
 pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::SiteOutage>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let outage = SiteOutage::by_uuid(&mut conn, &uuid).await.context("could not find outage").short()?.map(&*pool).await.short()?;
+  let outage = SiteOutage::by_uuid(&mut conn, &uuid).await.context("could not find outage").short()?.map(pool).await.short()?;
 
   Ok(Json(outage))
 }

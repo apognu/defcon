@@ -98,10 +98,10 @@ impl ApiMapper for db::Check {
 
   async fn map(self, pool: &Pool<MySql>) -> Result<Self::Output> {
     let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
-    let spec = self.spec(&mut *conn).await?;
-    let group = self.group(&mut *conn).await;
-    let alerter = self.alerter(&mut *conn).await;
-    let sites = self.sites(&mut *conn).await?;
+    let spec = self.spec(&mut conn).await?;
+    let group = self.group(&mut conn).await;
+    let alerter = self.alerter(&mut conn).await;
+    let sites = self.sites(&mut conn).await?;
     let status = Some(self.ok(&mut conn).await);
 
     let check = api::Check {
@@ -127,11 +127,11 @@ impl ApiMapper for Vec<db::Check> {
     let checks: Vec<api::Check> = stream::iter(self)
       .then(async move |check| {
         if let Ok(mut conn) = pool.acquire().await.context("could not retrieve database connection") {
-          match check.spec(&mut *conn).await {
+          match check.spec(&mut conn).await {
             Ok(spec) => {
-              let group = check.group(&mut *conn).await;
-              let alerter = check.alerter(&mut *conn).await;
-              let sites = check.sites(&mut *conn).await.unwrap_or_default();
+              let group = check.group(&mut conn).await;
+              let alerter = check.alerter(&mut conn).await;
+              let sites = check.sites(&mut conn).await.unwrap_or_default();
               let status = Some(check.ok(&mut conn).await);
 
               let check = api::Check {

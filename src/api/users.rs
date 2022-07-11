@@ -18,7 +18,7 @@ use super::error::{check_json, AppError};
 #[get("/api/users")]
 pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<User>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let users = User::list(&mut *conn).await.context("could not retrieve users").short()?;
+  let users = User::list(&mut conn).await.context("could not retrieve users").short()?;
 
   Ok(Json(users))
 }
@@ -26,7 +26,7 @@ pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Ve
 #[get("/api/users/<uuid>")]
 pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<User>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let user = User::by_uuid(&mut *conn, &uuid).await.context("could not retrieve user").short()?;
+  let user = User::by_uuid(&mut conn, &uuid).await.context("could not retrieve user").short()?;
 
   Ok(Json(user))
 }
@@ -37,7 +37,7 @@ pub async fn create(_auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json
 
   let mut payload = check_json(payload).short()?.0;
   payload.uuid = Uuid::new_v4().to_string();
-  payload.insert(&mut *conn).await.short()?;
+  payload.insert(&mut conn).await.short()?;
 
   Ok(Created::new(uri!(get(uuid = payload.uuid)).to_string()))
 }
@@ -47,7 +47,7 @@ pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payloa
   let payload = check_json(payload).short()?.0;
 
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let user = User::by_uuid(&mut *conn, &uuid).await.context("could not retrieve user").short()?;
+  let user = User::by_uuid(&mut conn, &uuid).await.context("could not retrieve user").short()?;
 
   let user = User {
     email: payload.email,
@@ -56,7 +56,7 @@ pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payloa
     ..user
   };
 
-  user.update(&mut *conn, true).await.context("could not update user").short()?;
+  user.update(&mut conn, true).await.context("could not update user").short()?;
 
   Ok(())
 }
@@ -66,7 +66,7 @@ pub async fn patch(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload
   let payload = check_json(payload).short()?.0;
 
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let mut user = User::by_uuid(&mut *conn, &uuid).await.context("could not retrieve user").short()?;
+  let mut user = User::by_uuid(&mut conn, &uuid).await.context("could not retrieve user").short()?;
   let mut update_password = false;
 
   payload.email.run(|value| user.email = value);
@@ -76,7 +76,7 @@ pub async fn patch(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload
     update_password = true;
   });
 
-  user.update(&mut *conn, update_password).await.context("could not update user").short()?;
+  user.update(&mut conn, update_password).await.context("could not update user").short()?;
 
   Ok(())
 }

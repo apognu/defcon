@@ -24,7 +24,7 @@ pub async fn list_stale(pool: &State<Pool<MySql>>, credentials: RunnerAuth) -> A
     .await
     .context("could not retrieve checks")
     .short()?
-    .map(&*pool)
+    .map(pool)
     .await
     .short()?
     .into_iter()
@@ -38,7 +38,7 @@ pub async fn list_stale(pool: &State<Pool<MySql>>, credentials: RunnerAuth) -> A
 pub async fn report(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, credentials: RunnerAuth, payload: Json<api::ReportEvent>) -> ApiResponse<()> {
   let report = payload.0;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let check = Check::by_uuid(&mut *conn, &report.check).await.short()?;
+  let check = Check::by_uuid(&mut conn, &report.check).await.short()?;
 
   let event = Event {
     check_id: check.id,
@@ -48,7 +48,7 @@ pub async fn report(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, cred
     ..Default::default()
   };
 
-  handlers::handle_event(config.inner().clone(), &mut *conn, &event, &check, None).await.short()?;
+  handlers::handle_event(config.inner().clone(), &mut conn, &event, &check, None).await.short()?;
 
   Ok(())
 }

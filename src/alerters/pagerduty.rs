@@ -39,7 +39,7 @@ impl Webhook for PagerdutyAlerter {
         payload: AlertTriggerPayload {
           summary: format!("{}: {}", check.name.clone(), event.map(|ev| ev.message).unwrap_or_default()),
           source: "defcon".to_owned(),
-          timestamp: outage.started_on.map(|dt| OffsetDateTime::from_unix_timestamp(dt.timestamp()).ok()).flatten(),
+          timestamp: outage.started_on.and_then(|dt| OffsetDateTime::from_unix_timestamp(dt.timestamp()).ok()),
           severity: level,
           component: Some(check.name.clone()),
           group: check.group(&mut *conn).await.map(|group| group.name),

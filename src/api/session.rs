@@ -25,7 +25,7 @@ use super::error::{check_json, AppError};
 #[post("/api/-/token", data = "<payload>")]
 pub async fn token(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, payload: Json<Credentials>) -> ApiResponse<Json<Tokens>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let user = User::by_email(&mut *conn, &payload.email).await.context(AppError::InvalidCredentials).short()?;
+  let user = User::by_email(&mut conn, &payload.email).await.context(AppError::InvalidCredentials).short()?;
 
   user.check_password(&payload.password).await.context(AppError::InvalidCredentials).short()?;
 
@@ -43,7 +43,7 @@ pub async fn refresh(config: &State<Arc<Config>>, refresh: Json<RefreshToken>, p
   }
 
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let user = User::by_uuid(&mut *conn, &claims.claims.sub).await.context(AppError::InvalidCredentials).short()?;
+  let user = User::by_uuid(&mut conn, &claims.claims.sub).await.context(AppError::InvalidCredentials).short()?;
 
   Ok(Json(Tokens::generate(config.as_ref(), &user.uuid, Duration::hours(1)).context(AppError::ServerError).short()?))
 }
@@ -59,7 +59,7 @@ pub async fn password(auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Jso
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   auth.user.check_password(&passwords.password).await.context(AppError::InvalidCredentials).short()?;
-  auth.user.update_password(&mut *conn, &passwords.new_password).await.context("could not change password").short()?;
+  auth.user.update_password(&mut conn, &passwords.new_password).await.context("could not change password").short()?;
 
   Ok(())
 }
@@ -68,7 +68,7 @@ pub async fn password(auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Jso
 pub async fn api_key(auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<ApiKey>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  let api_key = auth.user.generate_api_key(&mut *conn).await.context("could not generate API key").short()?;
+  let api_key = auth.user.generate_api_key(&mut conn).await.context("could not generate API key").short()?;
 
   Ok(Json(ApiKey { api_key }))
 }
@@ -346,7 +346,7 @@ mod tests {
 
       assert_eq!(response.status(), Status::Ok);
 
-      let user = User::by_email(&mut *conn, "noreply@example.com").await?;
+      let user = User::by_email(&mut conn, "noreply@example.com").await?;
 
       assert!(matches!(user.check_password("newpassword").await, Ok(())));
     }
@@ -391,7 +391,7 @@ mod tests {
 
       assert_eq!(response.status(), Status::Unauthorized);
 
-      let user = User::by_email(&mut *conn, "noreply@example.com").await?;
+      let user = User::by_email(&mut conn, "noreply@example.com").await?;
 
       assert!(matches!(user.check_password("password").await, Ok(())));
     }

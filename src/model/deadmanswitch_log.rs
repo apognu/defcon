@@ -63,10 +63,10 @@ mod tests {
 
       pool.create_check(Some(1), None, "insert()", Some(true), None).await?;
 
-      DeadManSwitchLog::insert(&mut conn, 1).await?;
-      DeadManSwitchLog::insert(&mut conn, 1).await?;
+      DeadManSwitchLog::insert(&mut *conn, 1).await?;
+      DeadManSwitchLog::insert(&mut *conn, 1).await?;
 
-      let log = DeadManSwitchLog::last(&mut conn, 1).await?;
+      let log = DeadManSwitchLog::last(&mut *conn, 1).await?;
 
       assert!(matches!(log, Some(_)));
       assert_eq!(log.unwrap().id, 2);

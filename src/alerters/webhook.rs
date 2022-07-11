@@ -26,14 +26,14 @@ impl Webhook for WebhookAlerter {
       None => return Err(anyhow!("could not retrieve Pagerduty integration key")),
     };
 
-    let level = match check.last_event(&mut *conn).await {
+    let level = match check.last_event(conn).await {
       Ok(Some(Event { status: OK, .. })) => Some("ok"),
       Ok(Some(Event { status: CRITICAL, .. })) => Some("critical"),
       Ok(Some(Event { status: WARNING, .. })) => Some("warning"),
       _ => None,
     };
 
-    let spec = check.spec(&mut *conn).await?;
+    let spec = check.spec(conn).await?;
     let payload = Payload { level, check, spec, outage };
     let client = reqwest::Client::new();
 

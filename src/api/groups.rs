@@ -44,7 +44,7 @@ pub async fn create(_auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json
     ..Default::default()
   };
 
-  let group = group.insert(&mut *conn).await.context("could not create group").short()?;
+  let group = group.insert(&mut conn).await.context("could not create group").short()?;
 
   Ok(Created::new(uri!(get(uuid = group.uuid)).to_string()))
 }
@@ -54,10 +54,10 @@ pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payloa
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let payload = check_json(payload).short()?.0;
 
-  let group = Group::by_uuid(&mut *conn, &uuid).await.context("could not retrieve group").short()?;
+  let group = Group::by_uuid(&mut conn, &uuid).await.context("could not retrieve group").short()?;
   let group = Group { name: payload.name, ..group };
 
-  group.update(&mut *conn).await.context("could not update group").short()?;
+  group.update(&mut conn).await.context("could not update group").short()?;
 
   Ok(())
 }

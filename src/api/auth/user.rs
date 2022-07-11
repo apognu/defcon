@@ -90,14 +90,14 @@ impl<'r> FromRequest<'r> for Auth {
       }
 
       let headers: Vec<_> = request.headers().get("authorization").collect();
-      let token = headers.get(0).and_then(|value| value.strip_prefix("Bearer "));
+      let token = headers.first().and_then(|value| value.strip_prefix("Bearer "));
 
       if let Some(token) = token {
         if let Ok(claims) = jsonwebtoken::decode::<Claims>(token, &DecodingKey::from_secret(config.api.jwt_signing_key.as_ref()), &Validation::default()) {
           if claims.claims.aud == "urn:defcon:access" {
             if let Outcome::Success(pool) = request.guard::<&State<Pool<MySql>>>().await {
               if let Ok(mut conn) = pool.acquire().await {
-                if let Ok(user) = User::by_uuid(&mut *conn, &claims.claims.sub).await {
+                if let Ok(user) = User::by_uuid(&mut conn, &claims.claims.sub).await {
                   return Outcome::Success(Auth { user });
                 }
               }

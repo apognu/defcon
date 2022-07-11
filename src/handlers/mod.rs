@@ -100,7 +100,7 @@ mod tests {
       pool.create_check(None, None, "outages_are_created()", None, Some(&[CONTROLLER_ID, "eu-1"])).await?;
 
       let config = tests::config(false);
-      let check = Check::by_id(&mut *conn, 1).await?;
+      let check = Check::by_id(&mut conn, 1).await?;
       let mut event = Event {
         check_id: 1,
         site: CONTROLLER_ID.to_string(),
@@ -109,21 +109,21 @@ mod tests {
         ..Default::default()
       };
 
-      super::handle_event(config.clone(), &mut *conn, &event, &check, None).await?;
-      assert_eq!(SiteOutage::count_for_check(&mut *conn, &check).await?, 0);
-      super::handle_event(config.clone(), &mut *conn, &event, &check, None).await?;
-      assert_eq!(SiteOutage::count_for_check(&mut *conn, &check).await?, 1);
+      super::handle_event(config.clone(), &mut conn, &event, &check, None).await?;
+      assert_eq!(SiteOutage::count_for_check(&mut conn, &check).await?, 0);
+      super::handle_event(config.clone(), &mut conn, &event, &check, None).await?;
+      assert_eq!(SiteOutage::count_for_check(&mut conn, &check).await?, 1);
 
-      assert!(matches!(Outage::for_check_current(&mut *conn, &check).await, Err(_)));
+      assert!(matches!(Outage::for_check_current(&mut conn, &check).await, Err(_)));
 
       event.site = "eu-1".to_string();
 
-      super::handle_event(config.clone(), &mut *conn, &event, &check, None).await?;
-      assert_eq!(SiteOutage::current(&mut *conn).await?.len(), 1);
-      super::handle_event(config.clone(), &mut *conn, &event, &check, None).await?;
-      assert_eq!(SiteOutage::current(&mut *conn).await?.len(), 2);
+      super::handle_event(config.clone(), &mut conn, &event, &check, None).await?;
+      assert_eq!(SiteOutage::current(&mut conn).await?.len(), 1);
+      super::handle_event(config.clone(), &mut conn, &event, &check, None).await?;
+      assert_eq!(SiteOutage::current(&mut conn).await?.len(), 2);
 
-      assert!(matches!(Outage::for_check_current(&mut *conn, &check).await, Ok(_)));
+      assert!(matches!(Outage::for_check_current(&mut conn, &check).await, Ok(_)));
     }
 
     pool.cleanup().await;
@@ -141,7 +141,7 @@ mod tests {
       pool.create_check(None, None, "outages_are_resolved()", None, None).await?;
 
       let config = tests::config(false);
-      let check = Check::by_id(&mut *conn, 1).await?;
+      let check = Check::by_id(&mut conn, 1).await?;
       let mut event = Event {
         check_id: 1,
         site: CONTROLLER_ID.to_string(),
@@ -150,15 +150,15 @@ mod tests {
         ..Default::default()
       };
 
-      super::handle_event(config.clone(), &mut *conn, &event, &check, None).await?;
-      super::handle_event(config.clone(), &mut *conn, &event, &check, None).await?;
+      super::handle_event(config.clone(), &mut conn, &event, &check, None).await?;
+      super::handle_event(config.clone(), &mut conn, &event, &check, None).await?;
 
       event.status = 0;
 
-      super::handle_event(config.clone(), &mut *conn, &event, &check, None).await?;
-      super::handle_event(config.clone(), &mut *conn, &event, &check, None).await?;
+      super::handle_event(config.clone(), &mut conn, &event, &check, None).await?;
+      super::handle_event(config.clone(), &mut conn, &event, &check, None).await?;
 
-      assert!(matches!(Outage::for_check_current(&mut *conn, &check).await, Err(_)));
+      assert!(matches!(Outage::for_check_current(&mut conn, &check).await, Err(_)));
     }
 
     pool.cleanup().await;

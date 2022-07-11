@@ -28,7 +28,7 @@ pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>, all: Option<bool>, gro
 
   let group = match group {
     None => None,
-    Some(uuid) => Some(Group::by_uuid(&mut *conn, &uuid).await.context("could not retrieve group").short()?),
+    Some(uuid) => Some(Group::by_uuid(&mut conn, &uuid).await.context("could not retrieve group").short()?),
   };
 
   let kind = match kind {
@@ -39,7 +39,7 @@ pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>, all: Option<bool>, gro
   let checks = Check::list(&mut conn, all.unwrap_or(false), group, kind, site)
     .await
     .short()?
-    .map(&*pool)
+    .map(pool)
     .await
     .context("could not retrieve checks")
     .short()?;
@@ -50,7 +50,7 @@ pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>, all: Option<bool>, gro
 #[get("/api/checks/<uuid>")]
 pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Check>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let check = Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?.map(&*pool).await.short()?;
+  let check = Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?.map(pool).await.short()?;
 
   Ok(Json(check))
 }
@@ -99,9 +99,9 @@ pub async fn create(_auth: Auth, config: &State<Arc<Config>>, pool: &State<Pool<
     ..Default::default()
   };
 
-  let check = check.insert(&mut *txn).await.context("could not create check").short()?;
-  payload.spec.insert(&mut *txn, &check).await.context("could not create spec").short()?;
-  check.update_sites(&mut *txn, &sites).await.context("could not update check sites").short()?;
+  let check = check.insert(&mut txn).await.context("could not create check").short()?;
+  payload.spec.insert(&mut txn, &check).await.context("could not create spec").short()?;
+  check.update_sites(&mut txn, &sites).await.context("could not update check sites").short()?;
 
   txn.commit().await.context("could not commit transaction").short()?;
 
@@ -151,9 +151,9 @@ pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payloa
     ..check
   };
 
-  payload.spec.update(&mut *txn, &check).await.context("could not update spec").short()?;
-  check.update_sites(&mut *txn, &sites).await.context("could not update check sites").short()?;
-  check.update(&mut *txn).await.context("could not update check").short()?;
+  payload.spec.update(&mut txn, &check).await.context("could not update spec").short()?;
+  check.update_sites(&mut txn, &sites).await.context("could not update check sites").short()?;
+  check.update(&mut txn).await.context("could not update check").short()?;
 
   txn.commit().await.context("could not commit transaction").short()?;
 
@@ -194,17 +194,17 @@ pub async fn patch(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload
   }
 
   if let Some(value) = payload.sites {
-    check.update_sites(&mut *txn, &value).await.short()?;
+    check.update_sites(&mut txn, &value).await.short()?;
   }
 
   if let Some(value) = payload.spec {
-    value.update(&mut *txn, &check).await.short()?;
+    value.update(&mut txn, &check).await.short()?;
   }
 
-  check.update(&mut *txn).await.short()?;
+  check.update(&mut txn).await.short()?;
 
   let check = Check::by_uuid(&mut txn, &uuid).await.short()?;
-  let sites = check.sites(&mut *txn).await.short()?;
+  let sites = check.sites(&mut txn).await.short()?;
 
   if check.site_threshold as usize > sites.len() {
     Err(anyhow!("`site_threshold` cannot exceed the number of `sites`").context(AppError::BadRequest)).short()?;

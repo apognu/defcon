@@ -27,12 +27,12 @@ impl ApiMapper for db::Outage {
 
   async fn map(self, pool: &Pool<MySql>) -> Result<Self::Output> {
     let mut conn = pool.acquire().await.context("could not retrieve database connection")?;
-    let check = db::Check::by_id(&mut *conn, self.check_id).await?;
-    let spec = check.spec(&mut *conn).await?;
-    let group = check.group(&mut *conn).await;
-    let alerter = check.alerter(&mut *conn).await;
-    let sites = check.sites(&mut *conn).await?;
-    let event = db::Event::last_for_outage(&mut *conn, &self).await?;
+    let check = db::Check::by_id(&mut conn, self.check_id).await?;
+    let spec = check.spec(&mut conn).await?;
+    let group = check.group(&mut conn).await;
+    let alerter = check.alerter(&mut conn).await;
+    let sites = check.sites(&mut conn).await?;
+    let event = db::Event::last_for_outage(&mut conn, &self).await?;
 
     let outage = api::Outage {
       outage: self,
@@ -61,13 +61,13 @@ impl ApiMapper for Vec<db::Outage> {
     let outages = stream::iter(self)
       .then(async move |outage| {
         if let Ok(mut conn) = pool.acquire().await.context("could not retrieve database connection") {
-          match db::Check::by_id(&mut *conn, outage.check_id).await {
-            Ok(check) => match check.spec(&mut *conn).await {
+          match db::Check::by_id(&mut conn, outage.check_id).await {
+            Ok(check) => match check.spec(&mut conn).await {
               Ok(spec) => {
-                let group = check.group(&mut *conn).await;
-                let alerter = check.alerter(&mut *conn).await;
-                let sites = check.sites(&mut *conn).await.unwrap_or_default();
-                let event = db::Event::last_for_outage(&mut *conn, &outage).await.unwrap_or_default();
+                let group = check.group(&mut conn).await;
+                let alerter = check.alerter(&mut conn).await;
+                let sites = check.sites(&mut conn).await.unwrap_or_default();
+                let event = db::Event::last_for_outage(&mut conn, &outage).await.unwrap_or_default();
 
                 let outage = api::Outage {
                   outage,

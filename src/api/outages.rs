@@ -19,7 +19,7 @@ use crate::{
 pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  let outages = db::Outage::current(&mut conn).await.context("could not retrieve outages").short()?.map(&*pool).await.short()?;
+  let outages = db::Outage::current(&mut conn).await.context("could not retrieve outages").short()?.map(pool).await.short()?;
 
   Ok(Json(outages))
 }
@@ -37,7 +37,7 @@ pub async fn list_between(_auth: Auth, pool: &State<Pool<MySql>>, check: Option<
     .await
     .context("could not retrieve outages")
     .short()?
-    .map(&*pool)
+    .map(pool)
     .await
     .short()?;
 
@@ -48,7 +48,7 @@ pub async fn list_between(_auth: Auth, pool: &State<Pool<MySql>>, check: Option<
 pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Outage>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?.map(&*pool).await.short()?;
+  let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?.map(pool).await.short()?;
 
   Ok(Json(outage))
 }
@@ -62,7 +62,7 @@ pub async fn list_for_check(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String
     .await
     .context("could not retrieve outages")
     .short()?
-    .map(&*pool)
+    .map(pool)
     .await
     .short()?;
 
@@ -86,7 +86,7 @@ pub async fn list_for_check_between(
     .await
     .context("could not retrieve outages")
     .short()?
-    .map(&*pool)
+    .map(pool)
     .await
     .short()?;
 
