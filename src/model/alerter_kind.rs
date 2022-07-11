@@ -15,6 +15,7 @@ use sqlx::{
 pub enum AlerterKind {
   Webhook,
   Slack,
+  Pagerduty,
   Noop,
 }
 
@@ -29,6 +30,7 @@ impl Display for AlerterKind {
     let name = match self {
       AlerterKind::Webhook => "webhook",
       AlerterKind::Slack => "slack",
+      AlerterKind::Pagerduty => "pagerduty",
       AlerterKind::Noop => "noop",
     };
 
@@ -43,6 +45,7 @@ impl TryFrom<String> for AlerterKind {
     match kind.as_str() {
       "webhook" => Ok(AlerterKind::Webhook),
       "slack" => Ok(AlerterKind::Slack),
+      "pagerduty" => Ok(AlerterKind::Pagerduty),
       "noop" => Ok(AlerterKind::Noop),
       _ => Err(anyhow!("unknown alerter kind")),
     }

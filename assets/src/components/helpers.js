@@ -79,9 +79,20 @@ const filters = {
     switch (value) {
       case 'webhook': return 'Webhook';
       case 'slack': return 'Slack';
+      case 'pagerduty': return 'Pagerduty';
       default: return 'Unknown';
     }
   },
+
+  alerterlabels: (kind) => {
+    switch (kind) {
+      case 'webhook':
+      case 'slack':
+        return { url: 'Webhook URL' };
+      case 'pagerduty':
+        return { password: 'Integration key' };
+    }
+  }
 };
 
 export default {

@@ -9,7 +9,7 @@ ReadCheckAlerter:
     kind:
       description: Type of alerter
       type: string
-      enum: ["webhook", "slack"]
+      enum: ["webhook", "slack", "pagerduty"]
 
 ReadAlerter:
   type: object
@@ -36,7 +36,7 @@ components:
         kind:
           description: Type of alerter
           type: string
-          enum: ["webhook", "slack"]
+          enum: ["webhook", "slack", "pagerduty"]
         webhook:
           description: URL to the incoming webhook
           type: string

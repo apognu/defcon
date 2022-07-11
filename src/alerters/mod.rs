@@ -1,10 +1,11 @@
+mod pagerduty;
 mod slack;
 mod webhook;
 
 use anyhow::Result;
 use sqlx::MySqlConnection;
 
-pub use self::{slack::SlackAlerter, webhook::WebhookAlerter};
+pub use self::{pagerduty::PagerdutyAlerter, slack::SlackAlerter, webhook::WebhookAlerter};
 use crate::model::{Check, Outage};
 
 #[async_trait]

@@ -19,7 +19,12 @@ pub struct SlackAlerter(pub Alerter);
 #[async_trait]
 impl Webhook for SlackAlerter {
   async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
-    let slack = Slack::new(self.0.webhook.as_str()).map_err(|err| anyhow!(err.to_string()).context("could not create Slack alerter"))?;
+    let url = match self.0.url {
+      Some(ref url) => url,
+      None => return Err(anyhow!("could not retrieve Pagerduty integration key")),
+    };
+
+    let slack = Slack::new(url.as_ref()).map_err(|err| anyhow!(err.to_string()).context("could not create Slack alerter"))?;
     let event = check.last_event(conn).await.context("could not find outage event")?;
     let spec = check.spec(conn).await.context("could not retrieve check spec")?;
     let down = outage.ended_on.is_none();

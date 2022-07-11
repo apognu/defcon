@@ -35,6 +35,7 @@ jsonwebtoken = "^8.1"
 kvlogger = { version = "^0.5", features = ["datetime"] }
 log = "*"
 once_cell = "1.9.0"
+pagerduty-rs = "0.1.6"
 rand = "^0.8"
 refinery = { version = "^0.8", features = ["mysql"] }
 regex = "^1.0"
@@ -44,10 +45,10 @@ serde = "^1.0"
 serde_json = "^1.0"
 sha2 = "^0.10"
 slack-hook = "^0.8"
-# Stick to 0.5.11 until https://github.com/launchbadge/sqlx/issues/1824 is fixed
-sqlx = { version = "=0.5.11", default_features = false, features = ["macros", "mysql", "runtime-tokio-rustls", "chrono", "all-types"] }
+sqlx = { version = "^0.6", default_features = false, features = ["macros", "mysql", "runtime-tokio-rustls", "chrono", "all-types"] }
 ssl-expiration2 = "^0.4"
 thiserror = "^1.0"
+time = "^0.3.11"
 tokio = { version = "^1.2", default_features = false, features = ["time", "net"] }
 trust-dns-client = { version = "^0.21", default_features = false }
 uuid = { version = "^0.8", features = ["v4"] }

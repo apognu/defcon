@@ -12,7 +12,8 @@ pub struct Alerter {
   pub uuid: String,
   pub name: String,
   pub kind: AlerterKind,
-  pub webhook: String,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub url: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub username: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
@@ -23,7 +24,7 @@ impl Alerter {
   pub async fn all(conn: &mut MySqlConnection) -> Result<Vec<Alerter>> {
     let alerters = sqlx::query_as::<_, Alerter>(
       "
-        SELECT id, uuid, name, kind, webhook, username, password
+        SELECT id, uuid, name, kind, url, username, password
         FROM alerters
       ",
     )
@@ -37,7 +38,7 @@ impl Alerter {
   pub async fn by_id(conn: &mut MySqlConnection, id: u64) -> Result<Alerter> {
     let alerter = sqlx::query_as::<_, Alerter>(
       "
-        SELECT id, uuid, name, kind, webhook, username, password
+        SELECT id, uuid, name, kind, url, username, password
         FROM alerters
         WHERE id = ?
       ",
@@ -53,7 +54,7 @@ impl Alerter {
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Alerter> {
     let alerter = sqlx::query_as::<_, Alerter>(
       "
-        SELECT id, uuid, name, kind, webhook, username, password
+        SELECT id, uuid, name, kind, url, username, password
         FROM alerters
         WHERE uuid = ?
       ",
@@ -71,14 +72,14 @@ impl Alerter {
 
     sqlx::query(
       "
-        INSERT INTO alerters ( uuid, name, kind, webhook, username, password )
+        INSERT INTO alerters ( uuid, name, kind, url, username, password )
         VALUES ( ?, ?, ?, ?, ?, ? )
       ",
     )
     .bind(&uuid)
     .bind(&self.name)
     .bind(self.kind)
-    .bind(self.webhook)
+    .bind(self.url)
     .bind(self.username)
     .bind(self.password)
     .execute(&mut *conn)
@@ -94,13 +95,13 @@ impl Alerter {
     sqlx::query(
       "
         UPDATE alerters
-        SET name = ?, kind = ?, webhook = ?, username = ?, password = ?
+        SET name = ?, kind = ?, url = ?, username = ?, password = ?
         WHERE id = ?
       ",
     )
     .bind(self.name)
     .bind(self.kind)
-    .bind(self.webhook)
+    .bind(self.url)
     .bind(self.username)
     .bind(self.password)
     .bind(self.id)
@@ -132,6 +133,7 @@ impl Alerter {
     match self.kind {
       AlerterKind::Webhook => Box::new(WebhookAlerter(self)),
       AlerterKind::Slack => Box::new(SlackAlerter(self)),
+      AlerterKind::Pagerduty => Box::new(PagerdutyAlerter(self)),
       AlerterKind::Noop => Box::new(NoopAlerter),
     }
   }

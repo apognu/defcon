@@ -41,7 +41,7 @@ pub async fn add(_auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json<db
     uuid: uuid.clone(),
     name: payload.name,
     kind: payload.kind,
-    webhook: payload.webhook,
+    url: payload.url,
     username: payload.username,
     password: payload.password,
     ..Default::default()
@@ -62,7 +62,7 @@ pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payloa
   let alerter = db::Alerter {
     name: payload.name,
     kind: payload.kind,
-    webhook: payload.webhook,
+    url: payload.url,
     username: payload.username,
     password: payload.password,
     ..alerter
@@ -104,7 +104,7 @@ mod tests {
     let checks: Vec<Alerter> = serde_json::from_str(&response.into_string().await.unwrap())?;
     assert_eq!(checks.len(), 1);
     assert_eq!(checks[0].kind, AlerterKind::Webhook);
-    assert_eq!(&checks[0].webhook, "https://webhooks.example.com/1");
+    assert!(matches!(checks[0].url.as_deref(), Some("https://webhooks.example.com/1")));
 
     pool.cleanup().await;
 
@@ -120,9 +120,9 @@ mod tests {
     let response = client.get("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
     assert_eq!(response.status(), Status::Ok);
 
-    let checks: Alerter = serde_json::from_str(&response.into_string().await.unwrap())?;
-    assert_eq!(checks.kind, AlerterKind::Webhook);
-    assert_eq!(&checks.webhook, "https://webhooks.example.com/1");
+    let alerter: Alerter = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(alerter.kind, AlerterKind::Webhook);
+    assert!(matches!(alerter.url.as_deref(), Some("https://webhooks.example.com/1")));
 
     pool.cleanup().await;
 

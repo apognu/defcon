@@ -21,6 +21,11 @@ pub struct WebhookAlerter(pub Alerter);
 #[async_trait]
 impl Webhook for WebhookAlerter {
   async fn alert(&self, conn: &mut MySqlConnection, check: &Check, outage: &Outage) -> Result<()> {
+    let url = match self.0.url {
+      Some(ref url) => url,
+      None => return Err(anyhow!("could not retrieve Pagerduty integration key")),
+    };
+
     let level = match check.last_event(&mut *conn).await {
       Ok(Some(Event { status: OK, .. })) => Some("ok"),
       Ok(Some(Event { status: CRITICAL, .. })) => Some("critical"),
@@ -32,7 +37,7 @@ impl Webhook for WebhookAlerter {
     let payload = Payload { level, check, spec, outage };
     let client = reqwest::Client::new();
 
-    let builder = client.post(&self.0.webhook);
+    let builder = client.post(url);
     let builder = match &self.0.username {
       Some(username) => builder.basic_auth(username, self.0.password.as_ref()),
       None => builder,

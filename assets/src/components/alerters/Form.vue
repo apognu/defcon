@@ -21,13 +21,32 @@ div(v-if='alerter')
         select.uk-select(v-model='alerter.kind')
           option(value='webhook') {{ $filters.alerterkind("webhook") }}
           option(value='slack') {{ $filters.alerterkind("slack") }}
+          option(value='pagerduty') {{ $filters.alerterkind("pagerduty") }}
 
-    .uk-margin
-      label.uk-form-label Webhook URL
+    .uk-margin(v-if='field_shown.url')
+      label.uk-form-label {{ $filters.alerterlabels(alerter.kind).url }}
       .uk-form-controls
         input.uk-input(
           type='text',
-          v-model='alerter.webhook',
+          v-model='alerter.url',
+          @keyup.enter='save()'
+        )
+
+    .uk-margin(v-if='field_shown.username')
+      label.uk-form-label {{ $filters.alerterlabels(alerter.kind).username }}
+      .uk-form-controls
+        input.uk-input(
+          type='text',
+          v-model='alerter.username',
+          @keyup.enter='save()'
+        )
+
+    .uk-margin(v-if='field_shown.password')
+      label.uk-form-label {{ $filters.alerterlabels(alerter.kind).password }}
+      .uk-form-controls
+        input.uk-input(
+          type='text',
+          v-model='alerter.password',
           @keyup.enter='save()'
         )
 
@@ -46,6 +65,24 @@ export default {
   computed: {
     new_record() {
       return this.$route.meta.action === 'new';
+    },
+
+    field_shown() {
+      const fields = { url: false, username: false, password: false };
+
+      switch (this.alerter.kind) {
+        case 'webhook':
+        case 'slack':
+          fields.url = true;
+          break;
+        case 'pagerduty':
+          fields.password = true;
+          break;
+        default:
+          return {}
+      }
+
+      return fields;
     },
   },
 
