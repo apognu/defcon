@@ -11,3 +11,11 @@ frontend:
 
 migrate:
   cargo run migrate
+
+test: test-frontend test-backend
+
+test-backend:
+  sudo capsh --caps='cap_net_raw+eip cap_setpcap,cap_setuid,cap_setgid+ep' --keep=1 --user="$(whoami)" --addamb=cap_net_raw -- -c "JQ_LIB_DIR=/usr/lib DSN=$TEST_DSN cargo test --all-features"
+
+test-frontend:
+  yarn --cwd assets/ lint

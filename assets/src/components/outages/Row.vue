@@ -7,7 +7,6 @@ tr
   td(class='uk-visible@m')
     p.uk-margin-remove.uk-text-emphasis.uk-text-bold {{ outage.check.name }}
     p.uk-margin-remove.uk-text-muted.uk-text-small {{ outage.uuid }}
-    p.uk-margin-small-top.message(v-if='outage.event.message') {{ outage.event.message }}
 
   td(class='uk-hidden@m')
     p.uk-margin-remove.uk-text-emphasis.uk-text-bold {{ outage.check.name }}

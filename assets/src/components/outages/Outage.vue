@@ -33,13 +33,21 @@ div(v-if='outage')
           p.uk-text-bold.uk-text-warning(v-else) Ongoing
 
   .uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin
-    h3.uk-card-title Comment
+    h3.uk-card-title Timeline
 
-    textarea.uk-textarea.uk-form-blank.uk-margin-small-bottom(v-model='outage.comment')
+    textarea.uk-textarea.uk-margin-small-bottom(
+      rows='1',
+      placeholder="Write a comment in markdown...",
+      v-model='comment',
+      @keydown.ctrl.enter='addComment',
+      @input="resizeCommentTextArea()"
+      ref="comment"
+    )
+
     .uk-text-right
       button.uk-button.uk-button-small(@click='comment') Save comment
 
-  Spec(:check='outage.check')
+    Timeline(:updatedAt='timelineUpdatedAt')
 
   .uk-card.uk-card-default.uk-card-body.uk-margin(v-if='events')
     h3 Latest events
@@ -52,11 +60,13 @@ import UIkit from 'uikit';
 
 import Spec from '~/components/checks/Spec.vue';
 import Events from '~/components/outages/Events.vue';
+import Timeline from '~/components/outages/Timeline.vue';
 
 export default {
   components: {
     Spec,
     Events,
+    Timeline,
   },
 
   inject: ['$http', '$helpers'],
@@ -64,6 +74,8 @@ export default {
   data: () => ({
     outage: undefined,
     events: undefined,
+    comment: '',
+    timelineUpdatedAt: new Date().toString(),
   }),
 
   async mounted() {
@@ -85,15 +97,23 @@ export default {
       return this.$moment.duration(this.$moment(outage.ended_on).diff(this.$moment(outage.started_on)));
     },
 
-    comment() {
+    resizeCommentTextArea() {
+      const element = this.$refs.comment;
+      const rows = (this.comment.match(/\n/g) || []).length;
+
+      element.rows = rows + 1;
+    },
+
+    addComment() {
       this.$http()
         .put(`/api/outages/${this.$route.params.uuid}/comment`, {
-          comment: this.outage.comment,
+          comment: this.comment,
         })
         .then(() => {
-          UIkit.notification('<span uk-icon="icon: pencil"></span> The comment for this outage was updated..');
+          UIkit.notification('<span uk-icon="icon: pencil"></span> Your comment on this outage was saved...');
 
-          this.refresh();
+          this.timelineUpdatedAt = new Date().toString();
+          this.comment = '';
         })
         .catch((e) => {
           this.$helpers.error(`${e.message}: ${e.response.data.details}`);
@@ -102,3 +122,10 @@ export default {
   },
 };
 </script>
+
+<style lang="scss" scoped>
+textarea {
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+</style>

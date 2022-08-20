@@ -10,6 +10,7 @@ mod runner;
 mod session;
 mod site_outages;
 mod status;
+mod timeline;
 pub mod types;
 mod users;
 
@@ -84,6 +85,7 @@ pub fn routes() -> Vec<Route> {
     session::userinfo,
     session::password,
     session::api_key,
+    timeline::get,
     users::list,
     users::get,
     users::create,

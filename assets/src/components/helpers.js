@@ -95,6 +95,19 @@ const filters = {
         return {};
     }
   },
+
+  timeline: (kind) => {
+    switch (kind) {
+      case 'outage_started':
+        return { color: '#e55039', message: 'Incident started.' };
+      case 'outage_resolved':
+        return { color: '#1abc9c', message: 'Incident resolved.' };
+      case 'alert_dispatched':
+        return { color: '#2980b9', message: 'Alert was dispatched.' };
+      default:
+        return { color: '#989898', message: 'An unknown event has occured.' };
+    }
+  },
 };
 
 export default {

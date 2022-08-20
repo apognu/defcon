@@ -6,7 +6,11 @@ use kvlogger::*;
 use sqlx::{FromRow, MySqlConnection};
 use uuid::Uuid;
 
-use crate::{api::error::Shortable, config::Config, model::Check};
+use crate::{
+  api::error::Shortable,
+  config::Config,
+  model::{Check, Timeline},
+};
 
 #[derive(Debug, FromRow, Default, Clone, Serialize)]
 pub struct Outage {
@@ -18,8 +22,6 @@ pub struct Outage {
   pub started_on: Option<DateTime<Utc>>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub ended_on: Option<DateTime<Utc>>,
-  #[serde(skip_serializing_if = "Option::is_none")]
-  pub comment: Option<String>,
 }
 
 impl Outage {
@@ -29,7 +31,7 @@ impl Outage {
 
     let outages = sqlx::query_as::<_, Outage>(
       "
-        SELECT outages.id, check_id, outages.uuid, started_on, ended_on, comment
+        SELECT outages.id, check_id, outages.uuid, started_on, ended_on
         FROM outages
         INNER JOIN checks
         ON checks.id = outages.check_id
@@ -84,7 +86,7 @@ impl Outage {
   pub async fn current(conn: &mut MySqlConnection) -> Result<Vec<Outage>> {
     let outages = sqlx::query_as::<_, Outage>(
       "
-        SELECT outages.id, check_id, outages.uuid, started_on, ended_on, comment
+        SELECT outages.id, check_id, outages.uuid, started_on, ended_on
         FROM outages
         INNER JOIN checks
         ON checks.id = outages.check_id
@@ -101,7 +103,7 @@ impl Outage {
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Outage> {
     let outage = sqlx::query_as::<_, Outage>(
       "
-        SELECT id, check_id, uuid, started_on, ended_on, comment
+        SELECT id, check_id, uuid, started_on, ended_on
         FROM outages
         WHERE uuid = ?
       ",
@@ -117,7 +119,7 @@ impl Outage {
   pub async fn for_check_current(conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
     let outage = sqlx::query_as::<_, Outage>(
       "
-        SELECT id, check_id, uuid, started_on, ended_on, comment
+        SELECT id, check_id, uuid, started_on, ended_on
         FROM outages
         WHERE check_id = ? AND ended_on IS NULL
       ",
@@ -136,7 +138,7 @@ impl Outage {
 
     let outages = sqlx::query_as::<_, Outage>(
       "
-        SELECT id, check_id, uuid, started_on, ended_on, comment
+        SELECT id, check_id, uuid, started_on, ended_on
         FROM outages
         WHERE check_id = ?
         ORDER BY id DESC
@@ -159,7 +161,7 @@ impl Outage {
 
     let outages = sqlx::query_as::<_, Outage>(
       "
-        SELECT id, check_id, uuid, started_on, ended_on, comment
+        SELECT id, check_id, uuid, started_on, ended_on
         FROM outages
         WHERE
           check_id = ? AND
@@ -207,6 +209,8 @@ impl Outage {
 
         check.alert(config, &mut *conn, &outage.uuid).await;
 
+        Timeline::new(outage.id, None, "outage_started", "").insert(&mut *conn).await?;
+
         Ok(outage)
       }
 
@@ -237,24 +241,9 @@ impl Outage {
       if result.rows_affected() > 0 {
         check.alert(config, &mut *conn, &outage.uuid).await;
       }
+
+      Timeline::new(outage.id, None, "outage_resolved", "").insert(&mut *conn).await?;
     }
-
-    Ok(())
-  }
-
-  pub async fn comment(&self, conn: &mut MySqlConnection, comment: &str) -> Result<()> {
-    sqlx::query(
-      "
-        UPDATE outages
-        SET comment = ?
-        WHERE uuid = ?
-      ",
-    )
-    .bind(comment)
-    .bind(&self.uuid)
-    .execute(conn)
-    .await
-    .short()?;
 
     Ok(())
   }

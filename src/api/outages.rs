@@ -1,4 +1,5 @@
 use anyhow::Context;
+use pulldown_cmark::{html, Parser};
 use rocket::{
   serde::json::{Error as JsonError, Json},
   State,
@@ -94,12 +95,22 @@ pub async fn list_for_check_between(
 }
 
 #[put("/api/outages/<uuid>/comment", data = "<payload>")]
-pub async fn comment(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::OutageComment>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn comment(auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::OutageComment>, JsonError<'_>>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
 
-  outage.comment(&mut conn, &payload.comment).await.context("could not add comment to outage").short()?;
+  let mut html_comment = String::new();
+
+  {
+    html::push_html(&mut html_comment, Parser::new(&payload.comment));
+  }
+
+  db::Timeline::new(outage.id, Some(auth.user.id), "comment", &html_comment)
+    .insert(&mut conn)
+    .await
+    .context("could not add comment")
+    .short()?;
 
   Ok(())
 }

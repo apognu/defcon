@@ -1,0 +1,12 @@
+CREATE TABLE timelines (
+  `id` BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  `uuid` CHAR(37) NOT NULL,
+  `outage_id` BIGINT UNSIGNED NOT NULL,
+  `user_id` BIGINT UNSIGNED NULL,
+  `kind` VARCHAR(255) NOT NULL,
+  `content` TEXT NOT NULL,
+  `published_on` DATETIME NOT NULL,
+
+  CONSTRAINT fk_outage FOREIGN KEY (outage_id) REFERENCES outages (id) ON DELETE CASCADE,
+  CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);

@@ -34,6 +34,22 @@ impl User {
     Ok(users)
   }
 
+  pub async fn by_id(conn: &mut MySqlConnection, id: u64) -> Result<User> {
+    let user = sqlx::query_as::<_, User>(
+      "
+        SELECT id, uuid, email, password, name, api_key
+        FROM users
+        WHERE id = ?
+      ",
+    )
+    .bind(id)
+    .fetch_one(&mut *conn)
+    .await
+    .short()?;
+
+    Ok(user)
+  }
+
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<User> {
     let user = sqlx::query_as::<_, User>(
       "

@@ -64,6 +64,16 @@ hr {
   color: white;
 }
 
+button,
+.uk-button {
+  border-radius: 4px !important;
+}
+
+.uk-card,
+.uk-card-small {
+  border-radius: 8px;
+}
+
 .uk-alert-success.uk-alert-callout {
   background: #00b894 !important;
 }
@@ -78,4 +88,24 @@ hr {
   font-size: 14px !important;
   line-height: normal !important;
   color: white !important;
+}
+
+#timeline {
+  .body {
+    *:last-child {
+      margin-bottom: 0;
+    }
+
+    em {
+      color: inherit;
+    }
+
+    a {
+      text-decoration: underline;
+
+      &:hover {
+        text-decoration: none;
+      }
+    }
+  }
 }

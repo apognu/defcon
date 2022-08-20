@@ -8,7 +8,7 @@ use crate::{
   api::{error::Shortable, types as api},
   ext,
   handlers::*,
-  model::{specs, Alerter, CheckKind, DeadManSwitchLog, Duration, Event, Group, Outage, Site},
+  model::{specs, Alerter, CheckKind, DeadManSwitchLog, Duration, Event, Group, Outage, Site, Timeline},
   stash::Stash,
 };
 
@@ -399,6 +399,8 @@ impl Check {
 
         if let Some(alerter) = alerter {
           alerter.webhook().alert(config, &mut *conn, self, &outage).await?;
+
+          Timeline::new(outage.id, None, "alert_dispatched", "").insert(&mut *conn).await?;
         }
 
         Ok(())
