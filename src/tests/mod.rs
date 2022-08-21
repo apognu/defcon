@@ -71,7 +71,7 @@ pub fn config(auth: bool) -> Arc<Config> {
 }
 
 pub async fn api_client() -> Result<(TestConnection, Client)> {
-  let database = format!("defcon_test_{}", Uuid::new_v4().to_simple());
+  let database = format!("defcon_test_{}", Uuid::new_v4().simple());
   let mut dsn = Url::parse(&env::var("DSN")?)?;
 
   {
@@ -94,7 +94,7 @@ pub async fn api_client() -> Result<(TestConnection, Client)> {
 }
 
 pub async fn authenticated_api_client() -> Result<(TestConnection, Client)> {
-  let database = format!("defcon_test_{}", Uuid::new_v4().to_simple());
+  let database = format!("defcon_test_{}", Uuid::new_v4().simple());
   let mut dsn = Url::parse(&env::var("DSN")?)?;
 
   {
@@ -117,7 +117,7 @@ pub async fn authenticated_api_client() -> Result<(TestConnection, Client)> {
 }
 
 pub async fn db_client() -> Result<TestConnection> {
-  let database = format!("defcon_test_{}", Uuid::new_v4().to_simple());
+  let database = format!("defcon_test_{}", Uuid::new_v4().simple());
   let mut dsn = Url::parse(&env::var("DSN")?)?;
 
   {
