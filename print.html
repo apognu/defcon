@@ -284,6 +284,7 @@ INFO[2021-02-05T20:57:04.358+0000] outage confirmed check=&quot;4766d0dc-5d39-4e
 <tr><td><code>API_ENABLE</code></td><td></td><td>1</td><td>Enable or disable the API process</td></tr>
 <tr><td><code>API_LISTEN</code></td><td></td><td>127.0.0.1:8000</td><td>Set the listen address and port of the API process</td></tr>
 <tr><td><code>WEB_ENABLE</code></td><td></td><td>0</td><td>Enable or disable the Web administration interface</td></tr>
+<tr><td><code>WEB_STATUS_PAGE_ENABLE</code></td><td></td><td>0</td><td>Enable or disable the public status page, requires <code>WEB_ENABLE</code></td></tr>
 <tr><td><code>HANDLER_ENABLE</code></td><td></td><td>1</td><td>Enable or disable the handler process</td></tr>
 <tr><td><code>HANDLER_INTERVAL</code></td><td></td><td>1s</td><td>Interval between handler loop iterations</td></tr>
 <tr><td><code>HANDLER_SPREAD</code></td><td></td><td>0s</td><td>Maximum random delay applied when a check needs to run</td></tr>
@@ -310,6 +311,8 @@ $ openssl ec -in defcon-private.pem -pubout -out defcon-public.pem
 <p>A string representing an IP address and port on which the API process will bind its process. By default, the API is only reachable by the local host on port 8000.</p>
 <h3><a class="header" href="#web_enable" id="web_enable"><code>WEB_ENABLE</code></a></h3>
 <p>A value of <code>0</code> or <code>1</code> respectively disables and enabled the Web administration interface to manage and visualization Defcon's operations.</p>
+<h3><a class="header" href="#web_status_page_enable" id="web_status_page_enable"><code>WEB_STATUS_PAGE_ENABLE</code></a></h3>
+<p>A value of <code>0</code> or <code>1</code> respectively disables and enabled the public (unauthenticated) Web status page. You will further have to enable checks to be presented on the page for them to show.</p>
 <h3><a class="header" href="#handler_enable" id="handler_enable"><code>HANDLER_ENABLE</code></a></h3>
 <p>A value of <code>0</code> here disables check handling on the controller. If it is disabled, no check will run on this node. This is particularly useful if all your checks are configured to run on off-site runners and you would prefer to use the controller only as Defcon's control plane.</p>
 <h3><a class="header" href="#handler_interval" id="handler_interval"><code>HANDLER_INTERVAL</code></a></h3>
@@ -365,6 +368,7 @@ INFO[2021-02-06T14:18:36.973+0000] starting runner process site=&quot;eu-1&quot;
 <tr><td><code>name</code></td><td>string</td><td><code>&quot;acme-public-site&quot;</code></td><td>A human-friendly name used in logs and alerters</td></tr>
 <tr><td><code>alerter</code></td><td>UUID</td><td><code>&quot;19b9eb20-3e3e-46d5-801f-a912e159913c&quot;</code></td><td>Alerter to be triggered when an outage is created</td></tr>
 <tr><td><code>enabled</code></td><td>bool</td><td><code>true</code></td><td>When disabled, a check will not run</td></tr>
+<tr><td><code>on_status_page</code></td><td>bool</td><td><code>false</code></td><td>When enabled, the check will appear on the public static page, if enabled</td></tr>
 <tr><td><code>silent</code></td><td>bool</td><td><code>false</code></td><td>When silent, a check will not trigger its alerter</td></tr>
 <tr><td><code>group</code></td><td>string</td><td><code>&quot;9b77035c-218e-4d32-bcd7-4a015f7ee147&quot;</code></td><td>Put the check into a pre-existing group</td></tr>
 </tbody></table>
