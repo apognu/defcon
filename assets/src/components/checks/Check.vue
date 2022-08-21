@@ -3,6 +3,10 @@
   p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Check
   h2.uk-margin-remove-top {{ check.name }}
 
+  .uk-alert.uk-alert-primary(v-if='check && check.enabled && check.on_status_page')
+    span.uk-margin-right(uk-icon='icon: world')
+    | This check appears on your public status page.
+
   .uk-alert.uk-alert-warning(v-if='check && !check.enabled')
     span.uk-margin-right(uk-icon='icon: ban')
     | This check is disabled.
@@ -15,7 +19,6 @@
     .uk-flex.uk-flex-middle
       .uk-flex-1
         p.uk-text-bold.uk-text-emphasis.uk-margin-remove {{ check.name }}
-        p.uk-margin-remove.uk-text-muted {{ check.uuid }}
 
       a.uk-margin-left.uk-text-success(v-if='check.silent', @click='silence(false)', uk-tooltip='Unsilence')
         span(uk-icon='icon: bell')

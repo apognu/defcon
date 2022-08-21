@@ -36,11 +36,15 @@ div
 
           td
             p.uk-margin-remove
-              span.uk-text-bold.uk-text-emphasis(:class='{ "uk-text-warning": !check.enabled }') {{ check.name }}
+              span.uk-text-bold.uk-text-emphasis
+                | {{ check.name }}
+                span.uk-margin-small-left(v-if='check.on_status_page', uk-icon='icon: world; ratio: 0.8', uk-tooltip='On status page')
+                span.uk-margin-small-left(v-if='check.enabled && check.silent', uk-icon='icon: bell; ratio: 0.8', uk-tooltip='Silenced')
+                span.uk-margin-small-left.uk-text-danger(v-if='!check.enabled', uk-icon='icon: ban; ratio: 0.8', uk-tooltip='Disabled')
               span.uk-margin-left.uk-text-muted(v-if='check.group', class='uk-visible@m') {{ check.group.name }}
             p.uk-margin-remove.uk-text-muted.uk-text-small(class='uk-visible@m') {{ check.uuid }}
 
-          td.uk-table-shrink.uk-text-nowrap.uk-text-right
+          td.uk-table-shrink.uk-text-nowrap.uk-text-right(class='uk-visible@m')
             span.checkkind {{ $filters.checkkind(check.spec.kind) }}
 
           td.actions

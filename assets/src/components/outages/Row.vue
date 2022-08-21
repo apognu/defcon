@@ -16,7 +16,7 @@ tr
       span(v-if='outage.ended_on') {{ $helpers.humanize(lasted(outage)) }}
       span.uk-text-bold.uk-text-warning(v-else) Ongoing
 
-  td.uk-table-shrink.uk-text-nowrap.uk-text-right
+  td.uk-table-shrink.uk-text-nowrap.uk-text-right(class='uk-visible@m')
     span.checkkind {{ $filters.checkkind(outage.check.spec.kind) }}
 
   td.uk-table-shrink.uk-text-nowrap(class='uk-visible@m')
