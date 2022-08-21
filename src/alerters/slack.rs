@@ -12,7 +12,7 @@ use crate::{
 };
 
 const COLOR_UNKNOWN: &str = "#95a5a6";
-const COLOR_OK: &str = "#00b894";
+const COLOR_OK: &str = "$ok";
 const COLOR_CRITICAL: &str = "#e17055";
 const COLOR_WARNING: &str = "#e67e22";
 

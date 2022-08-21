@@ -73,6 +73,7 @@ export default {
 
 <style lang="scss">
 @import 'uikit/src/scss/variables-theme.scss';
+@import '@/../css/colors.scss';
 
 $sidebar-width: 300px;
 $sidebar-padding: 16px;
@@ -83,7 +84,7 @@ $sidebar-padding: 16px;
 
 #menu {
   .uk-badge {
-    background: #e55039 !important;
+    background: $error important;
   }
 
   a {
@@ -125,7 +126,7 @@ $sidebar-padding: 16px;
 
     #menu {
       .uk-badge {
-        background: #e55039 !important;
+        background: $error  !important;
       }
 
       a {

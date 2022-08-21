@@ -77,6 +77,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import '@/../css/colors.scss';
+
 .timeline {
   &.desktop {
     display: grid;
@@ -98,11 +100,11 @@ export default {
     border-radius: 8px;
 
     &.success {
-      background: #1abc9c;
+      background: $ok;
     }
 
     &.error {
-      background: #c0392b;
+      background: $error;
     }
   }
 }

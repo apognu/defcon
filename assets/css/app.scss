@@ -7,6 +7,7 @@ $offcanvas-bar-color-mode: dark;
 @import "uikit/src/scss/variables-theme.scss";
 @import "uikit/src/scss/mixins-theme.scss";
 @import "uikit/src/scss/uikit-theme.scss";
+@import "colors.scss";
 
 html,
 body {
@@ -42,11 +43,11 @@ table {
   border-radius: 8px;
 
   &.success {
-    background: #1abc9c;
+    background: $ok;
   }
 
   &.error {
-    background: #c0392b;
+    background: $error;
   }
 }
 
@@ -75,11 +76,11 @@ button,
 }
 
 .uk-alert-success.uk-alert-callout {
-  background: #00b894 !important;
+  background: $ok  !important;
 }
 
 .uk-alert-danger.uk-alert-callout {
-  background: #e55039 !important;
+  background: $error  !important;
 }
 
 .uk-notification-message {

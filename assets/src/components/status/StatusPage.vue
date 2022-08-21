@@ -21,7 +21,7 @@ div
           .bubble.error.uk-margin-right(v-else)
 
           div
-            p.uk-margin-remove.uk-text-bold.uk-text-emphasis(:class='{ "uk-text-warning": !check.ok }') {{ check.name }}
+            p.uk-margin-remove.uk-text-bold.uk-text-emphasis {{ check.name }}
             p.uk-margin-remove.uk-text-muted.uk-text-small(v-if='check.down_since')
               span(:uk-tooltip='`title: ${$helpers.datetime(check.down_since)}`') {{ $helpers.ago(check.down_since) }}
 

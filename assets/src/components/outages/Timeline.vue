@@ -2,7 +2,7 @@
 #timeline.uk-margin
   .item.uk-margin-bottom(v-for="item in timeline")
     .dot.avatar.uk-border-circle(v-if='item.author', :style="{ backgroundImage: avatar(item.author.email) }")
-    .dot.uk-border-circle(v-else, :style="{ backgroundColor: $filters.timeline(item.kind).color }")
+    .dot.uk-border-circle(v-else, :class="$filters.timeline(item.kind).class")
 
     .info.uk-flex.uk-margin-small-bottom
       span.left.author.uk-flex-1.uk-text-bold(v-if="item.author") {{ item.author.name }}
@@ -60,6 +60,8 @@ export default {
 </script>
 
 <style lang="scss">
+@import '@/../css/colors.scss';
+
 $dot-size: 10px;
 $avatar-size: 32px;
 
@@ -67,7 +69,7 @@ $avatar-size: 32px;
   margin-top: 16px;
   margin-left: 32px;
   padding-left: 32px;
-  border-left: 4px solid #989898;
+  border-left: 4px solid #eaeaea;
 
   .item {
     position: relative;
@@ -88,6 +90,18 @@ $avatar-size: 32px;
     margin-top: 0.3em;
     background-color: #989898;
     left: calc(($dot-size / -2) - 32px - 2px);
+
+    &.success {
+      background-color: $ok;
+    }
+
+    &.error {
+      background-color: $error;
+    }
+
+    &.info {
+      background-color: $info;
+    }
 
     &.avatar {
       width: $avatar-size;
