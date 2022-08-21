@@ -61,14 +61,16 @@ impl ApiConfig {
 pub struct WebConfig {
   pub enable: bool,
   pub listen: SocketAddr,
+  pub enable_status_page: bool,
 }
 
 impl WebConfig {
   pub fn new() -> Result<WebConfig> {
     let enable = env::var("WEB_ENABLE").or_string("0") == "1";
     let listen = env::var("WEB_LISTEN").or_string("127.0.0.1:3000").parse::<SocketAddr>().context("could not parse Web listen address")?;
+    let enable_status_page = env::var("WEB_STATUS_PAGE_ENABLE").or_string("0") == "1";
 
-    Ok(WebConfig { enable, listen })
+    Ok(WebConfig { enable, listen, enable_status_page })
   }
 }
 

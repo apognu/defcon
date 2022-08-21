@@ -11,6 +11,7 @@ export const store = defineStore('defcon', {
 
     status: undefined,
     incidents: 0,
+    statusPage: false,
   }),
 
   getters: {
@@ -67,6 +68,10 @@ export const store = defineStore('defcon', {
 
     setIncidentCount(count) {
       this.incidents = count;
+    },
+
+    setStatusPage(enabled) {
+      this.statusPage = enabled;
     },
   },
 });

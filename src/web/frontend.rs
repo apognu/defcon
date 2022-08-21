@@ -1,21 +1,14 @@
 use rocket::{
   http::{ContentType, Status},
-  request::Request,
-  response::{status::Custom, Responder, Response, Result as RocketResult},
+  response::{status::Custom, Response},
 };
 use std::{ffi::OsStr, io::Cursor, path::PathBuf};
+
+use crate::api::StaticResponse;
 
 #[derive(RustEmbed)]
 #[folder = "dist/"]
 struct Asset;
-
-pub struct StaticResponse(Response<'static>);
-
-impl<'r, 'o: 'r> Responder<'r, 'o> for StaticResponse {
-  fn respond_to(self, _request: &'r Request<'_>) -> RocketResult<'o> {
-    Ok(self.0)
-  }
-}
 
 #[get("/robots.txt")]
 pub fn robots() -> Result<StaticResponse, Custom<()>> {

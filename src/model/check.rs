@@ -25,6 +25,8 @@ pub struct Check {
   pub name: String,
   #[serde(default = "ext::to_true")]
   pub enabled: bool,
+  #[serde(default = "ext::to_false")]
+  pub on_status_page: bool,
   #[serde(skip)]
   pub kind: CheckKind,
   pub interval: Duration,
@@ -55,12 +57,15 @@ impl Check {
     Ok(check.0)
   }
 
-  pub async fn list(conn: &mut MySqlConnection, all: bool, group: Option<Group>, kind: Option<CheckKind>, site: Option<String>) -> Result<Vec<Check>> {
+  pub async fn list(conn: &mut MySqlConnection, all: bool, status_page: bool, group: Option<Group>, kind: Option<CheckKind>, site: Option<String>) -> Result<Vec<Check>> {
     let mut conditions = vec!["1"];
     let mut binds: Vec<String> = Vec::new();
 
     if !all {
       conditions.push("enabled = 1");
+    }
+    if status_page {
+      conditions.push("on_status_page = 1");
     }
     if let Some(group) = group {
       conditions.push("groups.uuid = ?");
@@ -77,7 +82,7 @@ impl Check {
 
     let query = format!(
       "
-      SELECT checks.id, checks.uuid, group_id, alerter_id, checks.name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+      SELECT checks.id, checks.uuid, group_id, alerter_id, checks.name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
       FROM checks
       LEFT JOIN groups
       ON groups.id = checks.group_id
@@ -98,7 +103,7 @@ impl Check {
   pub async fn by_id(conn: &mut MySqlConnection, id: u64) -> Result<Check> {
     let check = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE id = ?
       ",
@@ -120,7 +125,7 @@ impl Check {
 
     let checks = sqlx::query_as::<_, Check>(&format!(
       "
-        SELECT id, uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE id IN ( {} )
       ",
@@ -136,7 +141,7 @@ impl Check {
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Check> {
     let check = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE uuid = ?
       ",
@@ -153,8 +158,8 @@ impl Check {
     {
       sqlx::query(
         "
-        INSERT INTO checks ( uuid, group_id, alerter_id, name, enabled, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent )
-        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+        INSERT INTO checks ( uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent )
+        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
       ",
       )
       .bind(&self.uuid)
@@ -162,6 +167,7 @@ impl Check {
       .bind(self.alerter_id)
       .bind(self.name)
       .bind(self.enabled)
+      .bind(self.on_status_page)
       .bind(self.kind)
       .bind(self.interval)
       .bind(self.site_threshold)
@@ -182,7 +188,7 @@ impl Check {
     sqlx::query(
       "
         UPDATE checks
-        SET group_id = ?, alerter_id = ?, name = ?, enabled = ?, kind = ?, `interval` = ?, site_threshold = ?, passing_threshold = ?, failing_threshold = ?, silent = ?
+        SET group_id = ?, alerter_id = ?, name = ?, enabled = ?, on_status_page = ?, kind = ?, `interval` = ?, site_threshold = ?, passing_threshold = ?, failing_threshold = ?, silent = ?
         WHERE id = ?
       ",
     )
@@ -190,6 +196,7 @@ impl Check {
     .bind(self.alerter_id)
     .bind(self.name)
     .bind(self.enabled)
+    .bind(self.on_status_page)
     .bind(self.kind)
     .bind(self.interval)
     .bind(self.site_threshold)
@@ -447,7 +454,7 @@ mod tests {
 
       pool.create_check(None, None, "all()", None, None).await?;
 
-      let checks = Check::list(&mut *conn, true, None, None, None).await?;
+      let checks = Check::list(&mut *conn, true, false, None, None, None).await?;
 
       assert_eq!(checks.len(), 1);
       assert_eq!(&checks[0].name, "all()");
@@ -474,7 +481,7 @@ mod tests {
       pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "enabled()", Some(true), None).await?;
       pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "enabled()", Some(false), None).await?;
 
-      let checks = Check::list(&mut *conn, false, None, None, None).await?;
+      let checks = Check::list(&mut *conn, false, false, None, None, None).await?;
 
       assert_eq!(checks.len(), 1);
     }
@@ -493,11 +500,11 @@ mod tests {
 
       pool.create_check(None, None, "list_by_kind()", None, None).await?;
 
-      let checks = Check::list(&mut *conn, true, None, Some(CheckKind::Tcp), None).await?;
+      let checks = Check::list(&mut *conn, true, false, None, Some(CheckKind::Tcp), None).await?;
 
       assert_eq!(checks.len(), 1);
 
-      let checks = Check::list(&mut *conn, true, None, Some(CheckKind::Http), None).await?;
+      let checks = Check::list(&mut *conn, true, false, None, Some(CheckKind::Http), None).await?;
 
       assert_eq!(checks.len(), 0);
     }
@@ -516,11 +523,11 @@ mod tests {
 
       pool.create_check(None, None, "list_by_site()", None, Some(&["eu-1"])).await?;
 
-      let checks = Check::list(&mut *conn, true, None, None, Some("eu-1".to_string())).await?;
+      let checks = Check::list(&mut *conn, true, false, None, None, Some("eu-1".to_string())).await?;
 
       assert_eq!(checks.len(), 1);
 
-      let checks = Check::list(&mut *conn, true, None, None, Some("nosite".to_string())).await?;
+      let checks = Check::list(&mut *conn, true, false, None, None, Some("nosite".to_string())).await?;
 
       assert_eq!(checks.len(), 0);
     }
@@ -589,6 +596,7 @@ mod tests {
         name: "create()".to_string(),
         kind: CheckKind::Tcp,
         enabled: false,
+        on_status_page: false,
         interval: Duration::from(10),
         site_threshold: 2,
         passing_threshold: 10,
@@ -629,6 +637,7 @@ mod tests {
         name: "new_update()".to_string(),
         kind: CheckKind::Tcp,
         enabled: false,
+        on_status_page: false,
         interval: Duration::from(10),
         site_threshold: 2,
         passing_threshold: 10,

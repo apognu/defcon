@@ -14,10 +14,17 @@ import GroupForm from '~/components/groups/Form.vue';
 import Alerters from '~/components/alerters/Alerters.vue';
 import AlerterForm from '~/components/alerters/Form.vue';
 import Settings from '~/components/session/Settings.vue';
+import StatusPage from '~/components/status/StatusPage.vue';
 import Users from '~/components/users/Users.vue';
 import UserForm from '~/components/users/Form.vue';
 
 const routes = [
+  {
+    name: 'statuspage',
+    path: '/status',
+    component: StatusPage,
+    meta: { title: 'Status page', public: true },
+  },
   {
     name: 'home',
     path: '/',
@@ -143,6 +150,7 @@ router.beforeEach((to) => {
 
     return { name: 'home' };
   }
+
   return true;
 });
 

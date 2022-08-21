@@ -11,20 +11,21 @@ div
             li {{ store.identity.email }}
 
   template(v-for='item in items')
-    hr(v-if='item === "divider"')
+    template(v-if='!item.predicate || item.predicate(store)')
+      hr(v-if='item === "divider"')
 
-    router-link(
-      v-else,
-      :to='{ name: item.route }',
-      :exact-active-class='item.exact ? "active" : null',
-      :active-class='!item.exact ? "active" : null',
-      @click.native='close'
-    )
-      span.uk-margin-right(:uk-icon='`icon: ${item.icon}`')
-      | {{ item.label }}
-      span.uk-badge.uk-margin-small-left(
-        v-if='item.badge && badge(item.badge)'
-      ) {{ badge(item.badge) }}
+      router-link(
+        v-else,
+        :to='{ name: item.route }',
+        :exact-active-class='item.exact ? "active" : null',
+        :active-class='!item.exact ? "active" : null',
+        @click.native='close'
+      )
+        span.uk-margin-right(:uk-icon='`icon: ${item.icon}`')
+        | {{ item.label }}
+        span.uk-badge.uk-margin-small-left(
+          v-if='item.badge && badge(item.badge)'
+        ) {{ badge(item.badge) }}
 </template>
 
 <script>
@@ -61,6 +62,12 @@ export default {
       { label: 'Groups', icon: 'folder', route: 'groups' },
       { label: 'Alerters', icon: 'bell', route: 'alerters' },
       'divider',
+      {
+        label: 'Status page',
+        icon: 'world',
+        route: 'statuspage',
+        predicate: (store) => store.statusPage,
+      },
       { label: 'Users', icon: 'users', route: 'users' },
       { label: 'Settings', icon: 'cog', route: 'settings' },
       { label: 'Sign out', icon: 'sign-out', route: 'logout' },

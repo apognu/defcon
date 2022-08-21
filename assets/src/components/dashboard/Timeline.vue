@@ -6,12 +6,12 @@
 
       .timeline.desktop(v-if='statistics', class='uk-visible@m')
         div(v-for='day in days')
-          .bar.error.uk-margin-small-right.uk-margin-small-bottom(v-if='day.format("YYYY-MM-DD") in statistics', :uk-tooltip='`title: ${day.format("YYYY-MM-DD")}`')
+          .bar.error.uk-margin-small-right.uk-margin-small-bottom(v-if='day.format("YYYY-MM-DD") in statistics', :uk-tooltip='`title: ${day.format("MMMM Do, YYYY")}`')
           .bar.success.uk-margin-small-right.uk-margin-small-bottom(v-else, :uk-tooltip='`title: ${day.format("MMMM Do, YYYY")}`')
 
       .timeline.mobile(v-if='statistics', class='uk-hidden@m')
         div(v-for='day in days')
-          .bar.error.uk-margin-small-right.uk-margin-small-bottom(v-if='day.format("YYYY-MM-DD") in statistics', :uk-tooltip='`title: ${day.format("YYYY-MM-DD")}`')
+          .bar.error.uk-margin-small-right.uk-margin-small-bottom(v-if='day.format("YYYY-MM-DD") in statistics', :uk-tooltip='`title: ${day.format("MMMM Do, YYYY")}`')
           .bar.success.uk-margin-small-right.uk-margin-small-bottom(v-else, :uk-tooltip='`title: ${day.format("MMMM Do, YYYY")}`')
 
   .uk-width-1-1(v-if='showUptime', class='uk-width-1-4@m')

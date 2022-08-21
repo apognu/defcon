@@ -14,9 +14,12 @@ mod timeline;
 pub mod types;
 mod users;
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use rocket::{
+  http::Status,
+  request::Request,
+  response::{status::Custom, Responder, Response, Result as RocketResult},
   serde::json::{json, Value as JsonValue},
   Build, Config as RocketConfig, Rocket, Route,
 };
@@ -27,10 +30,18 @@ use crate::{
   config::Config,
 };
 
+pub struct StaticResponse(pub Response<'static>);
+
+impl<'r, 'o: 'r> Responder<'r, 'o> for StaticResponse {
+  fn respond_to(self, _request: &'r Request<'_>) -> RocketResult<'o> {
+    Ok(self.0)
+  }
+}
+
 type ApiResponse<T> = Result<T, ErrorResponse>;
 
 pub fn server(provider: RocketConfig, config: Arc<Config>, pool: Pool<MySql>, keys: Option<Keys>) -> Rocket<Build> {
-  let routes: Vec<Route> = routes().into_iter().chain(runner_routes(&keys).into_iter()).chain(web_routes(&config).into_iter()).collect();
+  let routes: Vec<Route> = routes(&config).into_iter().chain(runner_routes(&keys).into_iter()).chain(web_routes(&config).into_iter()).collect();
 
   match keys {
     Some(keys) => rocket::custom(provider)
@@ -47,8 +58,10 @@ pub fn server(provider: RocketConfig, config: Arc<Config>, pool: Pool<MySql>, ke
   }
 }
 
-pub fn routes() -> Vec<Route> {
-  routes![
+#[allow(unused_variables)]
+pub fn routes(config: &Arc<Config>) -> Vec<Route> {
+  #[allow(unused_mut)]
+  let mut routes = routes![
     health,
     checks::list,
     checks::get,
@@ -92,7 +105,15 @@ pub fn routes() -> Vec<Route> {
     users::update,
     users::patch,
     users::delete,
-  ]
+    api_catchall,
+  ];
+
+  #[cfg(feature = "web")]
+  if config.web.enable_status_page {
+    routes.append(&mut routes![status::status_page])
+  }
+
+  routes
 }
 
 pub fn runner_routes(keys: &Option<Keys>) -> Vec<Route> {
@@ -123,6 +144,12 @@ pub fn web_routes(_config: &Arc<Config>) -> Vec<Route> {
 
 #[get("/api/-/health")]
 fn health() {}
+
+#[allow(unused_variables)]
+#[get("/api/<path..>", rank = 19)]
+fn api_catchall(path: PathBuf) -> Result<StaticResponse, Custom<()>> {
+  Err(Custom(Status::NotFound, ()))
+}
 
 #[catch(404)]
 pub fn not_found() -> JsonValue {

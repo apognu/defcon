@@ -60,6 +60,7 @@ export default {
       this.$http().get('/api/status').then((response) => {
         this.store.setStatus(response.data.ok);
         this.store.setIncidentCount(response.data.outages.global);
+        this.store.setStatusPage(response.data.status_page);
       });
     },
 

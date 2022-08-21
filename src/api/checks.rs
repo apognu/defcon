@@ -36,7 +36,7 @@ pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>, all: Option<bool>, gro
     Some(kind) => Some(CheckKind::try_from(kind).context("cannot filter by this handler type").short()?),
   };
 
-  let checks = Check::list(&mut conn, all.unwrap_or(false), group, kind, site)
+  let checks = Check::list(&mut conn, all.unwrap_or(false), false, group, kind, site)
     .await
     .short()?
     .map(pool)
@@ -90,6 +90,7 @@ pub async fn create(_auth: Auth, config: &State<Arc<Config>>, pool: &State<Pool<
     alerter_id: alerter.map(|alerter| alerter.id),
     name: payload.check.name,
     enabled: payload.check.enabled,
+    on_status_page: payload.check.on_status_page,
     kind: payload.spec.kind(),
     interval: payload.check.interval,
     site_threshold: payload.check.site_threshold,
@@ -143,6 +144,7 @@ pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payloa
     group_id: group.map(|group| group.id),
     alerter_id: alerter.map(|alerter| alerter.id),
     enabled: payload.check.enabled,
+    on_status_page: payload.check.on_status_page,
     interval: payload.check.interval,
     site_threshold: payload.check.site_threshold,
     passing_threshold: payload.check.passing_threshold,
@@ -169,6 +171,7 @@ pub async fn patch(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload
 
   payload.name.run(|value| check.name = value);
   payload.enabled.run(|value| check.enabled = value);
+  payload.on_status_page.run(|value| check.on_status_page = value);
   payload.interval.run(|value| check.interval = value);
   payload.site_threshold.run(|value| check.site_threshold = value);
   payload.passing_threshold.run(|value| check.passing_threshold = value);

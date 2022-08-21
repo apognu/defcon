@@ -42,6 +42,7 @@ pub fn config(auth: bool) -> Arc<Config> {
     web: WebConfig {
       enable: false,
       listen: "127.0.0.1:4321".parse::<SocketAddr>().unwrap(),
+      enable_status_page: false,
     },
     handler: HandlerConfig {
       enable: true,

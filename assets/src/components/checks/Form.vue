@@ -84,6 +84,11 @@ div(v-if='check')
           .uk-form-controls
             vue-tags-input(v-model='site', :tags='sites', @tags-changed='(data) => sites = data')
 
+      .uk-grid-small(uk-grid)
+        label
+          input.uk-checkbox.uk-margin-right(type="checkbox", v-model='check.on_status_page')
+          | Display this check on the status page
+
   .uk-card.uk-card-default.uk-card-body.uk-margin
     h3.uk-card-title(v-if='new_record') Check specification
     h3.uk-card-title(v-else) {{ $filters.checkkind(check.spec.kind) }}

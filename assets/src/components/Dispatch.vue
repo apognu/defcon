@@ -1,15 +1,18 @@
 <template lang="pug">
 div(v-if='store.authenticated !== undefined')
-  App(v-if='store.authenticated')
+  PublicApp(v-if='$route.meta.public')
+  App(v-else-if='store.authenticated')
   Login(v-else)
 </template>
 
 <script>
+import PublicApp from '~/components/PublicApp.vue';
 import App from '~/components/App.vue';
 import Login from '~/components/session/Form.vue';
 
 export default {
   components: {
+    PublicApp,
     App,
     Login,
   },

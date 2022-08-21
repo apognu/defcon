@@ -45,6 +45,8 @@ INFO[2021-01-30T00:19:39.576+0000] started API server on port 8000
 INFO[2021-01-30T00:19:39.576+0000] started handler loop
 ```
 
+By default, the Web interface and the status page are disabled, see the documentation to learn how to enable them.
+
 ## Concepts
 
 Defcon allows you to create **checks** used to describe external services to be monitored, how often it should be monitored, and some options for state change thresholds. The actual check that is performed is described in a check's **spec**.

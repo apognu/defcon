@@ -34,7 +34,7 @@ pub async fn list_between(_auth: Auth, pool: &State<Pool<MySql>>, check: Option<
     None => None,
   };
 
-  let outages = db::Outage::between(&mut conn, check, from.and_hms(0, 0, 0), to.and_hms(23, 59, 59), limit, page)
+  let outages = db::Outage::between(&mut conn, check.as_ref(), from.and_hms(0, 0, 0), to.and_hms(23, 59, 59), limit, page)
     .await
     .context("could not retrieve outages")
     .short()?
@@ -113,42 +113,4 @@ pub async fn comment(auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payloa
     .short()?;
 
   Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-  use anyhow::Result;
-  use rocket::{http::Status, serde::json::json};
-
-  use crate::tests;
-
-  #[tokio::test]
-  async fn comment() -> Result<()> {
-    let (pool, client) = tests::api_client().await?;
-
-    pool.create_check(None, None, "comment()", None, None).await?;
-    pool.create_resolved_outage(None, None).await?;
-
-    let payload = json!({
-      "comment": "lorem ipsum"
-    });
-
-    let response = client
-      .put("/api/outages/dd9a531a-1b0b-4a12-bc09-e5637f916261/comment")
-      .body(payload.to_string().as_bytes())
-      .dispatch()
-      .await;
-
-    assert_eq!(response.status(), Status::Ok);
-
-    let outage = sqlx::query_as::<_, (String,)>(r#"SELECT comment FROM outages WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
-      .fetch_one(&*pool)
-      .await?;
-
-    assert_eq!(&outage.0, "lorem ipsum");
-
-    pool.cleanup().await;
-
-    Ok(())
-  }
 }

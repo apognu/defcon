@@ -76,7 +76,7 @@ mod tests {
       check_id: 0,
       domain: "github.com".to_string(),
       attribute: None,
-      window: Duration::try_from("90 days").unwrap(),
+      window: Duration::try_from("7 days").unwrap(),
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;

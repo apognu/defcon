@@ -25,7 +25,7 @@ pub struct Outage {
 }
 
 impl Outage {
-  pub async fn between(conn: &mut MySqlConnection, check: Option<Check>, from: NaiveDateTime, end: NaiveDateTime, limit: Option<u8>, page: Option<u8>) -> Result<Vec<Outage>> {
+  pub async fn between(conn: &mut MySqlConnection, check: Option<&Check>, from: NaiveDateTime, end: NaiveDateTime, limit: Option<u8>, page: Option<u8>) -> Result<Vec<Outage>> {
     let limit = limit.unwrap_or(50);
     let page = page.unwrap_or(1) - 1;
 

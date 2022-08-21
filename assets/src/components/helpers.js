@@ -3,6 +3,8 @@ import axios from 'axios';
 
 import { store } from '~/store';
 
+const publicHttp = () => axios.create();
+
 const http = (noRetry) => {
   const defconStore = store();
 
@@ -52,7 +54,7 @@ const helpers = (app) => ({
     UIkit.notification(message);
   },
 
-  datetime: (dt) => app.config.globalProperties.$moment(dt).format('MMMM Do, YYYY [at] HH:mm:ss ZZ'),
+  datetime: (dt) => app.config.globalProperties.$moment(dt).format('D MMM YYYY [at] HH:mm ZZ'),
   ago: (dt) => app.config.globalProperties.$moment(dt).fromNow(),
   humanize: (duration) => duration.humanize(),
 });
@@ -114,6 +116,7 @@ export default {
   setup: (app) => {
     app.provide('store', store());
     app.provide('$http', http);
+    app.provide('$publicHttp', publicHttp);
     app.provide('$helpers', helpers(app));
     app.provide('$filters', filters);
   },
