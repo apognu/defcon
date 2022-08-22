@@ -12,6 +12,8 @@ import router from '~/router';
 import Dispatch from '~/components/Dispatch.vue';
 import Helpers from '~/components/helpers';
 
+document.documentElement.setAttribute('data-theme', window.localStorage.getItem('theme'));
+
 UIkit.use(Icons);
 
 const moment = extendMoment(Moment);

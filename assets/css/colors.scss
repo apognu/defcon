@@ -1,3 +1,61 @@
-$ok: #58b19f;
-$error: #e17055;
-$info: #74b9ff;
+:root,
+[data-theme="light"] {
+  --background: #f9fbfd;
+  --surface: #ffffff;
+  --text-color: #666666;
+  --emphasis-text-color: black;
+  --form-background: #fafdfd;
+  --card-form-background: #f6f6f6;
+  --checkbox-border: #787878;
+
+  --gray-light: var(--background);
+  --gray-dark: #343434;
+
+  --primary: #40739e;
+  --primary-background: #142540;
+  --ok: #58b19f;
+  --warning: #e1b12c;
+  --warning-background: #ac5a04;
+  --error: #e17055;
+  --info: #74b9ff;
+}
+
+[data-theme="dark"] {
+  --background: #222838;
+  --surface: #293040;
+  --text-color: rgb(147, 157, 184);
+  --emphasis-text-color: white;
+  --form-background: var(--surface);
+  --card-form-background: var(--background);
+  --checkbox-border: #aeaeae;
+
+  --gray-light: var(--background);
+  --gray-dark: #343434;
+
+  --primary: #40739e;
+  --primary-background: #142540;
+  --ok: #3d7051;
+  --warning: #e1b12c;
+  --warning-background: #ac5a04;
+  --error: #d0667a;
+  --info: #3a637c;
+}
+
+$background: var(--background);
+$surface: var(--surface);
+$text-color: var(--text-color);
+$emphasis-text-color: var(--emphasis-text-color);
+$form-background: var(--form-background);
+$card-form-background: var(--card-form-background);
+$checkbox-border: var(--checkbox-border);
+
+$gray-light: var(--gray-light);
+$gray-dark: var(--gray-dark);
+
+$primary: var(--primary);
+$primary-background: var(--primary-background);
+$ok: var(--ok);
+$warning: var(--warning);
+$warning-background: var(--warning-background);
+$error: var(--error);
+$info: var(--info);

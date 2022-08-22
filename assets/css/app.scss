@@ -1,13 +1,45 @@
 /*! purgecss start ignore */
 
+@import "colors.scss";
+
 $global-font-size: 14px;
-$offcanvas-bar-background: #fff;
+$offcanvas-bar-background: $surface;
 $offcanvas-bar-color-mode: dark;
+$global-color: $text-color;
+$global-link-color: $text-color;
+$global-emphasis-color: $emphasis-text-color;
+$global-border: $gray-light;
+$alert-primary-background: $primary-background;
+$alert-primary-color: $primary;
+$global-warning-background: $warning-background;
+$global-warning-color: $warning;
+$global-danger-background: $error;
+$global-success-background: $ok;
+$global-muted-background: var(--surface);
+$global-info-background: $surface;
+
+/* Override UIKit variables that uses SCSS functions, since they do not accept CSS `--variables`. */
+
+$alert-success-background: green;
+$alert-warning-background: green;
+$alert-danger-background: green;
+
+$button-default-hover-border: $global-border;
+$button-default-active-border: $global-border;
+$button-danger-hover-background: blue;
+$button-danger-active-background: blue;
+
+$icon-link-active-color: orange;
+$icon-button-hover-background: orange;
+$icon-button-active-background: orange;
+
+$form-range-track-background: orange;
+$form-range-thumb-border: $checkbox-border;
+$form-radio-border: $checkbox-border;
 
 @import "uikit/src/scss/variables-theme.scss";
 @import "uikit/src/scss/mixins-theme.scss";
 @import "uikit/src/scss/uikit-theme.scss";
-@import "colors.scss";
 
 html,
 body {
@@ -16,7 +48,7 @@ body {
 }
 
 body {
-  background: #f9fbfd;
+  background: $background;
   font-family: Roboto, sans-serif;
   font-size: 14px;
 }
@@ -51,15 +83,36 @@ table {
   }
 }
 
+input:not([type="checkbox"]),
+textarea,
+select {
+  border: 0 !important;
+  border-radius: 3px !important;
+  background: $form-background  !important;
+}
+
+.uk-card {
+
+  input:not([type="checkbox"]),
+  textarea,
+  select {
+    background: $card-form-background  !important;
+  }
+}
+
+textarea {
+  padding: 8px;
+}
+
 hr {
   margin: 16px 0;
   border: 0;
-  border-top: 1px solid #f5f5f6;
+  border-top: 1px solid $gray-light;
 }
 
 .checkkind {
   padding: 4px 8px;
-  background: #343434;
+  background: $gray-dark;
   border-radius: 4px;
   font-size: 0.9em;
   color: white;
@@ -72,6 +125,7 @@ button,
 
 .uk-card,
 .uk-card-small {
+  background: $surface;
   border-radius: 8px;
 }
 
@@ -84,7 +138,7 @@ button,
 }
 
 .uk-notification-message {
-  background: #343434 !important;
+  background: $gray-dark  !important;
   border-radius: 6px !important;
   font-size: 14px !important;
   line-height: normal !important;

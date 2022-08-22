@@ -12,9 +12,9 @@ div
       tr(v-for='user in users')
         td.uk-table-shrink: img.uk-comment-avatar(:src='avatar(user.email)')
         td
-          p.uk-margin-remove.uk-text-bold.uk-text-emphasis
+          p.uk-margin-remove.uk-text-bold.uk-text-emphasis.uk-margin-right
             | {{ user.name }}
-            span.uk-label.uk-margin-left(v-if='self(user)') You
+            span.uk-label(v-if='self(user)') You
           p.uk-margin-remove.uk-text-muted.uk-text-small(class='uk-visible@m') {{ user.email }}
 
         td.actions

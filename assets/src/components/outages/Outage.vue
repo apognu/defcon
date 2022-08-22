@@ -45,7 +45,8 @@ div(v-if='outage')
     )
 
     .uk-text-right
-      button.uk-button.uk-button-small(@click='comment') Save comment
+      button.uk-button.uk-button-small.uk-button-primary(@click='comment')
+        span(uk-icon='icon: comment')
 
     Timeline(:updatedAt='timelineUpdatedAt')
 

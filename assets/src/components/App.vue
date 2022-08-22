@@ -21,7 +21,7 @@ div
             Sidenav(:mobile='true', @close='closeMenu')
 
   #main
-    router-view.uk-container-large.uk-margin-auto.uk-padding
+    router-view.uk-container-large.uk-margin-auto.uk-padding-small
 </template>
 
 <script>
@@ -82,6 +82,10 @@ $sidebar-padding: 16px;
   min-height: 100vh;
 }
 
+#sidebar {
+  border-radius: 0;
+}
+
 #menu {
   .uk-badge {
     background: $error important;
@@ -103,7 +107,7 @@ $sidebar-padding: 16px;
 
     &:hover,
     &.active {
-      background: #f4f5f8;
+      background: $gray-light;
     }
 
     &.active {
@@ -122,7 +126,7 @@ $sidebar-padding: 16px;
     width: $sidebar-width;
     height: 100vh;
     padding: $sidebar-padding;
-    background: white;
+    background: $surface;
 
     #menu {
       .uk-badge {
@@ -145,7 +149,7 @@ $sidebar-padding: 16px;
 
         &:hover,
         &.active {
-          background: #f4f5f8;
+          background: $gray-light;
         }
 
         &.active {

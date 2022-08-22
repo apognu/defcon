@@ -85,9 +85,11 @@ div(v-if='check')
             vue-tags-input(v-model='site', :tags='sites', @tags-changed='(data) => sites = data')
 
       .uk-grid-small(uk-grid)
-        label
-          input.uk-checkbox.uk-margin-right(type="checkbox", v-model='check.on_status_page')
-          | Display this check on the status page
+        div
+          .uk-form-controls
+            label
+              input.uk-checkbox.uk-margin-right(type="checkbox", v-model='check.on_status_page')
+              | Display this check on the status page
 
   .uk-card.uk-card-default.uk-card-body.uk-margin
     h3.uk-card-title(v-if='new_record') Check specification
@@ -316,12 +318,26 @@ export default {
 </script>
 
 <style lang="scss">
+@import '@/../css/colors.scss';
+
 .vue-tags-input {
   max-width: none !important;
+  padding: 4px;
+  background: $form-background  !important;
+
+  .ti-input {
+    border: 0 !important;
+    border-radius: 4px !important;
+  }
 
   .ti-tag {
     padding: 6px 8px !important;
-    background: #1e87f0 !important;
+    background: $primary  !important;
+  }
+
+  .ti-new-tag-input {
+    background: transparent !important;
+    color: $text-color;
   }
 }
 </style>

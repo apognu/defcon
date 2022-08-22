@@ -9,7 +9,7 @@
       span.left.uk-flex-1(v-else) {{ $filters.timeline(item.kind).message }}
       span.right.uk-text-small.uk-text-muted(:uk-tooltip='`title: ${$helpers.datetime(item.published_on)}`') {{ $helpers.ago(item.published_on) }}
 
-    .body.uk-margin-bottom.uk-background-muted.uk-border-rounded.uk-padding-small(v-if="item.content", v-html="item.content")
+    .body.uk-margin-bottom.uk-border-rounded.uk-padding-small(v-if="item.content", v-html="item.content")
 </template>
 
 <script>
@@ -80,6 +80,10 @@ $avatar-size: 32px;
       .left.author {
         margin-top: calc($avatar-size / 4);
       }
+    }
+
+    .body {
+      background: $background;
     }
   }
 

@@ -29,6 +29,9 @@ div
           Timeline(:outages='check.stats || {}')
   div(v-else-if="!enabled")
     p The status page was not enabled on this Defcon instance.
+
+  p.uk-margin-top.uk-text-center
+    span#theme-switcher(uk-icon='icon: paint-bucket', @click='switchTheme()')
 </template>
 
 <script>
@@ -61,6 +64,16 @@ export default {
             this.enabled = false;
           }
         });
+    },
+
+    switchTheme() {
+      if (document.documentElement.getAttribute('data-theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        window.localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        window.localStorage.setItem('theme', 'dark');
+      }
     },
   },
 };
@@ -104,5 +117,9 @@ h3 {
       margin-bottom: 32px;
     }
   }
+}
+
+#theme-switcher {
+  cursor: pointer;
 }
 </style>
