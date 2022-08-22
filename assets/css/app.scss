@@ -86,12 +86,16 @@ table {
   }
 }
 
+.uk-select:not([multiple]):not([size]) {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='24' height='16' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%23787878' d='M12 1 9 6h6zM12 13 9 8h6z'/%3E%3C/svg%3E");
+}
+
 input:not([type="checkbox"]),
 textarea,
 select {
   border: 0 !important;
   border-radius: 3px !important;
-  background: $form-background  !important;
+  background-color: $form-background  !important;
 }
 
 .uk-card {
@@ -99,7 +103,7 @@ select {
   input:not([type="checkbox"]),
   textarea,
   select {
-    background: $card-form-background  !important;
+    background-color: $card-form-background  !important;
   }
 }
 
