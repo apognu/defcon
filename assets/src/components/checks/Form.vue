@@ -323,7 +323,7 @@ export default {
 .vue-tags-input {
   max-width: none !important;
   padding: 4px;
-  background: $form-background  !important;
+  background: $card-form-background  !important;
 
   .ti-input {
     border: 0 !important;

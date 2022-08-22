@@ -12,10 +12,12 @@
   --gray-dark: #343434;
 
   --primary: #40739e;
-  --primary-background: #142540;
+  --primary-background: #0abde3;
+  --primary-background-color: white;
   --ok: #58b19f;
   --warning: #e1b12c;
-  --warning-background: #ac5a04;
+  --warning-background: #f2c894;
+  --warning-background-color: #d35400;
   --error: #e17055;
   --info: #74b9ff;
 }
@@ -34,10 +36,12 @@
 
   --primary: #40739e;
   --primary-background: #142540;
+  --primary-background-color: #0097e6;
   --ok: #3d7051;
-  --warning: #e1b12c;
+  --warning: black;
   --warning-background: #ac5a04;
-  --error: #d0667a;
+  --warning-background-color: var(--emphasis-text-color);
+  --error: #ff7676;
   --info: #3a637c;
 }
 
@@ -54,8 +58,10 @@ $gray-dark: var(--gray-dark);
 
 $primary: var(--primary);
 $primary-background: var(--primary-background);
+$primary-background-color: var(--primary-background-color);
 $ok: var(--ok);
 $warning: var(--warning);
 $warning-background: var(--warning-background);
+$warning-background-color: var(--warning-background-color);
 $error: var(--error);
 $info: var(--info);

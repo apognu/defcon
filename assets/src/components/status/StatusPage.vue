@@ -4,14 +4,14 @@ div
 
   div(v-if='enabled && status')
 
-    .uk-alert-success.uk-alert-callout.uk-margin.uk-padding.uk-border-rounded(v-if='status.ok')
-      h3.uk-margin-remove.uk-text-center
-        span.uk-margin-right(uk-icon='icon: check; ratio: 2')
+    .uk-alert-success.uk-alert-callout.uk-margin.uk-padding-small.uk-border-rounded(v-if='status.ok')
+      h4.uk-margin-remove.uk-text-center
+        span.uk-margin-right(uk-icon='icon: check; ratio: 1.2')
         | Everything is fine
 
-    .uk-alert-danger.uk-alert-callout.uk-margin.uk-padding.uk-border-rounded(v-else)
+    .uk-alert-danger.uk-alert-callout.uk-margin.uk-padding-small.uk-border-rounded(v-else)
       h3.uk-margin-remove.uk-text-center
-        span.uk-margin-right(uk-icon='icon: warning; ratio: 2')
+        span.uk-margin-right(uk-icon='icon: warning; ratio: 1.2')
         | {{ status.outages }} active incident(s)
 
     #stats.uk-card.uk-card-default.uk-card-body

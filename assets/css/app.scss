@@ -9,20 +9,23 @@ $global-color: $text-color;
 $global-link-color: $text-color;
 $global-emphasis-color: $emphasis-text-color;
 $global-border: $gray-light;
-$alert-primary-background: $primary-background;
-$alert-primary-color: $primary;
 $global-warning-background: $warning-background;
 $global-warning-color: $warning;
 $global-danger-background: $error;
 $global-success-background: $ok;
-$global-muted-background: var(--surface);
+$global-muted-background: $surface;
 $global-info-background: $surface;
 
-/* Override UIKit variables that uses SCSS functions, since they do not accept CSS `--variables`. */
+$alert-primary-background: $primary-background;
+$alert-primary-color: $primary-background-color;
+$alert-success-background: $global-success-background;
+$alert-success-color: $ok;
+$alert-warning-background: $warning-background;
+$alert-warning-color: $warning-background-color;
+$alert-danger-background: $global-danger-background;
+$alert-danger-color: $error;
 
-$alert-success-background: green;
-$alert-warning-background: green;
-$alert-danger-background: green;
+/* Override UIKit variables that uses SCSS functions, since they do not accept CSS `--variables`. */
 
 $button-default-hover-border: $global-border;
 $button-default-active-border: $global-border;
@@ -127,6 +130,10 @@ button,
 .uk-card-small {
   background: $surface;
   border-radius: 8px;
+}
+
+.uk-alert {
+  border-radius: 4px;
 }
 
 .uk-alert-success.uk-alert-callout {
