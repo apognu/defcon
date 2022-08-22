@@ -116,6 +116,21 @@ impl SiteOutage {
     }
   }
 
+  pub async fn all_for_check(conn: &mut MySqlConnection, check: &Check) -> Result<Vec<SiteOutage>> {
+    let outage = sqlx::query_as::<_, SiteOutage>(
+      "
+        SELECT id, uuid, check_id, site, passing_strikes, failing_strikes, started_on, ended_on
+        FROM site_outages
+        WHERE check_id = ? AND ended_on IS NULL
+      ",
+    )
+    .bind(check.id)
+    .fetch_all(&mut *conn)
+    .await?;
+
+    Ok(outage)
+  }
+
   pub async fn insert(conn: &mut MySqlConnection, check: &Check, event: &Event) -> Result<Option<SiteOutage>> {
     let outage = SiteOutage::for_check(conn, check, &event.site).await;
 

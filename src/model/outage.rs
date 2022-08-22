@@ -3,13 +3,14 @@ use std::sync::Arc;
 use anyhow::Result;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use kvlogger::*;
+use serde_json::json;
 use sqlx::{FromRow, MySqlConnection};
 use uuid::Uuid;
 
 use crate::{
   api::error::Shortable,
   config::Config,
-  model::{Check, Timeline},
+  model::{Check, SiteOutage, Timeline},
 };
 
 #[derive(Debug, FromRow, Default, Clone, Serialize)]
@@ -183,7 +184,7 @@ impl Outage {
     Ok(outages)
   }
 
-  pub async fn confirm(config: Arc<Config>, conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
+  pub async fn confirm(config: Arc<Config>, conn: &mut MySqlConnection, check: &Check, site_outages: Vec<SiteOutage>) -> Result<Outage> {
     match Outage::for_check_current(conn, check).await {
       Err(_) => {
         let uuid = Uuid::new_v4().to_string();
@@ -207,9 +208,19 @@ impl Outage {
           "since" => outage.started_on.map(|dt| dt.to_string()).unwrap_or_else(|| "-".to_string())
         });
 
-        check.alert(config, &mut *conn, &outage.uuid).await;
+        for site_outage in site_outages {
+          let payload = json!({
+            "outage": {
+              "site": site_outage.site
+            }
+          });
+
+          Timeline::new(outage.id, None, "site_outage_started", &payload.to_string()).insert(&mut *conn).await?;
+        }
 
         Timeline::new(outage.id, None, "outage_started", "").insert(&mut *conn).await?;
+
+        check.alert(config, &mut *conn, &outage.uuid).await;
 
         Ok(outage)
       }

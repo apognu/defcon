@@ -17,6 +17,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use async_trait::async_trait;
+use serde_json::json;
 use sqlx::MySqlConnection;
 
 #[cfg(feature = "ping")]
@@ -30,7 +31,7 @@ pub use crate::{
     whois::WhoisHandler,
   },
   inhibitor::Inhibitor,
-  model::{Check, Event, Outage, SiteOutage},
+  model::{Check, Event, Outage, SiteOutage, Timeline},
   stash::Stash,
 };
 
@@ -62,14 +63,26 @@ pub async fn handle_event(config: Arc<Config>, conn: &mut MySqlConnection, event
   }
 
   if let Some(outage) = outage {
+    let payload = json!({
+      "outage": {
+        "site": event.site
+      }
+    });
+
     match outage.ended_on {
       None => {
+        let site_outages = SiteOutage::all_for_check(&mut *conn, check).await?;
+
         if SiteOutage::count_for_check(conn, check).await? >= check.site_threshold as i64 {
-          Outage::confirm(config, conn, check).await?;
+          Outage::confirm(config, conn, check, site_outages).await?;
         }
       }
 
       Some(_) => {
+        let global_outage = Outage::for_check_current(&mut *conn, check).await?;
+
+        Timeline::new(global_outage.id, None, "site_outage_resolved", &payload.to_string()).insert(&mut *conn).await?;
+
         if SiteOutage::count_for_check(conn, check).await? < check.site_threshold as i64 {
           Outage::resolve(config, conn, check).await?;
         }

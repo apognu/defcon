@@ -6,10 +6,10 @@
 
     .info.uk-flex.uk-margin-small-bottom
       span.left.author.uk-flex-1.uk-text-bold(v-if="item.author") {{ item.author.name }}
-      span.left.uk-flex-1(v-else) {{ $filters.timeline(item.kind).message }}
+      span.left.uk-flex-1(v-if='hasShortContent(item)' v-html="shortContent(item)")
       span.right.uk-text-small.uk-text-muted(:uk-tooltip='`title: ${$helpers.datetime(item.published_on)}`') {{ $helpers.ago(item.published_on) }}
 
-    .body.uk-margin-bottom.uk-border-rounded.uk-padding-small(v-if="item.content", v-html="item.content")
+    .body.uk-margin-bottom.uk-border-rounded.uk-padding-small(v-if="hasLongContent(item)", v-html="item.content")
 </template>
 
 <script>
@@ -54,6 +54,43 @@ export default {
 
     avatar(email) {
       return `url(https://www.gravatar.com/avatar/${MD5(email)})`;
+    },
+
+    hasShortContent(item) {
+      return item.kind !== 'comment';
+    },
+
+    hasLongContent(item) {
+      return item.kind === 'comment';
+    },
+
+    shortContent(item) {
+      try {
+        switch (item.kind) {
+          case 'site_outage_started': {
+            const payload = JSON.parse(item.content);
+
+            return `Site-local incident started at <span class="checkkind">${payload.outage.site}</span>.`;
+          }
+
+          case 'site_outage_resolved': {
+            const payload = JSON.parse(item.content);
+
+            return `Site-local incident resolved at <span class="checkkind">${payload.outage.site}</span>.`;
+          }
+
+          case 'alert_dispatched': {
+            const payload = JSON.parse(item.content);
+
+            return `Alert was dispatched to ${this.$filters.alerterkind(payload.alerter.kind)} alerter "<b>${payload.alerter.name}</b>".`;
+          }
+
+          default:
+            return this.$filters.timeline(item.kind).message;
+        }
+      } catch (e) {
+        return this.$filters.timeline(item.kind).message;
+      }
     },
   },
 };

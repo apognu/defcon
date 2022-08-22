@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};
+use serde_json::json;
 use sqlx::{FromRow, MySqlConnection};
 
 use crate::{
@@ -11,6 +12,8 @@ use crate::{
   model::{specs, Alerter, CheckKind, DeadManSwitchLog, Duration, Event, Group, Outage, Site, Timeline},
   stash::Stash,
 };
+
+use super::AlerterKind;
 
 #[derive(Debug, Default, FromRow, Clone, Serialize, Deserialize)]
 pub struct Check {
@@ -405,9 +408,20 @@ impl Check {
         };
 
         if let Some(alerter) = alerter {
+          let kind = alerter.kind.clone();
+
+          let payload = json!({
+            "alerter": {
+              "kind": &alerter.kind,
+              "name": &alerter.name
+            }
+          });
+
           alerter.webhook().alert(config, &mut *conn, self, &outage).await?;
 
-          Timeline::new(outage.id, None, "alert_dispatched", "").insert(&mut *conn).await?;
+          if kind != AlerterKind::Noop {
+            Timeline::new(outage.id, None, "alert_dispatched", &payload.to_string()).insert(&mut *conn).await?;
+          }
         }
 
         Ok(())

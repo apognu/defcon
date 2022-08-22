@@ -36,7 +36,7 @@ impl Timeline {
         SELECT id, uuid, outage_id, user_id, kind, content, published_on
         FROM timelines
         WHERE outage_id = ?
-        ORDER BY published_on DESC
+        ORDER BY id DESC
       ",
     )
     .bind(outage.id)
