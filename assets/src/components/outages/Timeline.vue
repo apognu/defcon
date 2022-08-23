@@ -103,6 +103,7 @@ export default {
 </script>
 
 <style lang="scss">
+@import 'uikit/src/scss/variables-theme.scss';
 @import '@/../css/colors.scss';
 
 $dot-size: 10px;
@@ -157,6 +158,24 @@ $avatar-size: 32px;
       left: calc(($avatar-size / -2) - 32px - 2px);
       background-repeat: no-repeat;
       background-size: cover;
+    }
+  }
+}
+
+@media (max-width: $breakpoint-medium) {
+  #timeline {
+    margin-left: 16px;
+
+    .item {
+      display: block !important;
+
+      .info {
+        display: block;
+
+        >span {
+          display: block !important;
+        }
+      }
     }
   }
 }

@@ -1,11 +1,11 @@
 <template lang="pug">
 div(v-if='outage')
-  #header.uk-flex
+  #header.uk-flex.uk-margin-bottom
     .uk-flex-1
       p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Incident
-      h2.uk-margin-remove-top {{ outage.check.name }}
+      h2.uk-margin-remove {{ outage.check.name }}
 
-    p#acknowledgement(v-if='outage.acknowledged_by')
+    p#acknowledgement.uk-margin-remove(v-if='outage.acknowledged_by')
       | Acknowledged by
       img.uk-comment-avatar(:src="avatar(outage.acknowledged_by.email)")
       | {{ outage.acknowledged_by.name }}
@@ -18,7 +18,7 @@ div(v-if='outage')
 
       .uk-flex-1
         p.uk-text-bold.uk-text-emphasis.uk-margin-remove {{ outage.check.name }}
-        p.uk-margin-remove.uk-text-muted {{ outage.check.uuid }}
+        p.uk-margin-remove.uk-text-muted(class="uk-visible@m") {{ outage.check.uuid }}
 
       p(v-if="!outage.acknowledged_by"): a(@click="acknowledge()") Acknowledge
 
@@ -147,6 +147,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@import 'uikit/src/scss/variables-theme.scss';
+
+@media (max-width: $breakpoint-medium) {
+  #header {
+    flex-direction: column;
+  }
+}
+
 textarea {
   font-family: monospace;
   font-size: 0.9rem;
