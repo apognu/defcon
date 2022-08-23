@@ -1,0 +1,5 @@
+ALTER TABLE outages
+ADD COLUMN acknowledged_by BIGINT UNSIGNED;
+
+ALTER TABLE outages
+ADD CONSTRAINT fk_user FOREIGN KEY (acknowledged_by) REFERENCES users (id) ON DELETE CASCADE;

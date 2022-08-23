@@ -5,7 +5,9 @@
     .dot.uk-border-circle(v-else, :class="$filters.timeline(item.kind).class")
 
     .info.uk-flex.uk-margin-small-bottom
-      span.left.author.uk-flex-1.uk-text-bold(v-if="item.author") {{ item.author.name }}
+      span.left.author.uk-flex-1.uk-text-bold(v-if="item.kind === 'comment' && item.author") {{ item.author.name }}
+      span.left.author.uk-flex-1(v-else-if="item.author") {{ shortContent(item) }}
+
       span.left.uk-flex-1(v-if='hasShortContent(item)' v-html="shortContent(item)")
       span.right.uk-text-small.uk-text-muted(:uk-tooltip='`title: ${$helpers.datetime(item.published_on)}`') {{ $helpers.ago(item.published_on) }}
 
@@ -57,7 +59,7 @@ export default {
     },
 
     hasShortContent(item) {
-      return item.kind !== 'comment';
+      return item.kind !== 'comment' && item.kind !== 'acknowledgement';
     },
 
     hasLongContent(item) {
@@ -67,6 +69,10 @@ export default {
     shortContent(item) {
       try {
         switch (item.kind) {
+          case 'acknowledgement': {
+            return `${item.author.name} has acknowledged this incident.`;
+          }
+
           case 'site_outage_started': {
             const payload = JSON.parse(item.content);
 
@@ -112,7 +118,7 @@ $avatar-size: 32px;
     position: relative;
 
     .info {
-      align-items: end;
+      align-items: flex-end;
 
       .left.author {
         margin-top: calc($avatar-size / 4);

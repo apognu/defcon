@@ -1,6 +1,8 @@
 use anyhow::Context;
 use pulldown_cmark::{html, Parser};
 use rocket::{
+  http::Status,
+  response::status::Custom,
   serde::json::{Error as JsonError, Json},
   State,
 };
@@ -15,6 +17,8 @@ use crate::{
   },
   model as db,
 };
+
+use super::error::ErrorResponse;
 
 #[get("/api/outages", rank = 10)]
 pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<api::Outage>>> {
@@ -92,6 +96,26 @@ pub async fn list_for_check_between(
     .short()?;
 
   Ok(Json(outages))
+}
+
+#[post("/api/outages/<uuid>/acknowledge")]
+pub async fn acknowledge(auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<()> {
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
+  let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
+
+  if outage.acknowledged_by.is_some() {
+    return Err(ErrorResponse(Custom(Status::Conflict, anyhow!("outage was already acknowledged"))));
+  }
+
+  outage.acknowledge(&mut conn, &auth.user).await.short()?;
+
+  db::Timeline::new(outage.id, Some(auth.user.id), "acknowledgement", "")
+    .insert(&mut conn)
+    .await
+    .context("could not add comment")
+    .short()?;
+
+  Ok(())
 }
 
 #[put("/api/outages/<uuid>/comment", data = "<payload>")]

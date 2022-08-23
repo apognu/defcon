@@ -82,6 +82,7 @@ pub fn routes(config: &Arc<Config>) -> Vec<Route> {
     outages::list_between,
     outages::list_for_check,
     outages::list_for_check_between,
+    outages::acknowledge,
     outages::comment,
     events::list_for_check,
     events::list_for_check_between,

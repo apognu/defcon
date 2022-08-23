@@ -1,7 +1,14 @@
 <template lang="pug">
 div(v-if='outage')
-  p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Incident
-  h2.uk-margin-remove-top {{ outage.check.name }}
+  #header.uk-flex
+    .uk-flex-1
+      p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Incident
+      h2.uk-margin-remove-top {{ outage.check.name }}
+
+    p#acknowledgement(v-if='outage.acknowledged_by')
+      | Acknowledged by
+      img.uk-comment-avatar(:src="avatar(outage.acknowledged_by.email)")
+      | {{ outage.acknowledged_by.name }}
 
   .heading.uk-card.uk-card-default.uk-card-small.uk-card-body.uk-margin-bottom
     .uk-flex.uk-flex-middle
@@ -12,6 +19,8 @@ div(v-if='outage')
       .uk-flex-1
         p.uk-text-bold.uk-text-emphasis.uk-margin-remove {{ outage.check.name }}
         p.uk-margin-remove.uk-text-muted {{ outage.check.uuid }}
+
+      p(v-if="!outage.acknowledged_by"): a(@click="acknowledge()") Acknowledge
 
       router-link.uk-margin-left(:to='{ name: "checks.view", params: { uuid: outage.check.uuid } }')
         span(uk-icon='icon: search')
@@ -57,6 +66,7 @@ div(v-if='outage')
 </template>
 
 <script>
+import { MD5 } from 'crypto-js';
 import UIkit from 'uikit';
 
 import Spec from '~/components/checks/Spec.vue';
@@ -105,6 +115,18 @@ export default {
       element.rows = rows + 1;
     },
 
+    acknowledge() {
+      this.$http().post(`/api/outages/${this.$route.params.uuid}/acknowledge`)
+        .then(() => this.refresh())
+        .catch((e) => {
+          this.$helpers.error(`${e.message}: ${e.response.data.details}`);
+        });
+    },
+
+    avatar(email) {
+      return `https://www.gravatar.com/avatar/${MD5(email)}`;
+    },
+
     addComment() {
       this.$http()
         .put(`/api/outages/${this.$route.params.uuid}/comment`, {
@@ -128,5 +150,15 @@ export default {
 textarea {
   font-family: monospace;
   font-size: 0.9rem;
+}
+
+#acknowledgement {
+  img {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    min-width: auto;
+    margin: 0 8px;
+  }
 }
 </style>

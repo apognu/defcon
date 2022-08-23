@@ -14,6 +14,8 @@ pub struct Outage {
   #[serde(skip_serializing_if = "Option::is_none")]
   pub event: Option<db::Event>,
   pub check: api::Check,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub acknowledged_by: Option<db::User>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -34,6 +36,12 @@ impl ApiMapper for db::Outage {
     let sites = check.sites(&mut conn).await?;
     let event = db::Event::last_for_outage(&mut conn, &self).await?;
 
+    let acknowledged_by = if let Some(user_id) = self.acknowledged_by {
+      Some(db::User::by_id(&mut conn, user_id).await?)
+    } else {
+      None
+    };
+
     let outage = api::Outage {
       outage: self,
       event: Some(event),
@@ -47,6 +55,7 @@ impl ApiMapper for db::Outage {
         alerter_in: None,
         sites: Some(sites.into()),
       },
+      acknowledged_by,
     };
 
     Ok(outage)
@@ -69,6 +78,12 @@ impl ApiMapper for Vec<db::Outage> {
                 let sites = check.sites(&mut conn).await.unwrap_or_default();
                 let event = db::Event::last_for_outage(&mut conn, &outage).await.unwrap_or_default();
 
+                let acknowledged_by = if let Some(user_id) = outage.acknowledged_by {
+                  db::User::by_id(&mut conn, user_id).await.ok()
+                } else {
+                  None
+                };
+
                 let outage = api::Outage {
                   outage,
                   event: Some(event),
@@ -82,6 +97,7 @@ impl ApiMapper for Vec<db::Outage> {
                     alerter_in: None,
                     sites: Some(sites.into()),
                   },
+                  acknowledged_by,
                 };
 
                 Some(outage)

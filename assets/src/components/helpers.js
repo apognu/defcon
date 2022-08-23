@@ -100,6 +100,8 @@ const filters = {
 
   timeline: (kind) => {
     switch (kind) {
+      case 'acknowledgement':
+        return { class: 'info', message: 'Incident was acknowledged.' };
       case 'site_outage_started':
         return { class: 'error', message: 'Site-local incident started.' };
       case 'site_outage_resolved':

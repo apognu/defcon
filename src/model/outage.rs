@@ -13,6 +13,8 @@ use crate::{
   model::{Check, SiteOutage, Timeline},
 };
 
+use super::User;
+
 #[derive(Debug, FromRow, Default, Clone, Serialize)]
 pub struct Outage {
   #[serde(skip)]
@@ -23,6 +25,8 @@ pub struct Outage {
   pub started_on: Option<DateTime<Utc>>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub ended_on: Option<DateTime<Utc>>,
+  #[serde(skip)]
+  pub acknowledged_by: Option<u64>,
 }
 
 impl Outage {
@@ -32,7 +36,7 @@ impl Outage {
 
     let outages = sqlx::query_as::<_, Outage>(
       "
-        SELECT outages.id, check_id, outages.uuid, started_on, ended_on
+        SELECT outages.id, check_id, outages.uuid, started_on, ended_on, acknowledged_by
         FROM outages
         INNER JOIN checks
         ON checks.id = outages.check_id
@@ -87,7 +91,7 @@ impl Outage {
   pub async fn current(conn: &mut MySqlConnection) -> Result<Vec<Outage>> {
     let outages = sqlx::query_as::<_, Outage>(
       "
-        SELECT outages.id, check_id, outages.uuid, started_on, ended_on
+        SELECT outages.id, check_id, outages.uuid, started_on, ended_on, acknowledged_by
         FROM outages
         INNER JOIN checks
         ON checks.id = outages.check_id
@@ -104,7 +108,7 @@ impl Outage {
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Outage> {
     let outage = sqlx::query_as::<_, Outage>(
       "
-        SELECT id, check_id, uuid, started_on, ended_on
+        SELECT id, check_id, uuid, started_on, ended_on, acknowledged_by
         FROM outages
         WHERE uuid = ?
       ",
@@ -120,7 +124,7 @@ impl Outage {
   pub async fn for_check_current(conn: &mut MySqlConnection, check: &Check) -> Result<Outage> {
     let outage = sqlx::query_as::<_, Outage>(
       "
-        SELECT id, check_id, uuid, started_on, ended_on
+        SELECT id, check_id, uuid, started_on, ended_on, acknowledged_by
         FROM outages
         WHERE check_id = ? AND ended_on IS NULL
       ",
@@ -139,7 +143,7 @@ impl Outage {
 
     let outages = sqlx::query_as::<_, Outage>(
       "
-        SELECT id, check_id, uuid, started_on, ended_on
+        SELECT id, check_id, uuid, started_on, ended_on, acknowledged_by
         FROM outages
         WHERE check_id = ?
         ORDER BY id DESC
@@ -162,7 +166,7 @@ impl Outage {
 
     let outages = sqlx::query_as::<_, Outage>(
       "
-        SELECT id, check_id, uuid, started_on, ended_on
+        SELECT id, check_id, uuid, started_on, ended_on, acknowledged_by
         FROM outages
         WHERE
           check_id = ? AND
@@ -255,6 +259,23 @@ impl Outage {
 
       Timeline::new(outage.id, None, "outage_resolved", "").insert(&mut *conn).await?;
     }
+
+    Ok(())
+  }
+
+  pub async fn acknowledge(&self, conn: &mut MySqlConnection, user: &User) -> Result<()> {
+    sqlx::query(
+      "
+        UPDATE outages
+        SET acknowledged_by = ?
+        WHERE id = ? AND acknowledged_by IS NULL
+      ",
+    )
+    .bind(user.id)
+    .bind(self.id)
+    .execute(&mut *conn)
+    .await
+    .short()?;
 
     Ok(())
   }

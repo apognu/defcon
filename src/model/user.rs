@@ -5,7 +5,7 @@ use sqlx::{FromRow, MySqlConnection};
 
 use crate::api::error::{AppError, Shortable};
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct User {
   #[serde(skip)]
   pub id: u64,
