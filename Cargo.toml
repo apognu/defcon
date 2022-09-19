@@ -51,7 +51,7 @@ ssl-expiration2 = "^0.4"
 thiserror = "^1.0"
 time = "^0.3.11"
 tokio = { version = "^1.2", default_features = false, features = ["time", "net"] }
-trust-dns-client = { version = "^0.21", default_features = false }
+trust-dns-client = { version = "^0.22", default_features = false }
 uuid = { version = "^1.1", features = ["v4"] }
 whois2 = "^0.0.1"
 
