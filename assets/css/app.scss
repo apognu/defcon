@@ -23,7 +23,7 @@ $alert-success-color: $ok;
 $alert-warning-background: $warning-background;
 $alert-warning-color: $warning-background-color;
 $alert-danger-background: $global-danger-background;
-$alert-danger-color: $error;
+$alert-danger-color: $error-text;
 
 /* Override UIKit variables that uses SCSS functions, since they do not accept CSS `--variables`. */
 
