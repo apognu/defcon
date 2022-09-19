@@ -44,6 +44,10 @@ export default {
   async mounted() {
     this.refresh();
 
+    this.$http().get('/api/-/config').then((response) => {
+      this.store.setConfig(response.data);
+    });
+
     this.$http().get('/api/-/me').then((response) => {
       this.store.setIdentity(response.data);
     });
@@ -130,7 +134,7 @@ $sidebar-padding: 16px;
 
     #menu {
       .uk-badge {
-        background: $error  !important;
+        background: $error !important;
       }
 
       a {

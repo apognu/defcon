@@ -3,6 +3,7 @@ import { defineStore, storeToRefs } from 'pinia';
 export const store = defineStore('defcon', {
   state: () => ({
     title: '',
+    config: undefined,
 
     authenticated: undefined,
     identity: undefined,
@@ -27,6 +28,10 @@ export const store = defineStore('defcon', {
   actions: {
     setTitle(title) {
       this.title = title;
+    },
+
+    setConfig(config) {
+      this.config = config;
     },
 
     setCredentials(email, password) {

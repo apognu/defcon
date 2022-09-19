@@ -20,8 +20,8 @@ use rocket::{
   http::Status,
   request::Request,
   response::{status::Custom, Responder, Response, Result as RocketResult},
-  serde::json::{json, Value as JsonValue},
-  Build, Config as RocketConfig, Rocket, Route,
+  serde::json::{json, Json, Value as JsonValue},
+  Build, Config as RocketConfig, Rocket, Route, State,
 };
 use sqlx::{MySql, Pool};
 
@@ -29,6 +29,8 @@ use crate::{
   api::{auth::Keys, error::ErrorResponse},
   config::Config,
 };
+
+use self::auth::Auth;
 
 pub struct StaticResponse(pub Response<'static>);
 
@@ -63,6 +65,7 @@ pub fn routes(config: &Arc<Config>) -> Vec<Route> {
   #[allow(unused_mut)]
   let mut routes = routes![
     health,
+    config,
     checks::list,
     checks::get,
     checks::create,
@@ -145,6 +148,11 @@ pub fn web_routes(_config: &Arc<Config>) -> Vec<Route> {
 
 #[get("/api/-/health")]
 fn health() {}
+
+#[get("/api/-/config")]
+fn config(_auth: Auth, config: &State<Arc<Config>>) -> Json<Arc<Config>> {
+  Json(config.inner().clone())
+}
 
 #[allow(unused_variables)]
 #[get("/api/<path..>", rank = 19)]

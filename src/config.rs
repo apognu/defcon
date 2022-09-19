@@ -20,7 +20,7 @@ pub static PUBLIC_KEY: Lazy<Option<Vec<u8>>> = Lazy::new(|| {
     .ok()
 });
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Config {
   pub domain: String,
   pub api: ApiConfig,
@@ -34,11 +34,12 @@ pub struct Config {
   pub key: Option<&'static Vec<u8>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ApiConfig {
   pub enable: bool,
   pub listen: SocketAddr,
   pub skip_authentication: bool,
+  #[serde(skip)]
   pub jwt_signing_key: String,
 }
 
@@ -57,7 +58,7 @@ impl ApiConfig {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct WebConfig {
   pub enable: bool,
   pub listen: SocketAddr,
@@ -74,7 +75,7 @@ impl WebConfig {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct HandlerConfig {
   pub enable: bool,
   pub interval: Duration,
@@ -97,7 +98,7 @@ impl HandlerConfig {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct CleanerConfig {
   pub enable: bool,
   pub interval: Duration,
@@ -119,7 +120,7 @@ impl CleanerConfig {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct DmsConfig {
   pub enable: bool,
   pub listen: SocketAddr,
@@ -137,7 +138,7 @@ impl DmsConfig {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ChecksConfig {
   pub dns_resolver: IpAddr,
   #[cfg(feature = "python")]
@@ -162,7 +163,7 @@ impl ChecksConfig {
   }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct AlertersConfig {
   pub default: Option<String>,
   pub fallback: Option<String>,
