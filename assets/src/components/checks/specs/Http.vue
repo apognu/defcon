@@ -6,6 +6,7 @@ div(uk-grid, class='uk-child-width-1-2@s uk-child-width-1-4@m')
   Attribute(label='Expected status') {{ spec.code }}
   Attribute(label='Expected content') {{ spec.content }}
   Attribute(label='Expected digest') {{ spec.digest }}
+  Attribute(label='JSON query', :code='true') {{ spec.json_query }}
 </template>
 
 <script>

@@ -18,6 +18,8 @@ SpecHttp:
       type: string
     digest:
       type: string
+    json_query:
+      type: string
 
 ReadSpecHttp:
   title: HTTP
@@ -44,4 +46,3 @@ WriteSpecHttp:
                 - kind
                 - http
                 - url
-

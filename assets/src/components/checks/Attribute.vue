@@ -2,7 +2,7 @@
 div
   dl.uk-description-list
     dt {{ label }}
-    dd {{ value }}
+    dd(:class="{ code: code }") {{ value }}
 </template>
 
 <script>
@@ -12,6 +12,12 @@ export default {
       type: String,
       required: true,
     },
+
+    code: {
+      type: Boolean,
+      required: false,
+      default: false
+    }
   },
 
   computed: {
@@ -29,4 +35,12 @@ export default {
 </script>
 
 <style lang="scss">
+.code {
+  padding: 6px 8px;
+  background: var(--gray-dark);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.9em;
+  color: white;
+}
 </style>

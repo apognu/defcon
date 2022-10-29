@@ -54,6 +54,15 @@ div
           v-model='spec.digest',
           @keyup.enter='$emit("enter")'
         )
+
+    .uk-margin
+      label.uk-form-label JSON query
+      .uk-form-controls
+        input.uk-input(
+          type='text',
+          v-model='spec.json_query',
+          @keyup.enter='$emit("enter")'
+        )
 </template>
 
 <script>
