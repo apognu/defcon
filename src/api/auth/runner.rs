@@ -1,15 +1,18 @@
 use anyhow::{Context, Error, Result};
+use axum::{
+  extract::{FromRef, FromRequestParts, TypedHeader},
+  headers::{authorization::Bearer, Authorization},
+  http::request::Parts,
+  RequestPartsExt,
+};
 use chrono::Utc;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use regex::Regex;
-use rocket::{
-  http::Status,
-  outcome::Outcome,
-  request::{self, FromRequest, Request},
-  State,
-};
 
-use crate::api::error::AppError;
+use crate::api::{
+  error::{AppError, ErrorResponse, Shortable},
+  AppState,
+};
 
 #[derive(Default, Clone)]
 pub struct Keys {
@@ -78,22 +81,25 @@ pub struct RunnerAuth {
 }
 
 #[async_trait]
-impl<'r> FromRequest<'r> for RunnerAuth {
-  type Error = Error;
+impl<S> FromRequestParts<S> for RunnerAuth
+where
+  AppState: FromRef<S>,
+  S: Send + Sync,
+{
+  type Rejection = ErrorResponse;
 
-  async fn from_request(request: &'r Request<'_>) -> request::Outcome<RunnerAuth, Error> {
-    let headers: Vec<_> = request.headers().get("authorization").collect();
-    let token = headers.first().and_then(|value| value.strip_prefix("Bearer "));
+  async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+    let TypedHeader(Authorization(bearer)) = parts.extract::<TypedHeader<Authorization<Bearer>>>().await.context(AppError::InvalidCredentials).short()?;
+    let state = AppState::from_ref(state);
+    let keys = state.keys.unwrap();
     let rgx = Regex::new(r"^[a-z0-9-]+$").unwrap();
 
-    if let Outcome::Success(guard) = request.guard::<&State<Keys>>().await {
-      if let Ok(payload) = guard.verify(token) {
-        if rgx.is_match(&payload.claims.site) {
-          return Outcome::Success(RunnerAuth { site: payload.claims.site });
-        }
+    if let Ok(payload) = keys.verify(Some(bearer.token())) {
+      if rgx.is_match(&payload.claims.site) {
+        return Ok(RunnerAuth { site: payload.claims.site });
       }
     }
 
-    Outcome::Failure((Status::Unauthorized, anyhow!("credentials could not be validated").context(AppError::InvalidCredentials)))
+    Err(anyhow!("cannot authenticate the request").context(AppError::InvalidCredentials)).short()
   }
 }

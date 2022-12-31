@@ -16,8 +16,8 @@ export default {
     code: {
       type: Boolean,
       required: false,
-      default: false
-    }
+      default: false,
+    },
   },
 
   computed: {

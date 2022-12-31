@@ -1,10 +1,11 @@
 use anyhow::{Context, Error};
-use rocket::{
-  http::Status,
-  request::Request,
-  response::{self, status::Custom, Responder, Response},
-  serde::json::{json, Error as JsonError},
+use axum::{
+  extract::rejection::JsonRejection,
+  http::StatusCode,
+  response::{IntoResponse, Response},
+  Json,
 };
+use serde_json::json;
 
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
@@ -14,66 +15,50 @@ pub enum AppError {
   InvalidCredentials,
   #[error("missing resource")]
   ResourceNotFound,
+  #[error("resource already exists")]
+  Conflict,
   #[error("server error, please check your logs for more information")]
   ServerError,
   #[error("database error, please check your logs for more information")]
   DatabaseError,
 }
 
-pub struct ErrorResponse(pub Custom<anyhow::Error>);
+pub struct ErrorResponse(StatusCode, anyhow::Error);
 
 impl ErrorResponse {
-  fn status(&self) -> &'static str {
-    match self.code().code {
-      400 => "bad_request",
-      401 => "unauthorized",
-      404 => "not_found",
-      500 => "server_error",
-      _ => "unknown_error",
-    }
+  fn code(&self) -> StatusCode {
+    self.0
   }
 
-  fn code(&self) -> Status {
-    self.0 .0
-  }
-
-  fn error(self) -> Error {
-    self.0 .1
+  fn error(&self) -> &Error {
+    &self.1
   }
 }
 
-pub fn check_json<T>(payload: Result<T, JsonError>) -> Result<T, Error> {
-  match payload {
-    Ok(payload) => Ok(payload),
-
-    Err(err) => match err {
-      JsonError::Io(err) => Err(err).context(AppError::BadRequest),
-      JsonError::Parse(_, err) => Err(err).context(AppError::BadRequest),
-    },
-  }
-}
-
-impl<'r> Responder<'r, 'static> for ErrorResponse {
-  fn respond_to(self, request: &'r Request<'_>) -> response::Result<'static> {
-    let code = self.code();
-    let status = self.status();
+impl IntoResponse for ErrorResponse {
+  fn into_response(self) -> Response {
     let error = self.error();
     let details = error.chain().skip(1).map(ToString::to_string).collect::<Vec<_>>().join(": ");
 
     let payload = if details.is_empty() {
       json!({
-        "status": status,
         "message": error.to_string(),
       })
     } else {
       json!({
-        "status": status,
         "message": error.to_string(),
         "details": details
       })
     };
 
-    Response::build_from(payload.respond_to(request)?).status(code).ok()
+    (self.code(), Json(payload)).into_response()
+  }
+}
+
+pub fn check_json<T>(payload: Result<Json<T>, JsonRejection>) -> Result<T, Error> {
+  match payload {
+    Ok(Json(payload)) => Ok(payload),
+    Err(err) => Err(err).context(AppError::BadRequest),
   }
 }
 
@@ -88,12 +73,11 @@ impl<'a, T> Shortable<'a, T> for Result<T, Error> {
 
   fn short(self) -> Self::Output {
     self.map_err(|err| match err.downcast_ref::<AppError>() {
-      Some(AppError::BadRequest) => ErrorResponse(Custom(Status::BadRequest, err)),
-      Some(AppError::InvalidCredentials) => ErrorResponse(Custom(Status::Unauthorized, anyhow!("provided credentials are invalid"))),
-      Some(AppError::ResourceNotFound) => ErrorResponse(Custom(Status::NotFound, err)),
-      Some(AppError::ServerError) => ErrorResponse(Custom(Status::InternalServerError, err)),
-      Some(AppError::DatabaseError) => ErrorResponse(Custom(Status::InternalServerError, err)),
-      None => ErrorResponse(Custom(Status::InternalServerError, err)),
+      Some(AppError::BadRequest) => ErrorResponse(StatusCode::BAD_REQUEST, err),
+      Some(AppError::InvalidCredentials) => ErrorResponse(StatusCode::UNAUTHORIZED, anyhow!("provided credentials are invalid")),
+      Some(AppError::ResourceNotFound) => ErrorResponse(StatusCode::NOT_FOUND, err),
+      Some(AppError::Conflict) => ErrorResponse(StatusCode::CONFLICT, err),
+      _ => ErrorResponse(StatusCode::INTERNAL_SERVER_ERROR, err),
     })
   }
 }

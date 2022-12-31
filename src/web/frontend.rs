@@ -1,63 +1,35 @@
-use rocket::{
-  http::{ContentType, Status},
-  response::{status::Custom, Response},
-};
-use std::{ffi::OsStr, io::Cursor, path::PathBuf};
+use std::path::PathBuf;
 
-use crate::api::StaticResponse;
+use axum::{
+  body::Full,
+  extract::Path,
+  http::StatusCode,
+  response::{IntoResponse, Response},
+};
 
 #[derive(RustEmbed)]
 #[folder = "dist/"]
 struct Asset;
 
-#[get("/robots.txt")]
-pub fn robots() -> Result<StaticResponse, Custom<()>> {
-  Asset::get("static/robots.txt").map_or_else(
-    || Err(Custom(Status::NotFound, ())),
-    |asset| {
-      Ok(StaticResponse(
-        Response::build().header(ContentType::Plain).sized_body(asset.data.len(), Cursor::new(asset.data)).finalize(),
-      ))
-    },
+pub async fn robots() -> Result<impl IntoResponse, impl IntoResponse> {
+  Asset::get("robots.txt").map_or_else(
+    || Err(StatusCode::NOT_FOUND),
+    |asset| Ok(Response::builder().header("content-type", "text/plain").body(Full::from(asset.data)).unwrap()),
   )
 }
 
-#[get("/")]
-pub fn index() -> Result<StaticResponse, Custom<()>> {
+pub async fn index() -> Result<impl IntoResponse, impl IntoResponse> {
   Asset::get("index.html").map_or_else(
-    || Err(Custom(Status::NotFound, ())),
-    |asset| {
-      Ok(StaticResponse(
-        Response::build().header(ContentType::HTML).sized_body(asset.data.len(), Cursor::new(asset.data)).finalize(),
-      ))
-    },
+    || Err(StatusCode::NOT_FOUND),
+    |asset| Ok(Response::builder().header("content-type", "text/html").body(Full::from(asset.data)).unwrap()),
   )
 }
 
-#[allow(unused_variables)]
-#[get("/<path..>", rank = 20)]
-pub fn catchall(path: PathBuf) -> Result<StaticResponse, Custom<()>> {
-  Asset::get("index.html").map_or_else(
-    || Err(Custom(Status::NotFound, ())),
-    |asset| {
-      Ok(StaticResponse(
-        Response::build().header(ContentType::HTML).sized_body(asset.data.len(), Cursor::new(asset.data)).finalize(),
-      ))
-    },
-  )
-}
-
-#[get("/assets/<path..>")]
-pub fn assets(path: PathBuf) -> Result<StaticResponse, Custom<()>> {
+pub async fn assets(Path(path): Path<PathBuf>) -> Result<impl IntoResponse, impl IntoResponse> {
   Asset::get(&path.display().to_string()).map_or_else(
-    || Err(Custom(Status::NotFound, ())),
+    || Err(StatusCode::NOT_FOUND),
     |asset| {
-      let content_type = path
-        .as_path()
-        .extension()
-        .and_then(OsStr::to_str)
-        .and_then(ContentType::from_extension)
-        .ok_or(Custom(Status::BadRequest, ()))?;
+      let content_type = path.as_path().to_str().and_then(|path| new_mime_guess::from_path(path).first()).ok_or(StatusCode::BAD_REQUEST)?;
 
       let age = if path.extension().map(|e| e == "jpg" || e == "png").unwrap_or(false) {
         "86400" // 1 day
@@ -65,13 +37,13 @@ pub fn assets(path: PathBuf) -> Result<StaticResponse, Custom<()>> {
         "31536000" // 1 year
       };
 
-      Ok(StaticResponse(
-        Response::build()
-          .header(content_type)
-          .raw_header("cache-control", format!("max-age={}", age))
-          .sized_body(asset.data.len(), Cursor::new(asset.data))
-          .finalize(),
-      ))
+      Ok(
+        Response::builder()
+          .header("content-type", content_type.to_string())
+          .header("cache-control", format!("max-age={}", age))
+          .body(Full::from(asset.data))
+          .unwrap(),
+      )
     },
   )
 }

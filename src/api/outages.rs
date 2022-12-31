@@ -1,11 +1,10 @@
 use anyhow::Context;
-use pulldown_cmark::{html, Parser};
-use rocket::{
-  http::Status,
-  response::status::Custom,
-  serde::json::{Error as JsonError, Json},
-  State,
+use axum::{
+  extract::{rejection::JsonRejection, Path, Query, State},
+  response::IntoResponse,
+  Json,
 };
+use pulldown_cmark::{html, Parser};
 use sqlx::{MySql, Pool};
 
 use crate::{
@@ -18,39 +17,41 @@ use crate::{
   model as db,
 };
 
-use super::error::ErrorResponse;
+use super::error::AppError;
 
-#[get("/api/outages", rank = 10)]
-pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<api::Outage>>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-
-  let outages = db::Outage::current(&mut conn).await.context("could not retrieve outages").short()?.map(pool).await.short()?;
-
-  Ok(Json(outages))
+#[derive(Deserialize)]
+pub struct ListQuery {
+  check: Option<String>,
+  from: Option<api::Date>,
+  to: Option<api::Date>,
+  limit: Option<u8>,
+  page: Option<u8>,
 }
 
-#[get("/api/outages?<check>&<from>&<to>&<limit>&<page>", rank = 5)]
-pub async fn list_between(_auth: Auth, pool: &State<Pool<MySql>>, check: Option<String>, from: api::Date, to: api::Date, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<api::Outage>>> {
+pub async fn list(_: Auth, ref pool: State<Pool<MySql>>, Query(ListQuery { check, from, to, limit, page }): Query<ListQuery>) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  let check = match check {
-    Some(uuid) => Some(db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?),
-    None => None,
+  let outages = if let Some((from, to)) = from.zip(to) {
+    let check = match check {
+      Some(uuid) => Some(db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?),
+      None => None,
+    };
+
+    db::Outage::between(&mut conn, check.as_ref(), from.and_hms(0, 0, 0), to.and_hms(23, 59, 59), limit, page)
+      .await
+      .context("could not retrieve outages")
+      .short()?
+      .map(pool)
+      .await
+      .short()?
+  } else {
+    db::Outage::current(&mut conn).await.context("could not retrieve outages").short()?.map(pool).await.short()?
   };
 
-  let outages = db::Outage::between(&mut conn, check.as_ref(), from.and_hms(0, 0, 0), to.and_hms(23, 59, 59), limit, page)
-    .await
-    .context("could not retrieve outages")
-    .short()?
-    .map(pool)
-    .await
-    .short()?;
-
   Ok(Json(outages))
 }
 
-#[get("/api/outages/<uuid>")]
-pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Outage>> {
+pub async fn get(_: Auth, ref pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<Json<api::Outage>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?.map(pool).await.short()?;
@@ -58,53 +59,50 @@ pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiRes
   Ok(Json(outage))
 }
 
-#[get("/api/checks/<uuid>/outages?<limit>&<page>", rank = 10)]
-pub async fn list_for_check(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<api::Outage>>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
-
-  let outages = db::Outage::for_check(&mut conn, &check, limit, page)
-    .await
-    .context("could not retrieve outages")
-    .short()?
-    .map(pool)
-    .await
-    .short()?;
-
-  Ok(Json(outages))
-}
-
-#[get("/api/checks/<uuid>/outages?<from>&<to>&<limit>&<page>", rank = 5)]
-pub async fn list_for_check_between(
-  _auth: Auth,
-  pool: &State<Pool<MySql>>,
-  uuid: String,
-  from: api::DateTime,
-  to: api::DateTime,
+#[derive(Deserialize)]
+pub struct ListForOutageQuery {
+  from: Option<api::DateTime>,
+  to: Option<api::DateTime>,
   limit: Option<u8>,
   page: Option<u8>,
+}
+
+pub async fn list_for_check(
+  _: Auth,
+  ref pool: State<Pool<MySql>>,
+  Path(uuid): Path<String>,
+  Query(ListForOutageQuery { from, to, limit, page }): Query<ListForOutageQuery>,
 ) -> ApiResponse<Json<Vec<api::Outage>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
 
-  let outages = db::Outage::for_check_between(&mut conn, &check, *from, *to, limit, page)
-    .await
-    .context("could not retrieve outages")
-    .short()?
-    .map(pool)
-    .await
-    .short()?;
+  let outages = if let Some((from, to)) = from.zip(to) {
+    db::Outage::for_check_between(&mut conn, &check, *from, *to, limit, page)
+      .await
+      .context("could not retrieve outages")
+      .short()?
+      .map(pool)
+      .await
+      .short()?
+  } else {
+    db::Outage::for_check(&mut conn, &check, limit, page)
+      .await
+      .context("could not retrieve outages")
+      .short()?
+      .map(pool)
+      .await
+      .short()?
+  };
 
   Ok(Json(outages))
 }
 
-#[post("/api/outages/<uuid>/acknowledge")]
-pub async fn acknowledge(auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<()> {
+pub async fn acknowledge(auth: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<impl IntoResponse> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
 
   if outage.acknowledged_by.is_some() {
-    return Err(ErrorResponse(Custom(Status::Conflict, anyhow!("outage was already acknowledged"))));
+    Err(anyhow!("outage was already acknowledged").context(AppError::Conflict)).short()?;
   }
 
   outage.acknowledge(&mut conn, &auth.user).await.short()?;
@@ -118,8 +116,7 @@ pub async fn acknowledge(auth: Auth, pool: &State<Pool<MySql>>, uuid: String) ->
   Ok(())
 }
 
-#[put("/api/outages/<uuid>/comment", data = "<payload>")]
-pub async fn comment(auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::OutageComment>, JsonError<'_>>) -> ApiResponse<()> {
+pub async fn comment(auth: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, payload: Result<Json<api::OutageComment>, JsonRejection>) -> ApiResponse<()> {
   let payload = check_json(payload).short()?;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;

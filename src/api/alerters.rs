@@ -1,8 +1,9 @@
 use anyhow::Context;
-use rocket::{
-  response::status::{Created, NoContent},
-  serde::json::{Error as JsonError, Json},
-  State,
+use axum::{
+  extract::{rejection::JsonRejection, Path, State},
+  http::{header, StatusCode},
+  response::IntoResponse,
+  Json,
 };
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
@@ -16,25 +17,22 @@ use crate::{
   model as db,
 };
 
-#[get("/api/alerters")]
-pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<db::Alerter>>> {
+pub async fn list(_: Auth, pool: State<Pool<MySql>>) -> ApiResponse<Json<Vec<db::Alerter>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerters = db::Alerter::all(&mut conn).await.context("could not retrieve alerters").short()?;
 
   Ok(Json(alerters))
 }
 
-#[get("/api/alerters/<uuid>")]
-pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<db::Alerter>> {
+pub async fn get(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<Json<db::Alerter>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.context("could not find alerter").short()?;
 
   Ok(Json(alerter))
 }
 
-#[post("/api/alerters", data = "<payload>")]
-pub async fn add(_auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<Created<String>> {
-  let payload = check_json(payload).short()?.0;
+pub async fn add(_: Auth, pool: State<Pool<MySql>>, payload: Result<Json<db::Alerter>, JsonRejection>) -> ApiResponse<impl IntoResponse> {
+  let payload = check_json(payload).short()?;
   let uuid = Uuid::new_v4().to_string();
 
   let alerter = db::Alerter {
@@ -50,12 +48,11 @@ pub async fn add(_auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json<db
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerter = alerter.insert(&mut conn).await.context("could not create alerter").short()?;
 
-  Ok(Created::new(uri!(get(uuid = alerter.uuid)).to_string()))
+  Ok((StatusCode::CREATED, [(header::LOCATION, format!("/api/alerters/{}", alerter.uuid))]))
 }
 
-#[put("/api/alerters/<uuid>", data = "<payload>")]
-pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<db::Alerter>, JsonError<'_>>) -> ApiResponse<()> {
-  let payload = check_json(payload).short()?.0;
+pub async fn update(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, payload: Result<Json<db::Alerter>, JsonRejection>) -> ApiResponse<()> {
+  let payload = check_json(payload).short()?;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let alerter = db::Alerter::by_uuid(&mut conn, &uuid).await.context("could not find alerter").short()?;
 
@@ -73,19 +70,24 @@ pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payloa
   Ok(())
 }
 
-#[delete("/api/alerters/<uuid>")]
-pub async fn delete(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
+pub async fn delete(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<impl IntoResponse> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   db::Alerter::delete(&mut conn, &uuid).await.context("could not delete alerter").short()?;
 
-  Ok(NoContent)
+  Ok(StatusCode::NO_CONTENT)
 }
 
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
-  use rocket::{http::Status, serde::json::json};
+  use axum::{
+    body::Body,
+    http::{Request, StatusCode},
+  };
+  use hyper::{body, Method};
+  use serde_json::json;
+  use tower::ServiceExt;
 
   use crate::{
     model::{Alerter, AlerterKind},
@@ -98,10 +100,10 @@ mod tests {
 
     pool.create_alerter().await?;
 
-    let response = client.get("/api/alerters").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client.oneshot(Request::builder().uri("/api/alerters").body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 
-    let checks: Vec<Alerter> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    let checks: Vec<Alerter> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
     assert_eq!(checks.len(), 1);
     assert_eq!(checks[0].kind, AlerterKind::Webhook);
     assert!(matches!(checks[0].url.as_deref(), Some("https://webhooks.example.com/1")));
@@ -117,10 +119,14 @@ mod tests {
 
     pool.create_alerter().await?;
 
-    let response = client.get("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .oneshot(Request::builder().uri("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(Body::empty()).unwrap())
+      .await
+      .unwrap();
 
-    let alerter: Alerter = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let alerter: Alerter = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
     assert_eq!(alerter.kind, AlerterKind::Webhook);
     assert!(matches!(alerter.url.as_deref(), Some("https://webhooks.example.com/1")));
 
@@ -135,8 +141,8 @@ mod tests {
 
     pool.create_alerter().await?;
 
-    let response = client.get("/api/alerters/nonexistant").dispatch().await;
-    assert_eq!(response.status(), Status::NotFound);
+    let response = client.oneshot(Request::builder().uri("/api/alerters/nonexistant").body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
     pool.cleanup().await;
 
@@ -153,8 +159,19 @@ mod tests {
       "url": "https://hooks.example.com/1"
     });
 
-    let response = client.post("/api/alerters").body(payload.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::Created);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/alerters")
+          .header("content-type", "application/json")
+          .body(Body::from(payload.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
 
     let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, url, username, password FROM alerters")
       .fetch_one(&*pool)
@@ -183,8 +200,19 @@ mod tests {
       "password": "password"
     });
 
-    let response = client.post("/api/alerters").body(payload.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::Created);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/alerters")
+          .header("content-type", "application/json")
+          .body(Body::from(payload.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
 
     let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, url, username, password FROM alerters")
       .fetch_one(&*pool)
@@ -214,8 +242,19 @@ mod tests {
       "username": "bob",
     });
 
-    let response = client.put("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(payload.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::PUT)
+          .uri("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261")
+          .header("content-type", "application/json")
+          .body(Body::from(payload.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
 
     let check = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>)>("SELECT name, kind, url, username, password FROM alerters")
       .fetch_one(&*pool)
@@ -243,8 +282,19 @@ mod tests {
       "url": "https://hooks.example.com/2"
     });
 
-    let response = client.put("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(payload.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::PUT)
+          .uri("/api/alerters/dd9a531a-1b0b-4a12-bc09-e5637f916261")
+          .header("content-type", "application/json")
+          .body(Body::from(payload.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     pool.cleanup().await;
 

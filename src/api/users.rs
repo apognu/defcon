@@ -1,8 +1,9 @@
 use anyhow::Context;
-use rocket::{
-  response::status::{Created, NoContent},
-  serde::json::{Error as JsonError, Json},
-  State,
+use axum::{
+  extract::{rejection::JsonRejection, Path, State},
+  http::{header, StatusCode},
+  response::IntoResponse,
+  Json,
 };
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
@@ -15,36 +16,32 @@ use crate::{
 
 use super::error::{check_json, AppError};
 
-#[get("/api/users")]
-pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Vec<User>>> {
+pub async fn list(_: Auth, pool: State<Pool<MySql>>) -> ApiResponse<Json<Vec<User>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let users = User::list(&mut conn).await.context("could not retrieve users").short()?;
 
   Ok(Json(users))
 }
 
-#[get("/api/users/<uuid>")]
-pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<User>> {
+pub async fn get(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<Json<User>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let user = User::by_uuid(&mut conn, &uuid).await.context("could not retrieve user").short()?;
 
   Ok(Json(user))
 }
 
-#[post("/api/users", data = "<payload>")]
-pub async fn create(_auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json<User>, JsonError<'_>>) -> ApiResponse<Created<String>> {
+pub async fn create(_: Auth, pool: State<Pool<MySql>>, payload: Result<Json<User>, JsonRejection>) -> ApiResponse<impl IntoResponse> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  let mut payload = check_json(payload).short()?.0;
+  let mut payload = check_json(payload).short()?;
   payload.uuid = Uuid::new_v4().to_string();
   payload.insert(&mut conn).await.short()?;
 
-  Ok(Created::new(uri!(get(uuid = payload.uuid)).to_string()))
+  Ok((StatusCode::CREATED, [(header::LOCATION, format!("/api/users/{}", payload.uuid))]))
 }
 
-#[put("/api/users/<uuid>", data = "<payload>")]
-pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<User>, JsonError<'_>>) -> ApiResponse<()> {
-  let payload = check_json(payload).short()?.0;
+pub async fn update(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, payload: Result<Json<User>, JsonRejection>) -> ApiResponse<()> {
+  let payload = check_json(payload).short()?;
 
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let user = User::by_uuid(&mut conn, &uuid).await.context("could not retrieve user").short()?;
@@ -61,9 +58,8 @@ pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payloa
   Ok(())
 }
 
-#[patch("/api/users/<uuid>", data = "<payload>")]
-pub async fn patch(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<UserPatch>, JsonError<'_>>) -> ApiResponse<()> {
-  let payload = check_json(payload).short()?.0;
+pub async fn patch(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, payload: Result<Json<UserPatch>, JsonRejection>) -> ApiResponse<()> {
+  let payload = check_json(payload).short()?;
 
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let mut user = User::by_uuid(&mut conn, &uuid).await.context("could not retrieve user").short()?;
@@ -81,8 +77,7 @@ pub async fn patch(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload
   Ok(())
 }
 
-#[delete("/api/users/<uuid>")]
-pub async fn delete(auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<NoContent> {
+pub async fn delete(auth: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<impl IntoResponse> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   if uuid == auth.user.uuid {
@@ -91,5 +86,5 @@ pub async fn delete(auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiR
 
   User::delete(&mut conn, &uuid).await.context("could not delete user").short()?;
 
-  Ok(NoContent)
+  Ok(StatusCode::NO_CONTENT)
 }

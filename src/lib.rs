@@ -3,9 +3,9 @@
 #![allow(clippy::let_unit_value)]
 
 #[macro_use]
-extern crate serde;
+extern crate async_trait;
 #[macro_use]
-extern crate rocket;
+extern crate serde;
 #[macro_use]
 extern crate anyhow;
 #[cfg(feature = "web")]

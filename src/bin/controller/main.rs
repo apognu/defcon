@@ -10,20 +10,19 @@ mod deadmanswitch;
 mod handler;
 mod util;
 
-use std::{env, process, sync::Arc, time::Instant};
+use std::{env, net::SocketAddr, process, sync::Arc, time::Instant};
 
 use anyhow::{Context, Result};
 use futures::future;
 use humantime::format_duration;
 use kvlogger::*;
-use rocket::config::Config as RocketConfig;
 use sqlx::{
   mysql::{MySql, MySqlPoolOptions},
   Pool,
 };
 
 use defcon::{
-  api::{self, auth::Keys, middlewares::ApiLogger},
+  api::{self, auth::Keys},
   config::{Config, PUBLIC_KEY},
   inhibitor::Inhibitor,
   model::migrations,
@@ -112,15 +111,11 @@ async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Option<Keys>) -> 
     "listen" => config.api.listen
   });
 
-  let provider = RocketConfig {
-    address: config.api.listen.ip(),
-    port: config.api.listen.port(),
-    ..RocketConfig::release_default()
-  };
+  let addr = SocketAddr::from((config.api.listen.ip(), config.api.listen.port()));
+  let app = api::server(config, pool, keys);
 
-  let _ = api::server(provider, config, pool, keys)
-    .attach(ApiLogger::new())
-    .launch()
+  axum::Server::bind(&addr)
+    .serve(app.into_make_service_with_connect_info::<SocketAddr>())
     .await
     .context("could not launch api process")?;
 

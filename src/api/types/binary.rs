@@ -33,7 +33,7 @@ impl<'de> de::Visitor<'de> for BinaryVisitor {
   where
     E: de::Error,
   {
-    Ok(Binary::from(base64::decode(&value).map_err(de::Error::custom)?))
+    Ok(Binary::from(base64::decode(value).map_err(de::Error::custom)?))
   }
 }
 

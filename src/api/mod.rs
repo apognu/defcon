@@ -14,171 +14,136 @@ mod timeline;
 pub mod types;
 mod users;
 
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
-use rocket::{
-  http::Status,
-  request::Request,
-  response::{status::Custom, Responder, Response, Result as RocketResult},
-  serde::json::{json, Json, Value as JsonValue},
-  Build, Config as RocketConfig, Rocket, Route, State,
+use axum::{
+  extract::{FromRef, State},
+  http::StatusCode,
+  middleware,
+  response::{ErrorResponse, IntoResponse, Json},
+  routing::{get, post, put},
+  Router,
 };
 use sqlx::{MySql, Pool};
 
 use crate::{
-  api::{auth::Keys, error::ErrorResponse},
+  api::{auth::Keys, middlewares::api_logger},
   config::Config,
 };
 
 use self::auth::Auth;
 
-pub struct StaticResponse(pub Response<'static>);
-
-impl<'r, 'o: 'r> Responder<'r, 'o> for StaticResponse {
-  fn respond_to(self, _request: &'r Request<'_>) -> RocketResult<'o> {
-    Ok(self.0)
-  }
+#[derive(Clone, FromRef)]
+pub struct AppState {
+  pub config: Arc<Config>,
+  pub pool: Pool<MySql>,
+  pub keys: Option<Keys>,
 }
 
 type ApiResponse<T> = Result<T, ErrorResponse>;
 
-pub fn server(provider: RocketConfig, config: Arc<Config>, pool: Pool<MySql>, keys: Option<Keys>) -> Rocket<Build> {
-  let routes: Vec<Route> = routes(&config).into_iter().chain(runner_routes(&keys).into_iter()).chain(web_routes(&config).into_iter()).collect();
+pub fn server(config: Arc<Config>, pool: Pool<MySql>, keys: Option<Keys>) -> Router {
+  let state = AppState { config, pool, keys };
 
-  match keys {
-    Some(keys) => rocket::custom(provider)
-      .manage(config)
-      .manage(pool)
-      .manage(keys)
-      .mount("/", routes)
-      .register("/", catchers![not_found, unprocessable]),
-    None => rocket::custom(provider)
-      .manage(config)
-      .manage(pool)
-      .mount("/", routes)
-      .register("/", catchers![not_found, unprocessable]),
-  }
+  let router = Router::new();
+  let router = api_router(router, state.clone());
+  let router = web_router(router, state.clone());
+  let router = runner_routes(router, state);
+
+  router.layer(middleware::from_fn(api_logger))
 }
 
-#[allow(unused_variables)]
-pub fn routes(config: &Arc<Config>) -> Vec<Route> {
-  #[allow(unused_mut)]
-  let mut routes = routes![
-    health,
-    config,
-    checks::list,
-    checks::get,
-    checks::create,
-    checks::update,
-    checks::patch,
-    checks::delete,
-    groups::list,
-    groups::get,
-    groups::create,
-    groups::update,
-    groups::delete,
-    site_outages::list,
-    site_outages::list_between,
-    site_outages::get,
-    outages::list,
-    outages::get,
-    outages::list_between,
-    outages::list_for_check,
-    outages::list_for_check_between,
-    outages::acknowledge,
-    outages::comment,
-    events::list_for_check,
-    events::list_for_check_between,
-    events::list_for_outage,
-    alerters::list,
-    alerters::get,
-    alerters::add,
-    alerters::update,
-    alerters::delete,
-    status::status,
-    status::statistics,
-    session::token,
-    session::refresh,
-    session::userinfo,
-    session::password,
-    session::api_key,
-    timeline::get,
-    users::list,
-    users::get,
-    users::create,
-    users::update,
-    users::patch,
-    users::delete,
-    api_catchall,
-  ];
+pub fn api_router(router: Router, state: AppState) -> Router {
+  let routes = Router::new()
+    .route("/-/health", get(health))
+    .route("/-/config", get(configuration))
+    .route("/-/token", post(session::token))
+    .route("/-/refresh", post(session::refresh))
+    .route("/-/me", get(session::userinfo))
+    .route("/-/password", post(session::password))
+    .route("/-/apikey", post(session::api_key))
+    .route("/checks", get(checks::list).post(checks::create))
+    .route("/checks/:uuid", get(checks::get).put(checks::update).patch(checks::patch).delete(checks::delete))
+    .route("/checks/:uuid/outages", get(outages::list_for_check))
+    .route("/checks/:uuid/events", get(events::list_for_check))
+    .route("/groups", get(groups::list).post(groups::create))
+    .route("/groups/:uuid", get(groups::get).put(groups::update).delete(groups::delete))
+    .route("/sites/outages", get(site_outages::list))
+    .route("/sites/outages/:uuid", get(site_outages::get))
+    .route("/outages", get(outages::list))
+    .route("/outages/:uuid", get(outages::get))
+    .route("/outages/:uuid/acknowledge", post(outages::acknowledge))
+    .route("/outages/:uuid/comment", put(outages::comment))
+    .route("/outages/:uuid/events", get(events::list_for_outage))
+    .route("/alerters", get(alerters::list).post(alerters::add))
+    .route("/alerters/:uuid", get(alerters::get).put(alerters::update).delete(alerters::delete))
+    .route("/status", get(status::status))
+    .route("/statistics", get(status::statistics))
+    .route("/outages/:uuid/timeline", get(timeline::get))
+    .route("/users", get(users::list).post(users::create))
+    .route("/users/:uuid", get(users::get).put(users::update).patch(users::patch).delete(users::delete));
 
   #[cfg(feature = "web")]
-  if config.web.enable_status_page {
-    routes.append(&mut routes![status::status_page])
-  }
+  let routes = if state.config.web.enable_status_page {
+    routes.route("/status-page", get(status::status_page))
+  } else {
+    routes
+  };
 
-  routes
+  let routes = routes.fallback(api_catchall).with_state(state);
+
+  router.nest("/api", routes)
 }
 
-pub fn runner_routes(keys: &Option<Keys>) -> Vec<Route> {
-  match keys {
-    Some(_) => routes![runner::list_stale, runner::report,],
+pub fn runner_routes(router: Router, state: AppState) -> Router {
+  match state.keys {
+    Some(_) => router.nest(
+      "/runner",
+      Router::new().route("/checks", get(runner::list_stale)).route("/report", post(runner::report)).with_state(state),
+    ),
 
     None => {
       log::info!("no public key found, disabling runner endpoints");
 
-      vec![]
+      router
     }
   }
 }
 
 #[cfg(feature = "web")]
-pub fn web_routes(config: &Arc<Config>) -> Vec<Route> {
-  if config.web.enable {
-    return crate::web::routes();
+pub fn web_router(router: Router, state: AppState) -> Router {
+  if state.config.web.enable {
+    return crate::web::router(router);
   }
 
-  vec![]
+  router
 }
 
 #[cfg(not(feature = "web"))]
-pub fn web_routes(_config: &Arc<Config>) -> Vec<Route> {
-  vec![]
+pub fn web_router(router: Router, _: AppState) -> Router {
+  router
 }
 
-#[get("/api/-/health")]
-fn health() {}
+async fn health() -> impl IntoResponse {
+  StatusCode::OK
+}
 
-#[get("/api/-/config")]
-fn config(_auth: Auth, config: &State<Arc<Config>>) -> Json<Arc<Config>> {
-  Json(config.inner().clone())
+async fn configuration(_: Auth, State(config): State<Arc<Config>>) -> Json<Arc<Config>> {
+  Json(config)
 }
 
 #[allow(unused_variables)]
-#[get("/api/<path..>", rank = 19)]
-fn api_catchall(path: PathBuf) -> Result<StaticResponse, Custom<()>> {
-  Err(Custom(Status::NotFound, ()))
-}
-
-#[catch(404)]
-pub fn not_found() -> JsonValue {
-  json!({
-    "status": "not_found",
-    "message": "requested resource was not found"
-  })
-}
-
-#[catch(422)]
-pub fn unprocessable() -> JsonValue {
-  json!({
-    "status": "unprocessable",
-    "message": "the data you provided could not be understood"
-  })
+async fn api_catchall() -> impl IntoResponse {
+  StatusCode::NOT_FOUND
 }
 
 #[cfg(test)]
 mod tests {
-  use rocket::http::Status;
+  use axum::{
+    body::Body,
+    http::{Request, StatusCode},
+  };
+  use tower::ServiceExt;
 
   use crate::tests;
 
@@ -186,8 +151,8 @@ mod tests {
   async fn health() {
     let (pool, client) = tests::api_client().await.unwrap();
 
-    let response = client.get("/api/-/health").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client.oneshot(Request::builder().uri("/api/-/health").body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 
     pool.cleanup().await;
   }

@@ -1,8 +1,11 @@
 use std::{collections::HashMap, sync::Arc};
 
 use anyhow::Context;
+use axum::{
+  extract::{Query, State},
+  Json,
+};
 use chrono::{NaiveDate, Utc};
-use rocket::{serde::json::Json, State};
 use sqlx::{MySql, Pool};
 
 use crate::{
@@ -17,8 +20,7 @@ use crate::{
 };
 
 #[allow(unused_variables)]
-#[get("/api/status")]
-pub async fn status(_auth: Auth, config: &State<Arc<Config>>, pool: &State<Pool<MySql>>) -> ApiResponse<Json<api::Status>> {
+pub async fn status(_: Auth, config: State<Arc<Config>>, pool: State<Pool<MySql>>) -> ApiResponse<Json<api::Status>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let checks = Check::count(&mut conn).await.short()?;
@@ -41,8 +43,14 @@ pub async fn status(_auth: Auth, config: &State<Arc<Config>>, pool: &State<Pool<
   Ok(Json(status))
 }
 
-#[get("/api/statistics?<check>&<from>&<to>")]
-pub async fn statistics(_auth: Auth, pool: &State<Pool<MySql>>, check: Option<String>, from: api::Date, to: api::Date) -> ApiResponse<Json<HashMap<NaiveDate, Vec<api::Outage>>>> {
+#[derive(Deserialize)]
+pub struct StatisticsQuery {
+  check: Option<String>,
+  from: api::Date,
+  to: api::Date,
+}
+
+pub async fn statistics(_: Auth, ref pool: State<Pool<MySql>>, Query(StatisticsQuery { check, from, to }): Query<StatisticsQuery>) -> ApiResponse<Json<HashMap<NaiveDate, Vec<api::Outage>>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let check = match check {
@@ -77,8 +85,7 @@ pub async fn statistics(_auth: Auth, pool: &State<Pool<MySql>>, check: Option<St
 }
 
 #[cfg(feature = "web")]
-#[get("/api/status-page")]
-pub async fn status_page(pool: &State<Pool<MySql>>) -> ApiResponse<Json<api::StatusPage>> {
+pub async fn status_page(ref pool: State<Pool<MySql>>) -> ApiResponse<Json<api::StatusPage>> {
   use std::ops::Sub;
 
   use chrono::Duration;

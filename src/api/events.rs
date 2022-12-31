@@ -1,5 +1,8 @@
 use anyhow::Context;
-use rocket::{serde::json::Json, State};
+use axum::{
+  extract::{Path, Query, State},
+  Json,
+};
 use sqlx::{MySql, Pool};
 
 use crate::{
@@ -7,39 +10,42 @@ use crate::{
   model as db,
 };
 
-#[get("/api/checks/<uuid>/events?<limit>&<page>", rank = 10)]
-pub async fn list_for_check(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<db::Event>>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
-  let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
-
-  let events = db::Event::for_check(&mut conn, &check, limit, page).await.context("could not retrieve events").short()?;
-
-  Ok(Json(events))
-}
-
-#[get("/api/checks/<uuid>/events?<from>&<to>&<limit>&<page>", rank = 5)]
-pub async fn list_for_check_between(
-  _auth: Auth,
-  pool: &State<Pool<MySql>>,
-  uuid: String,
-  from: api::DateTime,
-  to: api::DateTime,
+#[derive(Deserialize)]
+pub struct ListForCheckQuery {
+  from: Option<api::DateTime>,
+  to: Option<api::DateTime>,
   limit: Option<u8>,
   page: Option<u8>,
+}
+
+pub async fn list_for_check(
+  _: Auth,
+  pool: State<Pool<MySql>>,
+  Path(uuid): Path<String>,
+  Query(ListForCheckQuery { from, to, limit, page }): Query<ListForCheckQuery>,
 ) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
 
-  let events = db::Event::for_check_between(&mut conn, &check, *from, *to, limit, page)
-    .await
-    .context("could not retrieve events")
-    .short()?;
+  let events = if let Some((from, to)) = from.zip(to) {
+    db::Event::for_check_between(&mut conn, &check, *from, *to, limit, page)
+      .await
+      .context("could not retrieve events")
+      .short()?
+  } else {
+    db::Event::for_check(&mut conn, &check, limit, page).await.context("could not retrieve events").short()?
+  };
 
   Ok(Json(events))
 }
 
-#[get("/api/outages/<uuid>/events?<limit>&<page>")]
-pub async fn list_for_outage(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, limit: Option<u8>, page: Option<u8>) -> ApiResponse<Json<Vec<db::Event>>> {
+#[derive(Deserialize)]
+pub struct ListForOutageQuery {
+  limit: Option<u8>,
+  page: Option<u8>,
+}
+
+pub async fn list_for_outage(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, Query(ListForOutageQuery { limit, page }): Query<ListForOutageQuery>) -> ApiResponse<Json<Vec<db::Event>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
 
@@ -51,7 +57,12 @@ pub async fn list_for_outage(_auth: Auth, pool: &State<Pool<MySql>>, uuid: Strin
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
-  use rocket::http::Status;
+  use axum::{
+    body::Body,
+    http::{Request, StatusCode},
+  };
+  use hyper::body;
+  use tower::ServiceExt;
 
   use crate::{model::Event, tests};
 
@@ -63,10 +74,14 @@ mod tests {
     pool.create_unresolved_site_outage(None, None).await?;
     pool.create_resolved_outage(None, None).await?;
 
-    let response = client.get("/api/outages/dd9a531a-1b0b-4a12-bc09-e5637f916261/events").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .oneshot(Request::builder().uri("/api/outages/dd9a531a-1b0b-4a12-bc09-e5637f916261/events").body(Body::empty()).unwrap())
+      .await
+      .unwrap();
 
-    let events: Vec<Event> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let events: Vec<Event> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
     assert_eq!(events.len(), 1);
     assert_eq!(events[0].status, 1);
     assert_eq!(&events[0].message, "failure");
@@ -80,8 +95,8 @@ mod tests {
   async fn list_not_found() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    let response = client.get("/api/outages/nonexistant/events").dispatch().await;
-    assert_eq!(response.status(), Status::NotFound);
+    let response = client.oneshot(Request::builder().uri("/api/outages/nonexistant/events").body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
     pool.cleanup().await;
 

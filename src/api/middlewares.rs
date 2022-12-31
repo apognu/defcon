@@ -1,50 +1,37 @@
-use chrono::Local;
-use kvlogger::*;
-use rocket::{
-  fairing::{Fairing, Info, Kind},
-  request::Request,
+use std::net::SocketAddr;
+
+use axum::{
+  extract::ConnectInfo,
+  http::{Request, StatusCode},
+  middleware::Next,
   response::Response,
+  RequestPartsExt,
 };
+use chrono::Local;
 
-#[derive(Default)]
-pub struct ApiLogger;
+use kvlogger::kvlog;
 
-impl ApiLogger {
-  pub fn new() -> ApiLogger {
-    ApiLogger
-  }
-}
+pub async fn api_logger<B>(request: Request<B>, next: Next<B>) -> Result<Response, StatusCode> {
+  let time = Local::now().format("%Y-%m-%dT%H:%M:%S%z");
+  let method = request.method().clone();
+  let uri = request.uri().clone();
 
-#[async_trait]
-impl Fairing for ApiLogger {
-  fn info(&self) -> Info {
-    Info {
-      name: "Logging middleware",
-      kind: Kind::Request | Kind::Response,
-    }
-  }
+  let (mut parts, body) = request.into_parts();
+  let ip = if let Ok(ConnectInfo(addr)) = parts.extract::<ConnectInfo<SocketAddr>>().await {
+    addr.ip().to_string()
+  } else {
+    "N/A".to_string()
+  };
 
-  async fn on_response<'r>(&self, request: &'r Request<'_>, response: &mut Response<'r>) {
-    let ip = request.client_ip().map(|ip| ip.to_string()).unwrap_or_else(|| "-".to_string());
-    let time = Local::now().format("%Y-%m-%dT%H:%M:%S%z");
+  let response = next.run(Request::from_parts(parts, body)).await;
 
-    #[allow(clippy::branches_sharing_code)]
-    if request.uri().path().starts_with("/api/runner/") {
-      kvlog!(Debug, format!("{} {}", request.method(), request.uri()), {
-        "time" => time,
-        "remote" => ip,
-        "method" => request.method(),
-        "path" => request.uri(),
-        "status" => response.status().code
-      });
-    } else {
-      kvlog!(Info, format!("{} {}", request.method(), request.uri()), {
-        "time" => time,
-        "remote" => ip,
-        "method" => request.method(),
-        "path" => request.uri(),
-        "status" => response.status().code
-      });
-    }
-  }
+  kvlog!(Info, format!("{} {}", method, uri), {
+    "time" => time,
+    "remote" => ip,
+    "method" => method,
+    "path" => uri,
+    "status" => response.status().as_u16()
+  });
+
+  Ok(response)
 }

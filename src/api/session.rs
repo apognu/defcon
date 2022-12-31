@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use anyhow::Context;
+use axum::{
+  extract::{rejection::JsonRejection, State},
+  Json,
+};
 use chrono::Duration;
 use jsonwebtoken::{DecodingKey, Validation};
-use rocket::{
-  serde::json::{Error as JsonError, Json},
-  State,
-};
 use sqlx::{MySql, Pool};
 
 use crate::{
@@ -22,8 +22,7 @@ use crate::{
 
 use super::error::{check_json, AppError};
 
-#[post("/api/-/token", data = "<payload>")]
-pub async fn token(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, payload: Json<Credentials>) -> ApiResponse<Json<Tokens>> {
+pub async fn token(State(config): State<Arc<Config>>, State(pool): State<Pool<MySql>>, Json(payload): Json<Credentials>) -> ApiResponse<Json<Tokens>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let user = User::by_email(&mut conn, &payload.email).await.context(AppError::InvalidCredentials).short()?;
 
@@ -32,9 +31,8 @@ pub async fn token(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, paylo
   Ok(Json(Tokens::generate(config.as_ref(), &user.uuid, Duration::hours(1)).context(AppError::ServerError).short()?))
 }
 
-#[post("/api/-/refresh", data = "<refresh>")]
-pub async fn refresh(config: &State<Arc<Config>>, refresh: Json<RefreshToken>, pool: &State<Pool<MySql>>) -> ApiResponse<Json<Tokens>> {
-  let claims = jsonwebtoken::decode::<Claims>(&refresh.refresh_token, &DecodingKey::from_secret(config.api.jwt_signing_key.as_ref()), &Validation::default())
+pub async fn refresh(config: State<Arc<Config>>, pool: State<Pool<MySql>>, Json(payload): Json<RefreshToken>) -> ApiResponse<Json<Tokens>> {
+  let claims = jsonwebtoken::decode::<Claims>(&payload.refresh_token, &DecodingKey::from_secret(config.api.jwt_signing_key.as_ref()), &Validation::default())
     .context(AppError::InvalidCredentials)
     .short()?;
 
@@ -48,24 +46,21 @@ pub async fn refresh(config: &State<Arc<Config>>, refresh: Json<RefreshToken>, p
   Ok(Json(Tokens::generate(config.as_ref(), &user.uuid, Duration::hours(1)).context(AppError::ServerError).short()?))
 }
 
-#[get("/api/-/me")]
 pub async fn userinfo(auth: Auth) -> ApiResponse<Json<User>> {
   Ok(Json(auth.user))
 }
 
-#[post("/api/-/password", data = "<payload>")]
-pub async fn password(auth: Auth, pool: &State<Pool<MySql>>, payload: Result<Json<NewPassword>, JsonError<'_>>) -> ApiResponse<()> {
-  let passwords = check_json(payload).short()?.0;
+pub async fn password(auth: Auth, pool: State<Pool<MySql>>, payload: Result<Json<NewPassword>, JsonRejection>) -> ApiResponse<()> {
+  let payload = check_json(payload).short()?;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
-  auth.user.check_password(&passwords.password).await.context(AppError::InvalidCredentials).short()?;
-  auth.user.update_password(&mut conn, &passwords.new_password).await.context("could not change password").short()?;
+  auth.user.check_password(&payload.password).await.context(AppError::InvalidCredentials).short()?;
+  auth.user.update_password(&mut conn, &payload.new_password).await.context("could not change password").short()?;
 
   Ok(())
 }
 
-#[post("/api/-/apikey")]
-pub async fn api_key(auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<ApiKey>> {
+pub async fn api_key(auth: Auth, pool: State<Pool<MySql>>) -> ApiResponse<Json<ApiKey>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let api_key = auth.user.generate_api_key(&mut conn).await.context("could not generate API key").short()?;
@@ -76,12 +71,15 @@ pub async fn api_key(auth: Auth, pool: &State<Pool<MySql>>) -> ApiResponse<Json<
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
-  use chrono::{Duration, Utc};
-  use jsonwebtoken::{self, EncodingKey, Header as JwtHeader};
-  use rocket::{
-    http::{Header, Status},
-    serde::json::json,
+  use axum::{
+    body::Body,
+    http::{Request, StatusCode},
   };
+  use chrono::{Duration, Utc};
+  use hyper::Method;
+  use jsonwebtoken::{self, EncodingKey, Header as JwtHeader};
+  use serde_json::json;
+  use tower::ServiceExt;
 
   use super::*;
   use crate::{
@@ -100,8 +98,19 @@ mod tests {
       "password": "password"
     });
 
-    let response = client.post("/api/-/token").body(body.to_string()).dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/-/token")
+          .header("content-type", "application/json")
+          .body(Body::from(body.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
 
     pool.cleanup().await;
 
@@ -119,8 +128,19 @@ mod tests {
       "password": "wrongpassword"
     });
 
-    let response = client.post("/api/-/token").body(body.to_string()).dispatch().await;
-    assert_eq!(response.status(), Status::Unauthorized);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/-/token")
+          .header("content-type", "application/json")
+          .body(Body::from(body.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
     pool.cleanup().await;
 
@@ -133,8 +153,9 @@ mod tests {
 
     pool.create_user().await?;
 
-    let response = client.get("/api/checks").dispatch().await;
-    assert_eq!(response.status(), Status::Unauthorized);
+    let response = client.oneshot(Request::builder().uri("/api/checks").body(Body::empty()).unwrap()).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
     pool.cleanup().await;
 
@@ -147,8 +168,12 @@ mod tests {
 
     pool.create_user().await?;
 
-    let response = client.get("/api/checks").header(Header::new("authorization", "Bearer invalid")).dispatch().await;
-    assert_eq!(response.status(), Status::Unauthorized);
+    let response = client
+      .oneshot(Request::builder().uri("/api/checks").header("authorization", "Bearer invalid").body(Body::empty()).unwrap())
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
     pool.cleanup().await;
 
@@ -173,8 +198,12 @@ mod tests {
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret("invalidkey".as_ref())).unwrap();
 
-    let response = client.get("/api/checks").header(Header::new("authorization", format!("Bearer {token}"))).dispatch().await;
-    assert_eq!(response.status(), Status::Unauthorized);
+    let response = client
+      .oneshot(Request::builder().uri("/api/checks").header("authorization", format!("Bearer {token}")).body(Body::empty()).unwrap())
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
     pool.cleanup().await;
 
@@ -199,8 +228,12 @@ mod tests {
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
 
-    let response = client.get("/api/checks").header(Header::new("authorization", format!("Bearer {token}"))).dispatch().await;
-    assert_eq!(response.status(), Status::Unauthorized);
+    let response = client
+      .oneshot(Request::builder().uri("/api/checks").header("authorization", format!("Bearer {token}")).body(Body::empty()).unwrap())
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
     pool.cleanup().await;
 
@@ -225,8 +258,12 @@ mod tests {
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
 
-    let response = client.get("/api/checks").header(Header::new("authorization", format!("Bearer {token}"))).dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .oneshot(Request::builder().uri("/api/checks").header("authorization", format!("Bearer {token}")).body(Body::empty()).unwrap())
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
 
     pool.cleanup().await;
 
@@ -251,8 +288,19 @@ mod tests {
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
 
-    let response = client.post("/api/-/refresh").body(format!(r#"{{ "refresh_token": "{token}" }}"#)).dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/-/refresh")
+          .header("content-type", "application/json")
+          .body(Body::from(format!(r#"{{ "refresh_token": "{token}" }}"#)))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
 
     pool.cleanup().await;
 
@@ -277,8 +325,19 @@ mod tests {
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret("invalidkey".as_ref())).unwrap();
 
-    let response = client.post("/api/-/refresh").body(format!(r#"{{ "refresh_token": "{token}" }}"#)).dispatch().await;
-    assert_eq!(response.status(), Status::Unauthorized);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/-/refresh")
+          .header("content-type", "application/json")
+          .body(Body::from(format!(r#"{{ "refresh_token": "{token}" }}"#)))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
     pool.cleanup().await;
 
@@ -303,8 +362,19 @@ mod tests {
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
 
-    let response = client.post("/api/-/refresh").body(format!(r#"{{ "refresh_token": "{token}" }}"#)).dispatch().await;
-    assert_eq!(response.status(), Status::Unauthorized);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/-/refresh")
+          .header("content-type", "application/json")
+          .body(Body::from(format!(r#"{{ "refresh_token": "{token}" }}"#)))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
     pool.cleanup().await;
 
@@ -338,13 +408,19 @@ mod tests {
       });
 
       let response = client
-        .post("/api/-/password")
-        .header(Header::new("authorization", format!("Bearer {token}")))
-        .body(payload.to_string())
-        .dispatch()
-        .await;
+        .oneshot(
+          Request::builder()
+            .method(Method::POST)
+            .uri("/api/-/password")
+            .header("authorization", format!("Bearer {token}"))
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .unwrap(),
+        )
+        .await
+        .unwrap();
 
-      assert_eq!(response.status(), Status::Ok);
+      assert_eq!(response.status(), StatusCode::OK);
 
       let user = User::by_email(&mut conn, "noreply@example.com").await?;
 
@@ -383,13 +459,19 @@ mod tests {
       });
 
       let response = client
-        .post("/api/-/password")
-        .header(Header::new("authorization", format!("Bearer {token}")))
-        .body(payload.to_string())
-        .dispatch()
-        .await;
+        .oneshot(
+          Request::builder()
+            .method(Method::POST)
+            .uri("/api/-/password")
+            .header("authorization", format!("Bearer {token}"))
+            .header("content-type", "application/json")
+            .body(Body::from(payload.to_string()))
+            .unwrap(),
+        )
+        .await
+        .unwrap();
 
-      assert_eq!(response.status(), Status::Unauthorized);
+      assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 
       let user = User::by_email(&mut conn, "noreply@example.com").await?;
 

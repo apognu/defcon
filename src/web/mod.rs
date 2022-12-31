@@ -1,13 +1,11 @@
 mod frontend;
 
-use rocket::{
-  Build, Config as RocketConfig, Rocket, Route,
-};
+use axum::{routing::get, Router};
 
-pub fn server(provider: RocketConfig) -> Rocket<Build> {
-    rocket::custom(provider).mount("/", routes())
-}
-
-pub fn routes() -> Vec<Route> {
-  routes![self::frontend::robots, self::frontend::index, self::frontend::catchall, self::frontend::assets]
+pub fn router(router: Router) -> Router {
+  router
+    .route("/robots.txt", get(self::frontend::robots))
+    .route("/index.html", get(self::frontend::index))
+    .route("/assets/*path", get(self::frontend::assets))
+    .fallback(self::frontend::index)
 }

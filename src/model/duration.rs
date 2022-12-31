@@ -61,7 +61,7 @@ impl Encode<'_, MySql> for Duration {
   }
 
   fn encode_by_ref(&self, buf: &mut Vec<u8>) -> IsNull {
-    <&u64 as sqlx::Encode<MySql>>::encode(&self.as_secs(), buf)
+    <u64 as sqlx::Encode<MySql>>::encode(self.as_secs(), buf)
   }
 }
 

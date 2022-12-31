@@ -13,7 +13,7 @@ use std::{
 };
 
 use anyhow::Result;
-use rocket::{local::asynchronous::Client, Config as RocketConfig};
+use axum::Router;
 use sqlx::mysql::MySqlPoolOptions;
 use url::Url;
 use uuid::Uuid;
@@ -70,7 +70,7 @@ pub fn config(auth: bool) -> Arc<Config> {
   Arc::new(config)
 }
 
-pub async fn api_client() -> Result<(TestConnection, Client)> {
+pub async fn api_client() -> Result<(TestConnection, Router)> {
   let database = format!("defcon_test_{}", Uuid::new_v4().simple());
   let mut dsn = Url::parse(&env::var("DSN")?)?;
 
@@ -88,12 +88,12 @@ pub async fn api_client() -> Result<(TestConnection, Client)> {
     "-----BEGIN PUBLIC KEY-----MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMUdYFmfbi57NV7pTIht38+w8yPly7rmrD1MPXenlCOu8Mu5623/ztsGeTV9uatuMQeMS+a7NEFzPGjMIKiR3AA==-----END PUBLIC KEY-----".as_bytes(),
   )?;
 
-  let server = api::server(RocketConfig::default(), config(false), pool.clone(), Some(keys));
+  let server = api::server(config(false), pool.clone(), Some(keys));
 
-  Ok((TestConnection(pool, database), Client::untracked(server).await?))
+  Ok((TestConnection(pool, database), server))
 }
 
-pub async fn authenticated_api_client() -> Result<(TestConnection, Client)> {
+pub async fn authenticated_api_client() -> Result<(TestConnection, Router)> {
   let database = format!("defcon_test_{}", Uuid::new_v4().simple());
   let mut dsn = Url::parse(&env::var("DSN")?)?;
 
@@ -111,9 +111,9 @@ pub async fn authenticated_api_client() -> Result<(TestConnection, Client)> {
     "-----BEGIN PUBLIC KEY-----MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEMUdYFmfbi57NV7pTIht38+w8yPly7rmrD1MPXenlCOu8Mu5623/ztsGeTV9uatuMQeMS+a7NEFzPGjMIKiR3AA==-----END PUBLIC KEY-----".as_bytes(),
   )?;
 
-  let server = api::server(RocketConfig::default(), config(true), pool.clone(), Some(keys));
+  let server = api::server(config(true), pool.clone(), Some(keys));
 
-  Ok((TestConnection(pool, database), Client::untracked(server).await?))
+  Ok((TestConnection(pool, database), server))
 }
 
 pub async fn db_client() -> Result<TestConnection> {

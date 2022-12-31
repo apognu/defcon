@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use rocket::{serde::json::Json, State};
+use axum::{extract::State, Json};
 use sqlx::{MySql, Pool};
 
 use crate::{
@@ -16,8 +16,7 @@ use crate::{
   model::{Check, Event},
 };
 
-#[get("/api/runner/checks")]
-pub async fn list_stale(pool: &State<Pool<MySql>>, credentials: RunnerAuth) -> ApiResponse<Json<Vec<api::RunnerCheck>>> {
+pub async fn list_stale(ref pool: State<Pool<MySql>>, credentials: RunnerAuth) -> ApiResponse<Json<Vec<api::RunnerCheck>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let checks: Vec<api::RunnerCheck> = Check::stale(&mut conn, &credentials.site)
@@ -34,9 +33,8 @@ pub async fn list_stale(pool: &State<Pool<MySql>>, credentials: RunnerAuth) -> A
   Ok(Json(checks))
 }
 
-#[post("/api/runner/report", data = "<payload>")]
-pub async fn report(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, credentials: RunnerAuth, payload: Json<api::ReportEvent>) -> ApiResponse<()> {
-  let report = payload.0;
+pub async fn report(State(config): State<Arc<Config>>, pool: State<Pool<MySql>>, credentials: RunnerAuth, Json(payload): Json<api::ReportEvent>) -> ApiResponse<()> {
+  let report = payload;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = Check::by_uuid(&mut conn, &report.check).await.short()?;
 
@@ -48,7 +46,7 @@ pub async fn report(config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, cred
     ..Default::default()
   };
 
-  handlers::handle_event(config.inner().clone(), &mut conn, &event, &check, None).await.short()?;
+  handlers::handle_event(config.clone(), &mut conn, &event, &check, None).await.short()?;
 
   Ok(())
 }

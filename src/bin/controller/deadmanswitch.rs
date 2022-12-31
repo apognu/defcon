@@ -1,41 +1,44 @@
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 
 use anyhow::{Context, Result};
+use axum::{
+  extract::{Path, State},
+  http::StatusCode,
+  response::IntoResponse,
+  routing::get,
+  Router,
+};
 use kvlogger::*;
-use rocket::{get, http::Status, response::status::Custom, routes, Config as RocketConfig, Route, State};
 use sqlx::{MySql, Pool};
 
 use defcon::{
+  api::error::{AppError, ErrorResponse, Shortable},
   config::Config,
   model::{Check, DeadManSwitchLog},
 };
 
 pub async fn run(pool: Pool<MySql>, config: Arc<Config>) -> Result<()> {
-  let provider = RocketConfig {
-    address: config.dms.listen.ip(),
-    port: config.dms.listen.port(),
-    ..RocketConfig::release_default()
-  };
-
   kvlog!(Info, "starting dead man switch process", {
     "listen" => config.dms.listen
   });
 
-  let _ = rocket::custom(provider).manage(pool).mount("/", routes()).launch().await?;
+  let addr = SocketAddr::from((config.dms.listen.ip(), config.dms.listen.port()));
+  let app = server(pool);
+
+  axum::Server::bind(&addr).serve(app.into_make_service()).await.context("could not launch api process")?;
 
   Ok(())
 }
 
-fn routes() -> Vec<Route> {
-  routes![checkin]
+fn server(pool: Pool<MySql>) -> Router {
+  Router::new().route("/checkin/:uuid", get(checkin)).with_state(pool)
 }
 
-#[get("/checkin/<uuid>")]
-async fn checkin(pool: &State<Pool<MySql>>, uuid: String) -> Result<(), Custom<()>> {
-  let mut conn = pool.acquire().await.context("could not retrieve database connection").map_err(|_| Custom(Status::NotFound, ()))?;
-  let check = Check::by_uuid(&mut conn, &uuid).await.map_err(|_| Custom(Status::NotFound, ()))?;
+async fn checkin(pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> Result<impl IntoResponse, ErrorResponse> {
+  let mut conn = pool.acquire().await.context("could not retrieve database connection").context(AppError::ResourceNotFound).short()?;
+  let check = Check::by_uuid(&mut conn, &uuid).await.context(AppError::ResourceNotFound).short()?;
 
-  DeadManSwitchLog::insert(&mut conn, check.id).await.map_err(|_| Custom(Status::InternalServerError, ()))?;
+  DeadManSwitchLog::insert(&mut conn, check.id).await.context(AppError::ServerError).short()?;
 
-  Ok(())
+  Ok(StatusCode::OK)
 }

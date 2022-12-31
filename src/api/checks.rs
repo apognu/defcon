@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
 use anyhow::Context;
-use rocket::{
-  response::status::{Created, NoContent},
-  serde::json::{Error as JsonError, Json},
-  State,
+use axum::{
+  extract::{rejection::JsonRejection, Path, Query, State},
+  http::{header, StatusCode},
+  response::IntoResponse,
+  Json,
 };
 use sqlx::{MySql, Pool};
 use uuid::Uuid;
@@ -22,8 +23,15 @@ use crate::{
 
 use super::auth::Auth;
 
-#[get("/api/checks?<all>&<group>&<kind>&<site>")]
-pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>, all: Option<bool>, group: Option<String>, kind: Option<String>, site: Option<String>) -> ApiResponse<Json<Vec<api::Check>>> {
+#[derive(Deserialize)]
+pub struct ListQuery {
+  all: Option<bool>,
+  group: Option<String>,
+  kind: Option<String>,
+  site: Option<String>,
+}
+
+pub async fn list(_: Auth, ref pool: State<Pool<MySql>>, Query(ListQuery { all, group, kind, site }): Query<ListQuery>) -> ApiResponse<Json<Vec<api::Check>>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let group = match group {
@@ -47,17 +55,15 @@ pub async fn list(_auth: Auth, pool: &State<Pool<MySql>>, all: Option<bool>, gro
   Ok(Json(checks))
 }
 
-#[get("/api/checks/<uuid>")]
-pub async fn get(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String) -> ApiResponse<Json<api::Check>> {
+pub async fn get(_: Auth, ref pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<Json<api::Check>> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?.map(pool).await.short()?;
 
   Ok(Json(check))
 }
 
-#[post("/api/checks", data = "<payload>")]
-pub async fn create(_auth: Auth, config: &State<Arc<Config>>, pool: &State<Pool<MySql>>, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<Created<String>> {
-  let payload = check_json(payload).short()?.0;
+pub async fn create(_: Auth, config: State<Arc<Config>>, pool: State<Pool<MySql>>, payload: Result<Json<api::Check>, JsonRejection>) -> ApiResponse<impl IntoResponse> {
+  let payload = check_json(payload).short()?;
   let uuid = Uuid::new_v4().to_string();
 
   let sites = match payload.sites {
@@ -72,7 +78,7 @@ pub async fn create(_auth: Auth, config: &State<Arc<Config>>, pool: &State<Pool<
   let mut txn = pool.begin().await.context("could not start transaction").short()?;
 
   let group = match payload.group_in {
-    Some(group) => Some(Group::by_uuid(&mut txn, &group).await.context("could not retrieve group").short()?),
+    Some(ref group) => Some(Group::by_uuid(&mut txn, group).await.context("could not retrieve group").short()?),
     None => None,
   };
 
@@ -106,12 +112,11 @@ pub async fn create(_auth: Auth, config: &State<Arc<Config>>, pool: &State<Pool<
 
   txn.commit().await.context("could not commit transaction").short()?;
 
-  Ok(Created::new(uri!(get(uuid = check.uuid)).to_string()))
+  Ok((StatusCode::CREATED, [(header::LOCATION, format!("/api/checks/{}", check.uuid))]))
 }
 
-#[put("/api/checks/<uuid>", data = "<payload>")]
-pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::Check>, JsonError<'_>>) -> ApiResponse<()> {
-  let payload = check_json(payload).short()?.0;
+pub async fn update(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, payload: Result<Json<api::Check>, JsonRejection>) -> ApiResponse<()> {
+  let payload = check_json(payload).short()?;
 
   let sites = match payload.sites {
     Some(sites) => sites,
@@ -162,9 +167,8 @@ pub async fn update(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payloa
   Ok(())
 }
 
-#[patch("/api/checks/<uuid>", data = "<payload>")]
-pub async fn patch(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload: Result<Json<api::CheckPatch>, JsonError<'_>>) -> ApiResponse<()> {
-  let payload = check_json(payload).short()?.0;
+pub async fn patch(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, payload: Result<Json<api::CheckPatch>, JsonRejection>) -> ApiResponse<()> {
+  let payload = check_json(payload).short()?;
 
   let mut txn = pool.begin().await.context("could not start transaction").short()?;
   let mut check = Check::by_uuid(&mut txn, &uuid).await.context("could not retrieve check").short()?;
@@ -218,8 +222,12 @@ pub async fn patch(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, payload
   Ok(())
 }
 
-#[delete("/api/checks/<uuid>?<delete>")]
-pub async fn delete(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, delete: Option<bool>) -> ApiResponse<NoContent> {
+#[derive(Deserialize)]
+pub struct DeleteQuery {
+  delete: Option<bool>,
+}
+
+pub async fn delete(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, Query(DeleteQuery { delete }): Query<DeleteQuery>) -> ApiResponse<impl IntoResponse> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   match delete.unwrap_or(false) {
@@ -227,13 +235,19 @@ pub async fn delete(_auth: Auth, pool: &State<Pool<MySql>>, uuid: String, delete
     true => Check::delete(&mut conn, &uuid).await.context("could not delete check").short()?,
   }
 
-  Ok(NoContent)
+  Ok(StatusCode::NO_CONTENT)
 }
 
 #[cfg(test)]
 mod tests {
   use anyhow::Result;
-  use rocket::{http::Status, serde::json::json};
+  use axum::{
+    body::Body,
+    http::{Request, StatusCode},
+  };
+  use hyper::{body, Method};
+  use serde_json::json;
+  use tower::{Service, ServiceExt};
   use uuid::Uuid;
 
   use crate::{api::types as api, config::CONTROLLER_ID, tests};
@@ -245,10 +259,10 @@ mod tests {
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true), None).await?;
     pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "list_checks_2()", Some(false), None).await?;
 
-    let response = client.get("/api/checks").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client.oneshot(Request::builder().uri("/api/checks").body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 
-    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
     assert_eq!(checks.len(), 1);
     assert_eq!(&checks[0].check.name, "list_checks_1()");
 
@@ -264,10 +278,10 @@ mod tests {
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true), None).await?;
     pool.create_check(Some(2), Some(Uuid::new_v4().to_string()), "list_checks_2()", Some(false), None).await?;
 
-    let response = client.get("/api/checks?all=true").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client.oneshot(Request::builder().uri("/api/checks?all=true").body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 
-    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
     assert_eq!(checks.len(), 2);
 
     pool.cleanup().await;
@@ -277,20 +291,34 @@ mod tests {
 
   #[tokio::test]
   async fn list_by_kind() -> Result<()> {
-    let (pool, client) = tests::api_client().await?;
+    let (pool, mut client) = tests::api_client().await?;
 
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true), None).await?;
 
-    let response = client.get("/api/checks?kind=tcp").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .ready()
+      .await
+      .unwrap()
+      .call(Request::builder().uri("/api/checks?kind=tcp").body(Body::empty()).unwrap())
+      .await
+      .unwrap();
 
-    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
     assert_eq!(checks.len(), 1);
 
-    let response = client.get("/api/checks?kind=http").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .ready()
+      .await
+      .unwrap()
+      .call(Request::builder().uri("/api/checks?kind=http").body(Body::empty()).unwrap())
+      .await
+      .unwrap();
 
-    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
     assert_eq!(checks.len(), 0);
 
     pool.cleanup().await;
@@ -300,20 +328,34 @@ mod tests {
 
   #[tokio::test]
   async fn list_by_site() -> Result<()> {
-    let (pool, client) = tests::api_client().await?;
+    let (pool, mut client) = tests::api_client().await?;
 
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true), Some(&["eu-1"])).await?;
 
-    let response = client.get("/api/checks?site=eu-1").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .ready()
+      .await
+      .unwrap()
+      .call(Request::builder().uri("/api/checks?site=eu-1").body(Body::empty()).unwrap())
+      .await
+      .unwrap();
 
-    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
     assert_eq!(checks.len(), 1);
 
-    let response = client.get("/api/checks?site=nosite").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .ready()
+      .await
+      .unwrap()
+      .call(Request::builder().uri("/api/checks?site=nosite").body(Body::empty()).unwrap())
+      .await
+      .unwrap();
 
-    let checks: Vec<api::Check> = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
     assert_eq!(checks.len(), 0);
 
     pool.cleanup().await;
@@ -327,10 +369,14 @@ mod tests {
 
     pool.create_check(None, None, "get_check()", None, None).await?;
 
-    let response = client.get("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .oneshot(Request::builder().uri("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(Body::empty()).unwrap())
+      .await
+      .unwrap();
 
-    let check: api::Check = serde_json::from_str(&response.into_string().await.unwrap())?;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let check: api::Check = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
     assert_eq!(&check.check.name, "get_check()");
 
     pool.cleanup().await;
@@ -342,8 +388,8 @@ mod tests {
   async fn get_not_found() -> Result<()> {
     let (pool, client) = tests::api_client().await?;
 
-    let response = client.get("/api/checks/nonexistant").dispatch().await;
-    assert_eq!(response.status(), Status::NotFound);
+    let response = client.oneshot(Request::builder().uri("/api/checks/nonexistant").body(Body::empty()).unwrap()).await.unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
 
     pool.cleanup().await;
 
@@ -368,8 +414,19 @@ mod tests {
       }
     });
 
-    let response = client.post("/api/checks").body(check.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::Created);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/checks")
+          .header("content-type", "application/json")
+          .body(Body::from(check.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
 
     let checks = sqlx::query_as::<_, (String,)>("SELECT name FROM checks").fetch_all(&*pool).await?;
 
@@ -399,8 +456,19 @@ mod tests {
       }
     });
 
-    let response = client.post("/api/checks").body(check.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/checks")
+          .header("content-type", "application/json")
+          .body(Body::from(check.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     pool.cleanup().await;
 
@@ -425,8 +493,19 @@ mod tests {
       }
     });
 
-    let response = client.post("/api/checks").body(check.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/checks")
+          .header("content-type", "application/json")
+          .body(Body::from(check.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     pool.cleanup().await;
 
@@ -451,8 +530,19 @@ mod tests {
       }
     });
 
-    let response = client.post("/api/checks").body(check.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/checks")
+          .header("content-type", "application/json")
+          .body(Body::from(check.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     pool.cleanup().await;
 
@@ -471,8 +561,19 @@ mod tests {
       "failing_threshold": 1
     });
 
-    let response = client.post("/api/checks").body(check.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::POST)
+          .uri("/api/checks")
+          .header("content-type", "application/json")
+          .body(Body::from(check.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     pool.cleanup().await;
 
@@ -501,8 +602,19 @@ mod tests {
       }
     });
 
-    let response = client.put("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(check.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::PUT)
+          .uri("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261")
+          .header("content-type", "application/json")
+          .body(Body::from(check.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
 
     let check = sqlx::query_as::<_, (String, bool, u64)>(r#"SELECT name, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
       .fetch_one(&*pool)
@@ -542,8 +654,19 @@ mod tests {
       }
     });
 
-    let response = client.put("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(check.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::PUT)
+          .uri("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261")
+          .header("content-type", "application/json")
+          .body(Body::from(check.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     pool.cleanup().await;
 
@@ -568,8 +691,19 @@ mod tests {
       }
     });
 
-    let response = client.put("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(check.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::PUT)
+          .uri("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261")
+          .header("content-type", "application/json")
+          .body(Body::from(check.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     pool.cleanup().await;
 
@@ -588,8 +722,19 @@ mod tests {
       "enabled": false
     });
 
-    let response = client.patch("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(check.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::Ok);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::PATCH)
+          .uri("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261")
+          .header("content-type", "application/json")
+          .body(Body::from(check.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
 
     let check = sqlx::query_as::<_, (String, bool, u64)>(r#"SELECT name, enabled, `interval` FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
       .fetch_one(&*pool)
@@ -622,8 +767,19 @@ mod tests {
       "site_threshold": 2
     });
 
-    let response = client.patch("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").body(check.to_string().as_bytes()).dispatch().await;
-    assert_eq!(response.status(), Status::BadRequest);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::PATCH)
+          .uri("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261")
+          .header("content-type", "application/json")
+          .body(Body::from(check.to_string()))
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     pool.cleanup().await;
 
@@ -636,8 +792,18 @@ mod tests {
 
     pool.create_check(None, None, "disable()", None, None).await?;
 
-    let response = client.delete("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261").dispatch().await;
-    assert_eq!(response.status(), Status::NoContent);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::DELETE)
+          .uri("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261")
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
 
     let check = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
       .fetch_one(&*pool)
@@ -656,8 +822,18 @@ mod tests {
 
     pool.create_check(None, None, "delete()", None, None).await?;
 
-    let response = client.delete("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261?delete=true").dispatch().await;
-    assert_eq!(response.status(), Status::NoContent);
+    let response = client
+      .oneshot(
+        Request::builder()
+          .method(Method::DELETE)
+          .uri("/api/checks/dd9a531a-1b0b-4a12-bc09-e5637f916261?delete=true")
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
 
     let check = sqlx::query_as::<_, (bool,)>(r#"SELECT enabled FROM checks WHERE uuid = "dd9a531a-1b0b-4a12-bc09-e5637f916261""#)
       .fetch_one(&*pool)

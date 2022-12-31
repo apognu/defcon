@@ -1,7 +1,7 @@
-use std::ops::Deref;
+use std::{fmt, ops::Deref};
 
 use chrono::{NaiveDate, NaiveDateTime};
-use rocket::form::{error::ErrorKind, FromFormField, Result as FormResult, ValueField};
+use serde::de::{self, Deserialize, Deserializer, Visitor};
 
 pub struct DateTime(NaiveDateTime);
 
@@ -13,11 +13,31 @@ impl Deref for DateTime {
   }
 }
 
-impl<'v> FromFormField<'v> for DateTime {
-  fn from_value(field: ValueField<'v>) -> FormResult<'v, DateTime> {
-    let datetime = NaiveDateTime::parse_from_str(field.value, "%Y-%m-%dT%H:%M:%S").map_err(|_| ErrorKind::Unknown)?;
+struct DateTimeVisitor;
+
+impl<'de> Visitor<'de> for DateTimeVisitor {
+  type Value = DateTime;
+
+  fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    formatter.write_str("a date in YYYY-MM-DDTHH:mm:SS format")
+  }
+
+  fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+  where
+    E: de::Error,
+  {
+    let datetime = NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M:%S").map_err(|_| de::Error::custom("invalid date"))?;
 
     Ok(DateTime(datetime))
+  }
+}
+
+impl<'de> Deserialize<'de> for DateTime {
+  fn deserialize<D>(deserializer: D) -> Result<DateTime, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    deserializer.deserialize_str(DateTimeVisitor)
   }
 }
 
@@ -31,10 +51,30 @@ impl Deref for Date {
   }
 }
 
-impl<'v> FromFormField<'v> for Date {
-  fn from_value(field: ValueField<'v>) -> FormResult<'v, Date> {
-    let date = NaiveDate::parse_from_str(field.value, "%Y-%m-%d").map_err(|_| ErrorKind::Unknown)?;
+struct DateVisitor;
+
+impl<'de> Visitor<'de> for DateVisitor {
+  type Value = Date;
+
+  fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    formatter.write_str("a date in YYYY-MM-DD format")
+  }
+
+  fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+  where
+    E: de::Error,
+  {
+    let date = NaiveDate::parse_from_str(value, "%Y-%m-%d").map_err(|_| de::Error::custom("invalid date"))?;
 
     Ok(Date(date))
+  }
+}
+
+impl<'de> Deserialize<'de> for Date {
+  fn deserialize<D>(deserializer: D) -> Result<Date, D::Error>
+  where
+    D: Deserializer<'de>,
+  {
+    deserializer.deserialize_str(DateVisitor)
   }
 }
