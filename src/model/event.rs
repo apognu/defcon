@@ -192,7 +192,7 @@ mod tests {
       let outage = Outage {
         id: 1,
         check_id: 1,
-        started_on: Some(DateTime::<Utc>::from_utc(NaiveDate::from_ymd(2019, 12, 1).and_hms(0, 0, 0), Utc)),
+        started_on: Some(DateTime::<Utc>::from_utc(NaiveDate::from_ymd_opt(2019, 12, 1).unwrap().and_hms_opt(0, 0, 0).unwrap(), Utc)),
         ..Default::default()
       };
       let events = Event::for_outage(&mut *conn, &outage, None, None).await?;
@@ -250,7 +250,7 @@ mod tests {
       pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
       pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
-      Event::delete_before(&mut *conn, &NaiveDate::from_ymd(2021, 2, 1).and_hms(0, 0, 0)).await?;
+      Event::delete_before(&mut *conn, &NaiveDate::from_ymd_opt(2021, 2, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()).await?;
 
       let events = sqlx::query_as::<_, (u64,)>(r#"SELECT id FROM events"#).fetch_all(&*pool).await?;
 

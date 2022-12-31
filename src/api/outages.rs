@@ -37,7 +37,7 @@ pub async fn list(_: Auth, ref pool: State<Pool<MySql>>, Query(ListQuery { check
       None => None,
     };
 
-    db::Outage::between(&mut conn, check.as_ref(), from.and_hms(0, 0, 0), to.and_hms(23, 59, 59), limit, page)
+    db::Outage::between(&mut conn, check.as_ref(), from.and_hms_opt(0, 0, 0).unwrap(), to.and_hms_opt(23, 59, 59).unwrap(), limit, page)
       .await
       .context("could not retrieve outages")
       .short()?

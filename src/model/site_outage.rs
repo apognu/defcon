@@ -321,20 +321,20 @@ mod tests {
       pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
       pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
-      let start = NaiveDate::from_ymd(2021, 1, 1).and_hms(0, 0, 0);
-      let end = NaiveDate::from_ymd(2021, 2, 1).and_hms(0, 0, 0);
+      let start = NaiveDate::from_ymd_opt(2021, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+      let end = NaiveDate::from_ymd_opt(2021, 2, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
       let outages = SiteOutage::between(&mut *conn, start, end).await?;
 
       assert_eq!(outages.len(), 2);
 
-      let start = NaiveDate::from_ymd(2021, 1, 1).and_hms(0, 0, 0);
-      let end = NaiveDate::from_ymd(2021, 1, 5).and_hms(0, 0, 0);
+      let start = NaiveDate::from_ymd_opt(2021, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+      let end = NaiveDate::from_ymd_opt(2021, 1, 5).unwrap().and_hms_opt(0, 0, 0).unwrap();
       let outages = SiteOutage::between(&mut *conn, start, end).await?;
 
       assert_eq!(outages.len(), 1);
 
-      let start = NaiveDate::from_ymd(2020, 12, 1).and_hms(0, 0, 0);
-      let end = NaiveDate::from_ymd(2020, 12, 2).and_hms(0, 0, 0);
+      let start = NaiveDate::from_ymd_opt(2020, 12, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+      let end = NaiveDate::from_ymd_opt(2020, 12, 2).unwrap().and_hms_opt(0, 0, 0).unwrap();
       let outages = SiteOutage::between(&mut *conn, start, end).await?;
 
       assert_eq!(outages.len(), 0);
@@ -488,7 +488,7 @@ mod tests {
       pool.create_unresolved_site_outage(Some(1), Some(Uuid::new_v4().to_string())).await?;
       pool.create_resolved_site_outage(Some(2), Some(Uuid::new_v4().to_string())).await?;
 
-      let epoch = NaiveDate::from_ymd(2021, 2, 1).and_hms(0, 0, 0);
+      let epoch = NaiveDate::from_ymd_opt(2021, 2, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
       Event::delete_before(&mut *conn, &epoch).await?;
       SiteOutage::delete_before(&mut *conn, &epoch).await?;
 

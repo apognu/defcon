@@ -58,7 +58,7 @@ pub async fn statistics(_: Auth, ref pool: State<Pool<MySql>>, Query(StatisticsQ
     None => None,
   };
 
-  let outages = Outage::between(&mut conn, check.as_ref(), from.and_hms(0, 0, 0), to.and_hms(23, 59, 59), None, None)
+  let outages = Outage::between(&mut conn, check.as_ref(), from.and_hms_opt(0, 0, 0).unwrap(), to.and_hms_opt(23, 59, 59).unwrap(), None, None)
     .await
     .context("could not retrieve outages")
     .short()?
@@ -66,16 +66,16 @@ pub async fn statistics(_: Auth, ref pool: State<Pool<MySql>>, Query(StatisticsQ
     .await
     .short()?;
 
-  let now = Utc::now().date().naive_local();
+  let now = Utc::now().date_naive();
   let interval = to.signed_duration_since(*from).num_days() as usize + 1;
 
   let mut stats: HashMap<NaiveDate, Vec<api::Outage>> = HashMap::new();
 
   for outage in outages {
-    let start = outage.outage.started_on.unwrap().date().naive_local();
+    let start = outage.outage.started_on.unwrap().date_naive();
 
     from.iter_days().take(interval).for_each(|day| {
-      if day <= now && start <= day && (outage.outage.ended_on.is_none() || outage.outage.ended_on.unwrap().date().naive_local() >= day) {
+      if day <= now && start <= day && (outage.outage.ended_on.is_none() || outage.outage.ended_on.unwrap().date_naive() >= day) {
         stats.entry(day).or_default().push(outage.clone());
       }
     });
@@ -100,10 +100,10 @@ pub async fn status_page(ref pool: State<Pool<MySql>>) -> ApiResponse<Json<api::
     .then(async move |check| {
       if let Ok(mut conn) = pool.acquire().await.context("could not retrieve database connection") {
         let outage = Outage::for_check_current(&mut conn, &check).await;
-        let to = Utc::now().date().naive_utc();
-        let from = Utc::now().sub(Duration::days(30)).date().naive_utc();
+        let to = Utc::now().date_naive();
+        let from = Utc::now().sub(Duration::days(30)).date_naive();
 
-        let outages = Outage::between(&mut conn, Some(&check), from.and_hms(0, 0, 0), to.and_hms(23, 59, 59), None, None)
+        let outages = Outage::between(&mut conn, Some(&check), from.and_hms_opt(0, 0, 0).unwrap(), to.and_hms_opt(23, 59, 59).unwrap(), None, None)
           .await
           .context("could not retrieve outages")
           .ok()?
@@ -111,16 +111,16 @@ pub async fn status_page(ref pool: State<Pool<MySql>>) -> ApiResponse<Json<api::
           .await
           .ok()?;
 
-        let now = Utc::now().date().naive_local();
+        let now = Utc::now().date_naive();
         let interval = to.signed_duration_since(from).num_days() as usize + 1;
 
         let mut stats: HashMap<NaiveDate, u64> = HashMap::new();
 
         for outage in outages {
-          let start = outage.outage.started_on.unwrap().date().naive_local();
+          let start = outage.outage.started_on.unwrap().date_naive();
 
           from.iter_days().take(interval).for_each(|day| {
-            if day <= now && start <= day && (outage.outage.ended_on.is_none() || outage.outage.ended_on.unwrap().date().naive_local() >= day) {
+            if day <= now && start <= day && (outage.outage.ended_on.is_none() || outage.outage.ended_on.unwrap().date_naive() >= day) {
               *stats.entry(day).or_default() += 1;
             }
           });
