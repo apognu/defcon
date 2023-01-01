@@ -10,8 +10,8 @@ jobs:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
         with:
           path: target/
           key: cargo-clippy-cache-${{ matrix.arch.target }}
@@ -41,8 +41,8 @@ jobs:
     steps:
       - name: Install dependencies
         run: sudo apt install -y libcap-dev libjq-dev libonig-dev
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
         with:
           path: target/
           key: cargo-test-cache-${{ matrix.arch.target }}
@@ -66,8 +66,8 @@ jobs:
     steps:
       - name: Install dependencies
         run: sudo apt install -y libcap-dev libjq-dev libonig-dev
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
         with:
           path: |
             target/
@@ -114,7 +114,7 @@ jobs:
     runs-on: ubuntu-20.04
     needs: [clippy, test, build]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install mdbook
         uses: peaceiris/actions-mdbook@v1
         with:
