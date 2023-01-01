@@ -4,7 +4,6 @@ use anyhow::{Context, Result};
 use axum::{
   extract::{Path, State},
   http::StatusCode,
-  response::IntoResponse,
   routing::get,
   Router,
 };
@@ -34,7 +33,7 @@ fn server(pool: Pool<MySql>) -> Router {
   Router::new().route("/checkin/:uuid", get(checkin)).with_state(pool)
 }
 
-async fn checkin(pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> Result<impl IntoResponse, ErrorResponse> {
+async fn checkin(pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> Result<StatusCode, ErrorResponse> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").context(AppError::ResourceNotFound).short()?;
   let check = Check::by_uuid(&mut conn, &uuid).await.context(AppError::ResourceNotFound).short()?;
 

@@ -1,7 +1,6 @@
 use anyhow::Context;
 use axum::{
   extract::{rejection::JsonRejection, Path, Query, State},
-  response::IntoResponse,
   Json,
 };
 use pulldown_cmark::{html, Parser};
@@ -97,7 +96,7 @@ pub async fn list_for_check(
   Ok(Json(outages))
 }
 
-pub async fn acknowledge(auth: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<impl IntoResponse> {
+pub async fn acknowledge(auth: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<()> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?;
 

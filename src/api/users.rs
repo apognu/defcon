@@ -77,7 +77,7 @@ pub async fn patch(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, 
   Ok(())
 }
 
-pub async fn delete(auth: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<impl IntoResponse> {
+pub async fn delete(auth: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<StatusCode> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   if uuid == auth.user.uuid {

@@ -31,7 +31,10 @@ use crate::{
   config::Config,
 };
 
-use self::auth::Auth;
+use self::{
+  auth::Auth,
+  error::{AppError, Shortable},
+};
 
 #[derive(Clone, FromRef)]
 pub struct AppState {
@@ -124,7 +127,7 @@ pub fn web_router(router: Router, _: AppState) -> Router {
   router
 }
 
-async fn health() -> impl IntoResponse {
+async fn health() -> StatusCode {
   StatusCode::OK
 }
 
@@ -132,9 +135,10 @@ async fn configuration(_: Auth, State(config): State<Arc<Config>>) -> Json<Arc<C
   Json(config)
 }
 
-#[allow(unused_variables)]
 async fn api_catchall() -> impl IntoResponse {
-  StatusCode::NOT_FOUND
+  // StatusCode::NOT_FOUND
+
+  Err::<(), _>(anyhow!(AppError::ResourceNotFound)).short()
 }
 
 #[cfg(test)]

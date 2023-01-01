@@ -59,7 +59,7 @@ pub async fn update(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>,
   Ok(())
 }
 
-pub async fn delete(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<impl IntoResponse> {
+pub async fn delete(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<StatusCode> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   Group::delete(&mut conn, &uuid).await.context("could not delete group").short()?;
 

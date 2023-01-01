@@ -227,7 +227,7 @@ pub struct DeleteQuery {
   delete: Option<bool>,
 }
 
-pub async fn delete(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, Query(DeleteQuery { delete }): Query<DeleteQuery>) -> ApiResponse<impl IntoResponse> {
+pub async fn delete(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, Query(DeleteQuery { delete }): Query<DeleteQuery>) -> ApiResponse<StatusCode> {
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   match delete.unwrap_or(false) {

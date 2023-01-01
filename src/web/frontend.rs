@@ -3,7 +3,10 @@ use std::path::PathBuf;
 use axum::{
   body::Full,
   extract::Path,
-  http::StatusCode,
+  http::{
+    header::{CACHE_CONTROL, CONTENT_TYPE},
+    StatusCode,
+  },
   response::{IntoResponse, Response},
 };
 
@@ -11,21 +14,21 @@ use axum::{
 #[folder = "dist/"]
 struct Asset;
 
-pub async fn robots() -> Result<impl IntoResponse, impl IntoResponse> {
+pub async fn robots() -> Result<impl IntoResponse, StatusCode> {
   Asset::get("robots.txt").map_or_else(
     || Err(StatusCode::NOT_FOUND),
-    |asset| Ok(Response::builder().header("content-type", "text/plain").body(Full::from(asset.data)).unwrap()),
+    |asset| Ok(Response::builder().header(CONTENT_TYPE, "text/plain").body(Full::from(asset.data)).unwrap()),
   )
 }
 
-pub async fn index() -> Result<impl IntoResponse, impl IntoResponse> {
+pub async fn index() -> Result<impl IntoResponse, StatusCode> {
   Asset::get("index.html").map_or_else(
     || Err(StatusCode::NOT_FOUND),
-    |asset| Ok(Response::builder().header("content-type", "text/html").body(Full::from(asset.data)).unwrap()),
+    |asset| Ok(Response::builder().header(CONTENT_TYPE, "text/html").body(Full::from(asset.data)).unwrap()),
   )
 }
 
-pub async fn assets(Path(path): Path<PathBuf>) -> Result<impl IntoResponse, impl IntoResponse> {
+pub async fn assets(Path(path): Path<PathBuf>) -> Result<impl IntoResponse, StatusCode> {
   Asset::get(&path.display().to_string()).map_or_else(
     || Err(StatusCode::NOT_FOUND),
     |asset| {
@@ -39,8 +42,8 @@ pub async fn assets(Path(path): Path<PathBuf>) -> Result<impl IntoResponse, impl
 
       Ok(
         Response::builder()
-          .header("content-type", content_type.to_string())
-          .header("cache-control", format!("max-age={}", age))
+          .header(CONTENT_TYPE, content_type.to_string())
+          .header(CACHE_CONTROL, format!("max-age={}", age))
           .body(Full::from(asset.data))
           .unwrap(),
       )
