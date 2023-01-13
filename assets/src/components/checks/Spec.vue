@@ -19,7 +19,7 @@
     PlayStore(v-if='check.spec.kind == "play_store"', :spec='check.spec')
     AppStore(v-if='check.spec.kind == "app_store"', :spec='check.spec')
     Tls(v-if='check.spec.kind == "tls"', :spec='check.spec')
-    Whois(v-if='check.spec.kind == "whois"', :spec='check.spec')
+    Whois(v-if='check.spec.kind == "domain"', :spec='check.spec')
     Ping(v-if='check.spec.kind == "ping"', :spec='check.spec')
     Python(v-if='check.spec.kind == "python"', :spec='check.spec')
     DeadManSwitch(v-if='check.spec.kind == "deadmanswitch"', :spec='check.spec')

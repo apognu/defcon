@@ -3,7 +3,7 @@ SpecWhois:
   properties:
     kind:
       type: string
-      enum: ["whois"]
+      enum: ["domain"]
     domain:
       type: string
     window:

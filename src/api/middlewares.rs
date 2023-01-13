@@ -25,7 +25,7 @@ pub async fn api_logger<B>(request: Request<B>, next: Next<B>) -> Result<Respons
 
   let response = next.run(Request::from_parts(parts, body)).await;
 
-  kvlog!(Info, format!("{} {}", method, uri), {
+  kvlog!(Info, format!("{method} {uri}"), {
     "time" => time,
     "remote" => ip,
     "method" => method,

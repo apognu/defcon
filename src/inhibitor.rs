@@ -42,21 +42,21 @@ impl Inhibitor {
   }
 
   pub async fn inhibit(&mut self, site: &str, check: &str) {
-    self.write().await.insert(format!("{}-{}", site, check), Delay::Infinite);
+    self.write().await.insert(format!("{site}-{check}"), Delay::Infinite);
   }
 
   pub async fn inhibit_for(&mut self, site: &str, check: &str, duration: Duration) {
     if let Some(instant) = Instant::now().checked_add(duration) {
-      self.write().await.insert(format!("{}-{}", site, check), Delay::Until(instant));
+      self.write().await.insert(format!("{site}-{check}"), Delay::Until(instant));
     }
   }
 
   pub async fn release(&mut self, site: &str, check: &str) {
-    self.write().await.remove(&format!("{}-{}", site, check));
+    self.write().await.remove(&format!("{site}-{check}"));
   }
 
   pub async fn inhibited(&self, site: &str, check: &str) -> bool {
-    match self.read().await.get(&format!("{}-{}", site, check)) {
+    match self.read().await.get(&format!("{site}-{check}")) {
       Some(Delay::Infinite) => true,
       Some(Delay::Until(delay)) if &Instant::now() < delay => true,
       _ => false,

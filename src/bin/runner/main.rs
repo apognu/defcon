@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
   loop {
     let token = config.keys.generate(&claims)?.unwrap_or_default();
     let client = reqwest::Client::new();
-    let request = client.get(format!("{}/api/runner/checks", config.base)).header("authorization", format!("Bearer {}", token));
+    let request = client.get(format!("{}/api/runner/checks", config.base)).header("authorization", format!("Bearer {token}"));
 
     if let Ok(response) = request.send().await {
       if let Ok(checks) = response.json::<Vec<api::RunnerCheck>>().await {
@@ -141,7 +141,7 @@ async fn run_check(config: Arc<Config>, stash: Stash, mut inhibitor: Inhibitor, 
       let client = reqwest::Client::new();
       let request = client
         .post(format!("{}/api/runner/report", config.base))
-        .header("authorization", format!("Bearer {}", token))
+        .header("authorization", format!("Bearer {token}"))
         .json(&report);
       let _ = request.send().await;
 

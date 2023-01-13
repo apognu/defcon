@@ -45,7 +45,7 @@ impl Webhook for SlackAlerter {
     let (color, title, description) = if down {
       (
         color,
-        format!("{}: Outage started {} 🚨", check.name, level),
+        format!("{}: Outage started {level} 🚨", check.name),
         format!("An uptime check for the following service failed.\n```{}```", event.message),
       )
     } else {

@@ -130,9 +130,8 @@ impl Check {
       "
         SELECT id, uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
-        WHERE id IN ( {} )
+        WHERE id IN ( {ids} )
       ",
-      ids
     ))
     .fetch_all(&mut *conn)
     .await

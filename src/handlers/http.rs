@@ -82,14 +82,14 @@ impl<'h> Handler for HttpHandler<'h> {
             hasher.update(body);
             let result = hasher.finalize();
 
-            digest == &format!("{:x}", result)
+            digest == &format!("{result:x}")
           }
 
           None => true,
         };
 
         let (status, message) = match (code_ok, content_ok, digest_ok, json_ok) {
-          (false, _, _, _) => (CRITICAL, format!("status code was {}", code)),
+          (false, _, _, _) => (CRITICAL, format!("status code was {code}")),
           (_, false, _, _) => (CRITICAL, "content mismatch".to_string()),
           (_, _, false, _) => (CRITICAL, "digest mismatch".to_string()),
           (_, _, _, false) => (CRITICAL, "JSON query failed".to_string()),

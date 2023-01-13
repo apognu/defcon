@@ -56,7 +56,7 @@ impl Display for CheckKind {
       Unsupported => "unsupported",
     };
 
-    write!(formatter, "{}", name)
+    write!(formatter, "{name}")
   }
 }
 

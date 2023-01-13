@@ -34,7 +34,7 @@ impl Display for AlerterKind {
       AlerterKind::Noop => "noop",
     };
 
-    write!(formatter, "{}", name)
+    write!(formatter, "{name}")
   }
 }
 

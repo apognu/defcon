@@ -37,15 +37,15 @@ impl Stash {
   }
 
   pub async fn stash(&mut self, check: &Check, key: &str, value: &str) {
-    self.write().await.insert(format!("{}-{}", check.uuid, key), value.to_owned());
+    self.write().await.insert(format!("{}-{key}", check.uuid), value.to_owned());
   }
 
   pub async fn retrieve(&self, check: &Check, key: &str) -> Option<String> {
-    self.read().await.get(&format!("{}-{}", check.uuid, key)).map(ToOwned::to_owned)
+    self.read().await.get(&format!("{}-{key}", check.uuid)).map(ToOwned::to_owned)
   }
 
   pub async fn delete(&mut self, check: &Check, key: &str) {
-    self.write().await.remove(&format!("{}-{}", check.uuid, key));
+    self.write().await.remove(&format!("{}-{key}", check.uuid));
   }
 }
 

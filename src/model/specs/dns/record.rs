@@ -37,7 +37,7 @@ impl Display for DnsRecord {
       SRV => "SRV",
     };
 
-    write!(formatter, "{}", name)
+    write!(formatter, "{name}")
   }
 }
 

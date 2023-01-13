@@ -146,7 +146,7 @@ div(v-if='check')
         @enter='save()'
       )
       Whois(
-        v-if='check.spec.kind == "whois"',
+        v-if='check.spec.kind == "domain"',
         :spec='check.spec',
         ref='spec',
         @enter='save()'
@@ -222,7 +222,7 @@ export default {
       'ping',
       'app_store',
       'play_store',
-      'whois',
+      'domain',
       'deadmanswitch',
     ],
   }),
@@ -323,7 +323,7 @@ export default {
 .vue-tags-input {
   max-width: none !important;
   padding: 4px;
-  background: $card-form-background  !important;
+  background: $card-form-background !important;
 
   .ti-input {
     border: 0 !important;
@@ -332,7 +332,7 @@ export default {
 
   .ti-tag {
     padding: 6px 8px !important;
-    background: $primary  !important;
+    background: $primary !important;
   }
 
   .ti-new-tag-input {
