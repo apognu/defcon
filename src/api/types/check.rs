@@ -86,6 +86,7 @@ pub struct CheckPatch {
   pub enabled: Option<bool>,
   pub on_status_page: Option<bool>,
   pub interval: Option<db::Duration>,
+  pub down_interval: Option<db::Duration>,
   pub site_threshold: Option<u8>,
   pub passing_threshold: Option<u8>,
   pub failing_threshold: Option<u8>,

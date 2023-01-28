@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use chrono::{DateTime, Utc};
 use serde_json::json;
 use sqlx::{FromRow, MySqlConnection};
 
@@ -33,6 +32,7 @@ pub struct Check {
   #[serde(skip)]
   pub kind: CheckKind,
   pub interval: Duration,
+  pub down_interval: Option<Duration>,
   #[serde(default = "default_site_threshold")]
   pub site_threshold: u8,
   pub passing_threshold: u8,
@@ -85,7 +85,7 @@ impl Check {
 
     let query = format!(
       "
-      SELECT checks.id, checks.uuid, group_id, alerter_id, checks.name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+      SELECT checks.id, checks.uuid, group_id, alerter_id, checks.name, enabled, on_status_page, kind, `interval`, down_interval, site_threshold, passing_threshold, failing_threshold, silent
       FROM checks
       LEFT JOIN groups
       ON groups.id = checks.group_id
@@ -106,7 +106,7 @@ impl Check {
   pub async fn by_id(conn: &mut MySqlConnection, id: u64) -> Result<Check> {
     let check = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, down_interval, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE id = ?
       ",
@@ -128,7 +128,7 @@ impl Check {
 
     let checks = sqlx::query_as::<_, Check>(&format!(
       "
-        SELECT id, uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, down_interval, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE id IN ( {ids} )
       ",
@@ -143,7 +143,7 @@ impl Check {
   pub async fn by_uuid(conn: &mut MySqlConnection, uuid: &str) -> Result<Check> {
     let check = sqlx::query_as::<_, Check>(
       "
-        SELECT id, uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent
+        SELECT id, uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, down_interval, site_threshold, passing_threshold, failing_threshold, silent
         FROM checks
         WHERE uuid = ?
       ",
@@ -160,8 +160,8 @@ impl Check {
     {
       sqlx::query(
         "
-        INSERT INTO checks ( uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, site_threshold, passing_threshold, failing_threshold, silent )
-        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
+        INSERT INTO checks ( uuid, group_id, alerter_id, name, enabled, on_status_page, kind, `interval`, down_interval, site_threshold, passing_threshold, failing_threshold, silent )
+        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )
       ",
       )
       .bind(&self.uuid)
@@ -172,6 +172,7 @@ impl Check {
       .bind(self.on_status_page)
       .bind(self.kind)
       .bind(self.interval)
+      .bind(self.down_interval)
       .bind(self.site_threshold)
       .bind(self.passing_threshold)
       .bind(self.failing_threshold)
@@ -190,7 +191,7 @@ impl Check {
     sqlx::query(
       "
         UPDATE checks
-        SET group_id = ?, alerter_id = ?, name = ?, enabled = ?, on_status_page = ?, kind = ?, `interval` = ?, site_threshold = ?, passing_threshold = ?, failing_threshold = ?, silent = ?
+        SET group_id = ?, alerter_id = ?, name = ?, enabled = ?, on_status_page = ?, kind = ?, `interval` = ?, down_interval = ?, site_threshold = ?, passing_threshold = ?, failing_threshold = ?, silent = ?
         WHERE id = ?
       ",
     )
@@ -201,6 +202,7 @@ impl Check {
     .bind(self.on_status_page)
     .bind(self.kind)
     .bind(self.interval)
+    .bind(self.down_interval)
     .bind(self.site_threshold)
     .bind(self.passing_threshold)
     .bind(self.failing_threshold)
@@ -290,20 +292,22 @@ impl Check {
   }
 
   pub async fn stale(conn: &mut MySqlConnection, site: &str) -> Result<Vec<Check>> {
-    let checks = sqlx::query_as::<_, (u64, u64, Option<DateTime<Utc>>)>(
+    let checks = sqlx::query_as::<_, (u64,)>(
       "
-        SELECT
-          MAX(checks.id) AS id,
-          MAX(checks.interval) AS `interval`,
-          MAX(events.created_at) AS event_date
+        SELECT checks.id AS id
         FROM checks
         INNER JOIN check_sites
         ON check_sites.check_id = checks.id
         LEFT JOIN events
         ON events.check_id = checks.id AND events.site = check_sites.slug
+        LEFT JOIN outages
+        ON outages.check_id = checks.id AND outages.ended_on IS NULL
         WHERE checks.enabled = 1 AND check_sites.slug = ?
         GROUP BY checks.id, check_sites.slug
-        HAVING event_date IS NULL OR event_date < TIMESTAMPADD(SECOND, -`interval`, NOW());
+        HAVING
+          MAX(events.created_at) IS NULL OR
+          (MAX(outages.uuid) IS NULL AND MAX(events.created_at) < TIMESTAMPADD(SECOND, -MAX(checks.interval), NOW())) OR
+          (MAX(outages.uuid) IS NOT NULL AND MAX(events.created_at) < TIMESTAMPADD(SECOND, -MAX(checks.down_interval), NOW()));
       ",
     )
     .bind(site)
@@ -611,6 +615,7 @@ mod tests {
         enabled: false,
         on_status_page: false,
         interval: Duration::from(10),
+        down_interval: None,
         site_threshold: 2,
         passing_threshold: 10,
         failing_threshold: 10,
@@ -652,6 +657,7 @@ mod tests {
         enabled: false,
         on_status_page: false,
         interval: Duration::from(10),
+        down_interval: None,
         site_threshold: 2,
         passing_threshold: 10,
         failing_threshold: 10,

@@ -99,6 +99,7 @@ pub async fn create(_: Auth, config: State<Arc<Config>>, pool: State<Pool<MySql>
     on_status_page: payload.check.on_status_page,
     kind: payload.spec.kind(),
     interval: payload.check.interval,
+    down_interval: payload.check.down_interval,
     site_threshold: payload.check.site_threshold,
     passing_threshold: payload.check.passing_threshold,
     failing_threshold: payload.check.failing_threshold,
@@ -151,6 +152,7 @@ pub async fn update(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>,
     enabled: payload.check.enabled,
     on_status_page: payload.check.on_status_page,
     interval: payload.check.interval,
+    down_interval: payload.check.down_interval,
     site_threshold: payload.check.site_threshold,
     passing_threshold: payload.check.passing_threshold,
     failing_threshold: payload.check.failing_threshold,
@@ -177,6 +179,7 @@ pub async fn patch(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, 
   payload.enabled.run(|value| check.enabled = value);
   payload.on_status_page.run(|value| check.on_status_page = value);
   payload.interval.run(|value| check.interval = value);
+  payload.down_interval.run(|_| check.down_interval = payload.down_interval);
   payload.site_threshold.run(|value| check.site_threshold = value);
   payload.passing_threshold.run(|value| check.passing_threshold = value);
   payload.failing_threshold.run(|value| check.failing_threshold = value);

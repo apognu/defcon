@@ -41,6 +41,8 @@ div(v-if='check')
                 :value='alerter.uuid'
               ) {{ alerter.name }}
 
+      hr
+
       .uk-grid-small(uk-grid, class='uk-child-width-1-4@m uk-child-width-1-2@s')
         div
           label.uk-form-label Interval
@@ -51,6 +53,18 @@ div(v-if='check')
               @keyup.enter='save()'
             )
 
+        div
+          label.uk-form-label Outage interval
+          .uk-form-controls
+            input.uk-input(
+              type='text',
+              v-model='check.down_interval',
+              @keyup.enter='save()'
+            )
+
+      hr
+
+      .uk-grid-small(uk-grid, class='uk-child-width-1-4@m uk-child-width-1-2@s')
         div
           label.uk-form-label Failing threshold
           .uk-form-controls
@@ -83,6 +97,8 @@ div(v-if='check')
           label.uk-form-label Site labels
           .uk-form-controls
             vue-tags-input(v-model='site', :tags='sites', @tags-changed='(data) => sites = data')
+
+      hr
 
       .uk-grid-small(uk-grid)
         div

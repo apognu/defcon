@@ -34,16 +34,20 @@ pub async fn assets(Path(path): Path<PathBuf>) -> Result<impl IntoResponse, Stat
     |asset| {
       let content_type = path.as_path().to_str().and_then(|path| new_mime_guess::from_path(path).first()).ok_or(StatusCode::BAD_REQUEST)?;
 
+      #[cfg(debug_assertions)]
+      let cache = "no-cache";
+
+      #[cfg(not(debug_assertions))]
       let age = if path.extension().map(|e| e == "jpg" || e == "png").unwrap_or(false) {
-        "86400" // 1 day
+        "max-age=86400" // 1 day
       } else {
-        "31536000" // 1 year
+        "max-age=31536000" // 1 year
       };
 
       Ok(
         Response::builder()
           .header(CONTENT_TYPE, content_type.to_string())
-          .header(CACHE_CONTROL, format!("max-age={}", age))
+          .header(CACHE_CONTROL, cache)
           .body(Full::from(asset.data))
           .unwrap(),
       )

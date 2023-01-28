@@ -6,6 +6,11 @@
   .uk-card-body
     div(uk-grid, class='uk-child-width-1-2@s uk-child-width-1-4@m')
       Attribute(label='Interval', :uk-tooltip='check.interval') {{ check.interval }}
+      Attribute(label='Outage interval', :uk-tooltip='check.down_interval') {{ check.down_interval }}
+
+    hr
+
+    div(uk-grid, class='uk-child-width-1-2@s uk-child-width-1-4@m')
       Attribute(label='Failing threshold') {{ check.failing_threshold }}
       Attribute(label='Passing threshold') {{ check.passing_threshold }}
       Attribute(label='Site threshold') {{ check.site_threshold }}
