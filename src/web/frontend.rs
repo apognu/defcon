@@ -38,7 +38,7 @@ pub async fn assets(Path(path): Path<PathBuf>) -> Result<impl IntoResponse, Stat
       let cache = "no-cache";
 
       #[cfg(not(debug_assertions))]
-      let age = if path.extension().map(|e| e == "jpg" || e == "png").unwrap_or(false) {
+      let cache = if path.extension().map(|e| e == "jpg" || e == "png").unwrap_or(false) {
         "max-age=86400" // 1 day
       } else {
         "max-age=31536000" // 1 year
