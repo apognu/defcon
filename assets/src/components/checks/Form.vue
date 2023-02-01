@@ -296,6 +296,10 @@ export default {
         body.alerter = null;
       }
 
+      if (body.down_interval === '') {
+        body.down_interval = null;
+      }
+
       body.sites = this.sites.map((site) => site.text);
 
       delete body.uuid;

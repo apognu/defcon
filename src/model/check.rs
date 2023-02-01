@@ -307,7 +307,7 @@ impl Check {
         HAVING
           MAX(events.created_at) IS NULL OR
           (MAX(outages.uuid) IS NULL AND MAX(events.created_at) < TIMESTAMPADD(SECOND, -MAX(checks.interval), NOW())) OR
-          (MAX(outages.uuid) IS NOT NULL AND MAX(events.created_at) < TIMESTAMPADD(SECOND, -MAX(checks.down_interval), NOW()));
+          (MAX(outages.uuid) IS NOT NULL AND MAX(events.created_at) < TIMESTAMPADD(SECOND, -MAX(COALESCE(checks.down_interval, checks.interval)), NOW()));
       ",
     )
     .bind(site)
