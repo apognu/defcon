@@ -116,11 +116,7 @@ export default {
     },
 
     acknowledge() {
-      this.$http().post(`/api/outages/${this.$route.params.uuid}/acknowledge`)
-        .then(() => this.refresh())
-        .catch((e) => {
-          this.$helpers.error(`${e.message}: ${e.response.data.details}`);
-        });
+      this.$http().post(`/api/outages/${this.$route.params.uuid}/acknowledge`).then(() => this.refresh());
     },
 
     avatar(email) {
@@ -137,9 +133,6 @@ export default {
 
           this.timelineUpdatedAt = new Date().toString();
           this.comment = '';
-        })
-        .catch((e) => {
-          this.$helpers.error(`${e.message}: ${e.response.data.details}`);
         });
     },
   },

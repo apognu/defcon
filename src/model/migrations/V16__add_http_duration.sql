@@ -1,0 +1,2 @@
+ALTER TABLE `http_specs`
+ADD COLUMN `duration` BIGINT UNSIGNED;

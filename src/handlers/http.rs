@@ -1,4 +1,4 @@
-use std::{str::FromStr, sync::Arc};
+use std::{str::FromStr, sync::Arc, time::Instant};
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
@@ -45,7 +45,9 @@ impl<'h> Handler for HttpHandler<'h> {
     headers.append("user-agent", HeaderValue::from_str("defcon").unwrap());
 
     let client = HttpClient::builder().timeout(*timeout).build()?;
+    let start = Instant::now();
     let response = client.get(&spec.url).headers(headers).send().await;
+    let duration = start.elapsed();
 
     let event = match response {
       Ok(response) => {
@@ -88,12 +90,18 @@ impl<'h> Handler for HttpHandler<'h> {
           None => true,
         };
 
-        let (status, message) = match (code_ok, content_ok, digest_ok, json_ok) {
-          (false, _, _, _) => (CRITICAL, format!("status code was {code}")),
-          (_, false, _, _) => (CRITICAL, "content mismatch".to_string()),
-          (_, _, false, _) => (CRITICAL, "digest mismatch".to_string()),
-          (_, _, _, false) => (CRITICAL, "JSON query failed".to_string()),
-          (true, true, true, true) => (OK, String::new()),
+        let duration_ok = match spec.duration {
+          Some(ref maximum) => maximum.0 > duration,
+          None => true,
+        };
+
+        let (status, message) = match (code_ok, content_ok, digest_ok, json_ok, duration_ok) {
+          (false, _, _, _, _) => (CRITICAL, format!("status code was {code}")),
+          (_, false, _, _, _) => (CRITICAL, "content mismatch".to_string()),
+          (_, _, false, _, _) => (CRITICAL, "digest mismatch".to_string()),
+          (_, _, _, false, _) => (CRITICAL, "JSON query failed".to_string()),
+          (_, _, _, _, false) => (CRITICAL, "request took too long".to_string()),
+          (true, true, true, true, true) => (OK, String::new()),
         };
 
         Event {
@@ -149,6 +157,7 @@ mod tests {
       content: Some(r#""Lorem": "ipsum""#.to_string()),
       digest: None,
       json_query: None,
+      duration: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -172,6 +181,7 @@ mod tests {
       content: Some(r#""user-agent": "defcon""#.to_string()),
       digest: Some("2d3cb778b29b905457d6b87b3a4258202bfdbe883251523f7e479e5505b7df6bedbc25f5061e5a677e9e92bf3560a993d5cd88ba5918cc1b5bed1db23b060c84".to_string()),
       json_query: None,
+      duration: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -195,6 +205,7 @@ mod tests {
       content: None,
       digest: None,
       json_query: None,
+      duration: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -218,6 +229,7 @@ mod tests {
       content: Some("INVALIDCONTENT".to_string()),
       digest: None,
       json_query: None,
+      duration: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -241,6 +253,7 @@ mod tests {
       content: None,
       digest: Some("INVALIDDIGEST".to_string()),
       json_query: None,
+      duration: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -265,6 +278,7 @@ mod tests {
       content: None,
       digest: None,
       json_query: Some(r#".claims_supported | contains(["email"])"#.to_string()),
+      duration: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -288,6 +302,7 @@ mod tests {
       content: None,
       digest: None,
       json_query: Some(r#".issuer == "github.com""#.to_string()),
+      duration: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -295,6 +310,53 @@ mod tests {
 
     let result = result.unwrap();
     assert_eq!(result.status, CRITICAL);
+  }
+
+  #[tokio::test]
+  async fn handler_http_duration_ok() {
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "https://httpbin.org/delay/1".to_string(),
+      headers: Default::default(),
+      code: None,
+      timeout: None,
+      content: None,
+      digest: None,
+      json_query: None,
+      duration: Some(Duration::from(5)),
+    };
+
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
+    assert!(matches!(&result, Ok(_)));
+
+    let result = result.unwrap();
+    assert_eq!(result.status, OK);
+  }
+
+  #[tokio::test]
+  async fn handler_http_duration_too_long() {
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "https://httpbin.org/delay/3".to_string(),
+      headers: Default::default(),
+      code: None,
+      timeout: None,
+      content: None,
+      digest: None,
+      json_query: None,
+      duration: Some(Duration::from(1)),
+    };
+
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
+    assert!(matches!(&result, Ok(_)));
+
+    let result = result.unwrap();
+    assert_eq!(result.status, CRITICAL);
+    assert_eq!(result.message, "request took too long".to_string());
   }
 
   #[tokio::test]
@@ -310,6 +372,7 @@ mod tests {
       content: None,
       digest: None,
       json_query: None,
+      duration: None,
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;

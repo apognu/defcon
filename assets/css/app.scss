@@ -99,7 +99,7 @@ textarea,
 select {
   border: 0 !important;
   border-radius: 3px !important;
-  background-color: $form-background  !important;
+  background-color: $form-background !important;
 }
 
 .uk-card {
@@ -107,7 +107,7 @@ select {
   input:not([type="checkbox"]),
   textarea,
   select {
-    background-color: $card-form-background  !important;
+    background-color: $card-form-background !important;
   }
 }
 
@@ -145,19 +145,26 @@ button,
 }
 
 .uk-alert-success.uk-alert-callout {
-  background: $ok  !important;
+  background: $ok !important;
 }
 
 .uk-alert-danger.uk-alert-callout {
-  background: $error  !important;
+  background: $error !important;
+}
+
+.uk-notification {
+  width: 500px;
+}
+
+.uk-notification-top-center {
+  margin-left: -250px;
 }
 
 .uk-notification-message {
-  background: $gray-dark  !important;
+  background: $gray-dark !important;
   border-radius: 6px !important;
   font-size: 14px !important;
   line-height: normal !important;
-  color: white !important;
 }
 
 #timeline {

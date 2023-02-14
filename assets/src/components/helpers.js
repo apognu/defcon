@@ -16,6 +16,19 @@ const http = (noRetry) => {
     },
   });
 
+  client.interceptors.response.use(
+    null,
+    (error) => {
+      if (error.response.status !== 401 && error.response.status >= 400 && error.response.status <= 599) {
+        if (error.response.data.details) {
+          UIkit.notification(`${error.response.data.details}`, { status: 'danger' });
+        }
+      }
+
+      return Promise.reject(error);
+    },
+  );
+
   if (noRetry !== true) {
     client.interceptors.response.use(
       null,

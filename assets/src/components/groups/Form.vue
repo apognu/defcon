@@ -54,18 +54,12 @@ export default {
           .post('/api/groups', body)
           .then(() => {
             this.$router.push({ name: 'groups' });
-          })
-          .catch((e) => {
-            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
           });
       } else {
         this.$http()
           .put(`/api/groups/${this.$route.params.uuid}`, body)
           .then(() => {
             this.$router.push({ name: 'groups' });
-          })
-          .catch((e) => {
-            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
           });
       }
     },

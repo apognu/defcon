@@ -221,7 +221,7 @@ export default {
     DeadManSwitch,
   },
 
-  inject: ['$http', '$filters'],
+  inject: ['$http', '$filters', '$helpers'],
 
   data: () => ({
     check: undefined,
@@ -315,9 +315,6 @@ export default {
           .post('/api/checks', body)
           .then(() => {
             this.$router.push({ name: 'checks' });
-          })
-          .catch((e) => {
-            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
           });
       } else {
         this.$http()
@@ -327,9 +324,6 @@ export default {
               name: 'checks.view',
               params: { uuid: this.$route.params.uuid },
             });
-          })
-          .catch((e) => {
-            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
           });
       }
     },

@@ -24,7 +24,7 @@ div
       .uk-form-controls
         input.uk-input(
           type='text',
-          v-model='_headers',
+          v-model='headers',
           @keyup.enter='$emit("enter")'
         )
 
@@ -61,6 +61,15 @@ div
         input.uk-input(
           type='text',
           v-model='spec.json_query',
+          @keyup.enter='$emit("enter")'
+        )
+
+    .uk-margin
+      label.uk-form-label Duration
+      .uk-form-controls
+        input.uk-input(
+          type='text',
+          v-model='spec.duration',
           @keyup.enter='$emit("enter")'
         )
 </template>

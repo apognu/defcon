@@ -114,9 +114,6 @@ export default {
           .post('/api/users', body)
           .then(() => {
             this.$router.push({ name: 'users' });
-          })
-          .catch((e) => {
-            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
           });
       } else {
         this.$http()
@@ -131,9 +128,6 @@ export default {
             } else {
               this.$router.push({ name: 'users' });
             }
-          })
-          .catch((e) => {
-            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
           });
       }
     },

@@ -1,6 +1,6 @@
-use anyhow::{Context, Error};
+use anyhow::Error;
 use axum::{
-  extract::rejection::JsonRejection,
+  extract::rejection::{JsonDataError, JsonRejection, JsonRejection::*},
   http::StatusCode,
   response::{IntoResponse, Response},
   Json,
@@ -11,11 +11,13 @@ use serde_json::json;
 pub enum AppError {
   #[error("bad request")]
   BadRequest,
+  #[error("bad request")]
+  InvalidPayload(#[from] JsonDataError),
   #[error("invalid credentials")]
   InvalidCredentials,
   #[error("missing resource")]
   ResourceNotFound,
-  #[error("resource already exists")]
+  #[error("resource already exists or cannot be created")]
   Conflict,
   #[error("server error, please check your logs for more information")]
   ServerError,
@@ -58,7 +60,10 @@ impl IntoResponse for ErrorResponse {
 pub fn check_json<T>(payload: Result<Json<T>, JsonRejection>) -> Result<T, Error> {
   match payload {
     Ok(Json(payload)) => Ok(payload),
-    Err(err) => Err(err).context(AppError::BadRequest),
+    Err(err) => match err {
+      JsonDataError(err) => Err(anyhow!(AppError::InvalidPayload(err))),
+      _ => Err(anyhow!(AppError::BadRequest)),
+    },
   }
 }
 
@@ -74,6 +79,7 @@ impl<'a, T> Shortable<'a, T> for Result<T, Error> {
   fn short(self) -> Self::Output {
     self.map_err(|err| match err.downcast_ref::<AppError>() {
       Some(AppError::BadRequest) => ErrorResponse(StatusCode::BAD_REQUEST, err),
+      Some(AppError::InvalidPayload(_)) => ErrorResponse(StatusCode::BAD_REQUEST, err),
       Some(AppError::InvalidCredentials) => ErrorResponse(StatusCode::UNAUTHORIZED, anyhow!("provided credentials are invalid")),
       Some(AppError::ResourceNotFound) => ErrorResponse(StatusCode::NOT_FOUND, err),
       Some(AppError::Conflict) => ErrorResponse(StatusCode::CONFLICT, err),

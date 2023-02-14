@@ -107,18 +107,12 @@ export default {
           .post('/api/alerters', body)
           .then(() => {
             this.$router.push({ name: 'alerters' });
-          })
-          .catch((e) => {
-            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
           });
       } else {
         this.$http()
           .put(`/api/alerters/${this.$route.params.uuid}`, body)
           .then(() => {
             this.$router.push({ name: 'alerters' });
-          })
-          .catch((e) => {
-            this.$helpers.error(`${e.message}: ${e.response.data.details}`);
           });
       }
     },

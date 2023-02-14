@@ -28,6 +28,8 @@ pub struct Http {
   pub digest: Option<String>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub json_query: Option<String>,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub duration: Option<Duration>,
 }
 
 impl SpecMeta for Http {
@@ -44,7 +46,7 @@ impl Http {
   pub async fn for_check(conn: &mut MySqlConnection, check: &Check) -> Result<Http> {
     let spec = sqlx::query_as::<_, Http>(
       "
-        SELECT id, check_id, url, timeout, headers, code, content, digest, json_query
+        SELECT id, check_id, url, timeout, headers, code, content, digest, json_query, duration
         FROM http_specs
         WHERE check_id = ?
       ",
@@ -59,8 +61,8 @@ impl Http {
   pub async fn insert(pool: &mut MySqlConnection, check: &Check, spec: Http) -> Result<()> {
     sqlx::query(
       "
-        INSERT INTO http_specs ( check_id, url, headers, timeout, code, content, digest, json_query )
-        VALUES ( ?, ?, ?, ?, ?, ?, ?, ? )
+        INSERT INTO http_specs ( check_id, url, headers, timeout, code, content, digest, json_query, duration )
+        VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ? )
       ",
     )
     .bind(check.id)
@@ -71,6 +73,7 @@ impl Http {
     .bind(spec.content)
     .bind(spec.digest)
     .bind(spec.json_query)
+    .bind(spec.duration)
     .execute(pool)
     .await?;
 
@@ -81,7 +84,7 @@ impl Http {
     sqlx::query(
       "
         UPDATE http_specs
-        SET url = ?, headers = ?, timeout = ?, code = ?, content = ?, digest = ?, json_query = ?
+        SET url = ?, headers = ?, timeout = ?, code = ?, content = ?, digest = ?, json_query = ?, duration = ?
         WHERE check_id = ?
       ",
     )
@@ -92,6 +95,7 @@ impl Http {
     .bind(spec.content)
     .bind(spec.digest)
     .bind(spec.json_query)
+    .bind(spec.duration)
     .bind(check.id)
     .execute(conn)
     .await?;
