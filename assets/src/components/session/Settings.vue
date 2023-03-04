@@ -35,40 +35,56 @@
     div.uk-margin-bottom
       label.uk-display-block.uk-margin-small-bottom.uk-form-label Current password
       .uk-form-controls
-        input.uk-input(
-          type='password',
-          v-model='password',
-          @keyup.enter='submit()'
-          :disabled='disabled'
-        )
+        Field(:model='v$.password')
+          input.uk-input(
+            type='password',
+            v-model='v$.password.$model',
+            @keyup.enter='submit()'
+            :disabled='disabled'
+          )
 
     div.uk-margin-bottom
       label.uk-display-block.uk-margin-small-bottom.uk-form-label New password
       .uk-form-controls
-        input.uk-input(
-          type='password',
-          v-model='new_password',
-          @keyup.enter='submit()'
-          :disabled='disabled'
-        )
+        Field(:model='v$.new_password')
+          input.uk-input(
+            type='password',
+            v-model='v$.new_password.$model',
+            @keyup.enter='submit()'
+            :disabled='disabled'
+          )
 
     div.uk-margin-bottom
       label.uk-display-block.uk-margin-small-bottom.uk-form-label Confirm your new password
       .uk-form-controls
-        input.uk-input(
-          type='password',
-          v-model='new_password_confirmation',
-          @keyup.enter='submit()'
-          :disabled='disabled'
-        )
+        Field(:model='v$.new_password_confirmation')
+          input.uk-input(
+            type='password',
+            v-model='v$.new_password_confirmation.$model',
+            @keyup.enter='submit()'
+            :disabled='disabled'
+          )
 
     .uk-margin-top
-      button.uk-button.uk-button-primary.uk-button-small(@click='submit', :disabled='disabled || submitDisabled') Change password
+      button.uk-button.uk-button-primary.uk-button-small(@click='submit', :disabled='disabled || v$.$invalid') Change password
 </template>
 
 <script>
+import { useVuelidate } from '@vuelidate/core';
+import { required, sameAs } from '@vuelidate/validators';
+
+import Field from '~/components/partials/Field.vue';
+
 export default {
   inject: ['$http'],
+
+  setup: () => ({
+    v$: useVuelidate(),
+  }),
+
+  components: {
+    Field,
+  },
 
   data: () => ({
     alerts: {
@@ -84,18 +100,15 @@ export default {
     new_password_confirmation: '',
   }),
 
-  computed: {
-    submitDisabled() {
-      if (this.password === '' || this.new_password === '' || this.new_password_confirmation === '') {
-        return true;
-      }
-
-      if (this.new_password !== this.new_password_confirmation) {
-        return true;
-      }
-
-      return false;
-    },
+  validations() {
+    return {
+      password: { required },
+      new_password: { required },
+      new_password_confirmation: {
+        required,
+        sameAs: sameAs(this.new_password),
+      },
+    };
   },
 
   async mounted() {
@@ -127,30 +140,30 @@ export default {
     },
 
     submit() {
-      if (this.submitDisabled) {
-        return;
+      this.v$.$validate();
+
+      if (!this.v$.$error) {
+        this.disabled = true;
+
+        const body = {
+          password: this.password,
+          new_password: this.new_password,
+        };
+
+        this.$http(true).post('/api/-/password', body)
+          .then(() => {
+            this.password = '';
+            this.new_password = '';
+            this.new_password_confirmation = '';
+
+            this.alerts.success = 'Your password was updated successfully.';
+            this.disabled = false;
+          })
+          .catch((e) => {
+            this.alerts.error = `There was an error updating your password: ${e.response.data.message}.`;
+            this.disabled = false;
+          });
       }
-
-      this.disabled = true;
-
-      const body = {
-        password: this.password,
-        new_password: this.new_password,
-      };
-
-      this.$http(true).post('/api/-/password', body)
-        .then(() => {
-          this.password = '';
-          this.new_password = '';
-          this.new_password_confirmation = '';
-
-          this.alerts.success = 'Your password was updated successfully.';
-          this.disabled = false;
-        })
-        .catch((e) => {
-          this.alerts.error = `There was an error updating your password: ${e.response.data.message}.`;
-          this.disabled = false;
-        });
     },
   },
 };

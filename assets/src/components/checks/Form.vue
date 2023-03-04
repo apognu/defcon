@@ -13,11 +13,12 @@ div(v-if='check')
         div
           label.uk-form-label Check name
           .uk-form-controls
-            input.uk-input(
-              type='text',
-              v-model='check.name',
-              @keyup.enter='save()'
-            )
+            Field(:model='v$.check.name')
+              input.uk-input(
+                type='text',
+                v-model='v$.check.name.$model',
+                @keyup.enter='save()'
+              )
 
         div
           label.uk-form-label Group
@@ -47,20 +48,22 @@ div(v-if='check')
         div
           label.uk-form-label Interval
           .uk-form-controls
-            input.uk-input(
-              type='text',
-              v-model='check.interval',
-              @keyup.enter='save()'
-            )
+            Field(:model='v$.check.interval')
+              input.uk-input(
+                type='text',
+                v-model='v$.check.interval.$model',
+                @keyup.enter='save()'
+              )
 
         div
           label.uk-form-label Outage interval
           .uk-form-controls
-            input.uk-input(
-              type='text',
-              v-model='check.down_interval',
-              @keyup.enter='save()'
-            )
+            Field(:model='v$.check.down_interval')
+              input.uk-input(
+                type='text',
+                v-model='v$.check.down_interval.$model',
+                @keyup.enter='save()'
+              )
 
       hr
 
@@ -68,29 +71,32 @@ div(v-if='check')
         div
           label.uk-form-label Failing threshold
           .uk-form-controls
-            input.uk-input(
-              type='text',
-              v-model.number='check.failing_threshold',
-              @keyup.enter='save()'
-            )
+            Field(:model='v$.check.failing_threshold')
+              input.uk-input(
+                type='text',
+                v-model.number='v$.check.failing_threshold.$model',
+                @keyup.enter='save()'
+              )
 
         div
           label.uk-form-label Passing threshold
           .uk-form-controls
-            input.uk-input(
-              type='text',
-              v-model.number='check.passing_threshold',
-              @keyup.enter='save()'
-            )
+            Field(:model='v$.check.passing_threshold')
+              input.uk-input(
+                type='text',
+                v-model.number='v$.check.passing_threshold.$model',
+                @keyup.enter='save()'
+              )
 
         div
           label.uk-form-label Site threshold
           .uk-form-controls
-            input.uk-input(
-              type='text',
-              v-model.number='check.site_threshold',
-              @keyup.enter='save()'
-            )
+            Field(:model='v$.check.site_threshold')
+              input.uk-input(
+                type='text',
+                v-model.number='v$.check.site_threshold.$model',
+                @keyup.enter='save()'
+              )
 
       .uk-grid-small(uk-grid, class='uk-child-width-1-1@m uk-child-width-1-1@s')
         div
@@ -115,8 +121,9 @@ div(v-if='check')
       .uk-width-1-1
         label.uk-form-label Check type
         .uk-form-controls
-          select.uk-select(v-model='check.spec.kind')
-            option(v-for='kind in kinds', :key='kind', :value='kind') {{ $filters.checkkind(kind) }}
+          Field(:model='v$.check.spec.kind')
+            select.uk-select(v-model='v$.check.spec.kind.$model')
+              option(v-for='kind in kinds', :key='kind', :value='kind') {{ $filters.checkkind(kind) }}
 
     .uk-margin(v-if='check')
       Http(
@@ -192,6 +199,11 @@ div(v-if='check')
 
 <script>
 import VueTagsInput from '@sipec/vue3-tags-input';
+import { useVuelidate } from '@vuelidate/core';
+import { required, integer } from '@vuelidate/validators';
+
+import { duration } from '~/components/validators';
+import Field from '~/components/partials/Field.vue';
 
 import Http from '~/components/checks/forms/Http.vue';
 import Dns from '~/components/checks/forms/Dns.vue';
@@ -206,8 +218,13 @@ import Python from '~/components/checks/forms/Python.vue';
 import DeadManSwitch from '~/components/checks/forms/DeadManSwitch.vue';
 
 export default {
+  setup: () => ({
+    v$: useVuelidate(),
+  }),
+
   components: {
     VueTagsInput,
+    Field,
     Http,
     Dns,
     Tcp,
@@ -243,6 +260,26 @@ export default {
     ],
   }),
 
+  validations: () => ({
+    check: {
+      name: { required },
+      interval: { required, duration },
+      down_interval: { duration },
+      failing_threshold: { required, integer },
+      passing_threshold: { required, integer },
+      site_threshold: { required, integer },
+      spec: {
+        kind: { required },
+      },
+    },
+  }),
+
+  watch: {
+    'check.spec.kind': function kindWatcher(value) {
+      this.$router.push({ query: { kind: value } });
+    },
+  },
+
   computed: {
     new_record() {
       return this.$route.meta.action === 'new';
@@ -256,7 +293,9 @@ export default {
         failing_threshold: 3,
         passing_threshold: 3,
         site_threshold: 1,
-        spec: {},
+        spec: {
+          kind: this.$route.query.kind,
+        },
       };
     } else {
       this.$http().get(`/api/checks/${this.$route.params.uuid}`).then((response) => {
@@ -285,46 +324,50 @@ export default {
 
   methods: {
     save() {
-      const spec = this.$refs.spec.serialize();
-      const body = { ...this.check, spec };
+      this.v$.$validate();
 
-      if (body.group === '') {
-        body.group = null;
-      }
+      if (!this.v$.$error) {
+        const spec = this.$refs.spec.serialize();
+        const body = { ...this.check, spec };
 
-      if (body.alerter === '') {
-        body.alerter = null;
-      }
-
-      if (body.down_interval === '') {
-        body.down_interval = null;
-      }
-
-      body.sites = this.sites.map((site) => site.text);
-
-      delete body.uuid;
-
-      Object.keys(body.spec).forEach((key) => {
-        if (!body.spec[key] || body.spec[key] === '') {
-          delete body.spec[key];
+        if (body.group === '') {
+          body.group = null;
         }
-      });
 
-      if (this.new_record) {
-        this.$http()
-          .post('/api/checks', body)
-          .then(() => {
-            this.$router.push({ name: 'checks' });
-          });
-      } else {
-        this.$http()
-          .put(`/api/checks/${this.$route.params.uuid}`, body)
-          .then(() => {
-            this.$router.push({
-              name: 'checks.view',
-              params: { uuid: this.$route.params.uuid },
+        if (body.alerter === '') {
+          body.alerter = null;
+        }
+
+        if (body.down_interval === '') {
+          body.down_interval = null;
+        }
+
+        body.sites = this.sites.map((site) => site.text);
+
+        delete body.uuid;
+
+        Object.keys(body.spec).forEach((key) => {
+          if (!body.spec[key] || body.spec[key] === '') {
+            delete body.spec[key];
+          }
+        });
+
+        if (this.new_record) {
+          this.$http()
+            .post('/api/checks', body)
+            .then(() => {
+              this.$router.push({ name: 'checks' });
             });
-          });
+        } else {
+          this.$http()
+            .put(`/api/checks/${this.$route.params.uuid}`, body)
+            .then(() => {
+              this.$router.push({
+                name: 'checks.view',
+                params: { uuid: this.$route.params.uuid },
+              });
+            });
+        }
       }
     },
   },

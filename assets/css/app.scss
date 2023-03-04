@@ -167,6 +167,20 @@ button,
   line-height: normal !important;
 }
 
+.uk-form-controls {
+  .form-field-wrapper.error {
+
+    .uk-input,
+    select {
+      border: 1px solid $alert-danger-background !important;
+    }
+
+    .uk-text-meta {
+      color: $alert-danger-background;
+    }
+  }
+}
+
 #timeline {
   .body {
     *:last-child {

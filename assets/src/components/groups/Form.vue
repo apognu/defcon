@@ -5,26 +5,46 @@ div(v-if='group')
     p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Edit group
     h2.uk-margin-remove-top {{ group.name }}
 
-  .uk-form-horizontal(v-if='group || new_record')
+  .uk-form-horizontal
     .uk-margin
       label.uk-form-label Group name
       .uk-form-controls
-        input.uk-input(
-          type='text',
-          v-model='group.name',
-          @keyup.enter='save()'
-        )
+        Field(:model='v$.group.name')
+          input.uk-input(
+            type='text',
+            v-model='v$.group.name.$model',
+            @keyup.enter='save()'
+          )
 
     .uk-margin-top
       button.uk-button.uk-button-primary.uk-button-small(@click='save') Save group
 </template>
 
 <script>
+import { useVuelidate } from '@vuelidate/core';
+import { required } from '@vuelidate/validators';
+
+import Field from '~/components/partials/Field.vue';
+
 export default {
   inject: ['$http'],
 
+  setup: () => ({
+    v$: useVuelidate(),
+  }),
+
+  components: {
+    Field,
+  },
+
   data: () => ({
     group: undefined,
+  }),
+
+  validations: () => ({
+    group: {
+      name: { required },
+    },
   }),
 
   computed: {
@@ -45,22 +65,26 @@ export default {
 
   methods: {
     save() {
-      const body = {
-        name: this.group.name,
-      };
+      this.v$.$validate();
 
-      if (this.new_record) {
-        this.$http()
-          .post('/api/groups', body)
-          .then(() => {
-            this.$router.push({ name: 'groups' });
-          });
-      } else {
-        this.$http()
-          .put(`/api/groups/${this.$route.params.uuid}`, body)
-          .then(() => {
-            this.$router.push({ name: 'groups' });
-          });
+      if (!this.v$.$error()) {
+        const body = {
+          name: this.group.name,
+        };
+
+        if (this.new_record) {
+          this.$http()
+            .post('/api/groups', body)
+            .then(() => {
+              this.$router.push({ name: 'groups' });
+            });
+        } else {
+          this.$http()
+            .put(`/api/groups/${this.$route.params.uuid}`, body)
+            .then(() => {
+              this.$router.push({ name: 'groups' });
+            });
+        }
       }
     },
   },

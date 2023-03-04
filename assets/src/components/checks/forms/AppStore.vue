@@ -4,21 +4,41 @@ div
     .uk-margin
       label.uk-form-label Bundle ID
       .uk-form-controls
-        input.uk-input(
-          type='text',
-          v-model='spec.bundle_id',
-          @keyup.enter='$emit("enter")'
-        )
+        Field(:model='v$.spec.bundle_id')
+          input.uk-input(
+            type='text',
+            v-model='v$.spec.bundle_id.$model',
+            @keyup.enter='$emit("enter")'
+          )
 </template>
 
 <script>
+import { useVuelidate } from '@vuelidate/core';
+import { required } from '@vuelidate/validators';
+
+import Field from '~/components/partials/Field.vue';
+
 export default {
+  setup: () => ({
+    v$: useVuelidate(),
+  }),
+
+  components: {
+    Field,
+  },
+
   props: {
     spec: {
       type: Object,
       required: true,
     },
   },
+
+  validations: () => ({
+    spec: {
+      bundle_id: { required },
+    },
+  }),
 
   methods: {
     serialize() {

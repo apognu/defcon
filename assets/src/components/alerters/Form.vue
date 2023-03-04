@@ -5,15 +5,16 @@ div(v-if='alerter')
     p.uk-margin-remove.uk-text-small.uk-text-bolder.uk-text-uppercase Edit alerter
     h2.uk-margin-remove-top {{ alerter.name }}
 
-  .uk-form-horizontal(v-if='alerter || new_record')
+  .uk-form-horizontal
     .uk-margin
       label.uk-form-label Alerter name
       .uk-form-controls
-        input.uk-input(
-          type='text',
-          v-model='alerter.name',
-          @keyup.enter='save()'
-        )
+        Field(:model='v$.alerter.name')
+          input.uk-input(
+            type='text',
+            v-model='v$.alerter.name.$model',
+            @keyup.enter='save()'
+          )
 
     .uk-margin
       label.uk-form-label Alerter type
@@ -55,11 +56,31 @@ div(v-if='alerter')
 </template>
 
 <script>
+import { useVuelidate } from '@vuelidate/core';
+import { required } from '@vuelidate/validators';
+
+import Field from '~/components/partials/Field.vue';
+
 export default {
   inject: ['$http', '$filters'],
 
+  setup: () => ({
+    v$: useVuelidate(),
+  }),
+
+  components: {
+    Field,
+  },
+
   data: () => ({
     alerter: undefined,
+  }),
+
+  validations: () => ({
+    alerter: {
+      name: { required },
+      url: { required },
+    },
   }),
 
   computed: {
@@ -98,22 +119,26 @@ export default {
 
   methods: {
     save() {
-      const body = this.alerter;
+      this.v$.$validate();
 
-      delete body.uuid;
+      if (!this.v$.$error()) {
+        const body = this.alerter;
 
-      if (this.new_record) {
-        this.$http()
-          .post('/api/alerters', body)
-          .then(() => {
-            this.$router.push({ name: 'alerters' });
-          });
-      } else {
-        this.$http()
-          .put(`/api/alerters/${this.$route.params.uuid}`, body)
-          .then(() => {
-            this.$router.push({ name: 'alerters' });
-          });
+        delete body.uuid;
+
+        if (this.new_record) {
+          this.$http()
+            .post('/api/alerters', body)
+            .then(() => {
+              this.$router.push({ name: 'alerters' });
+            });
+        } else {
+          this.$http()
+            .put(`/api/alerters/${this.$route.params.uuid}`, body)
+            .then(() => {
+              this.$router.push({ name: 'alerters' });
+            });
+        }
       }
     },
   },
