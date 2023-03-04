@@ -98,12 +98,12 @@ export default {
 
   watch: {
     'filters.group': function groupWatcher() {
-      this.$router.push({ query: { group: this.filters.group, ...this.$route.query } });
+      this.$router.push({ query: { ...this.$route.query, group: this.filters.group } });
       this.refresh();
     },
 
     'filters.state': function stateWatcher() {
-      this.$router.push({ query: { state: this.filters.state, ...this.$route.query } });
+      this.$router.push({ query: { ...this.$route.query, state: this.filters.state } });
       this.refresh();
     },
   },
@@ -152,7 +152,7 @@ export default {
 
     search() {
       this.filters.search = this.terms;
-      this.$router.push({ query: { search: this.filters.search, ...this.$route.query } });
+      this.$router.push({ query: { ...this.$route.query, search: this.filters.search } });
     },
   },
 };

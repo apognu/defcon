@@ -121,7 +121,7 @@ export default {
     save() {
       this.v$.$validate();
 
-      if (!this.v$.$error()) {
+      if (!this.v$.$error) {
         const body = this.alerter;
 
         delete body.uuid;

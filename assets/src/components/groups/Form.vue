@@ -67,7 +67,7 @@ export default {
     save() {
       this.v$.$validate();
 
-      if (!this.v$.$error()) {
+      if (!this.v$.$error) {
         const body = {
           name: this.group.name,
         };
