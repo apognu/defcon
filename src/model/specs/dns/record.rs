@@ -12,10 +12,11 @@ use sqlx::{
 };
 use trust_dns_client::rr::RecordType;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub enum DnsRecord {
   NS,
   MX,
+  #[default]
   A,
   AAAA,
   CNAME,
@@ -38,12 +39,6 @@ impl Display for DnsRecord {
     };
 
     write!(formatter, "{name}")
-  }
-}
-
-impl Default for DnsRecord {
-  fn default() -> DnsRecord {
-    DnsRecord::A
   }
 }
 

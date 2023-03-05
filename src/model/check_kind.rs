@@ -11,7 +11,7 @@ use sqlx::{
   Decode, Encode, MySql,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub enum CheckKind {
   #[cfg(feature = "ping")]
   Ping,
@@ -26,13 +26,8 @@ pub enum CheckKind {
   #[cfg(feature = "python")]
   Python,
   DeadManSwitch,
+  #[default]
   Unsupported,
-}
-
-impl Default for CheckKind {
-  fn default() -> CheckKind {
-    CheckKind::Unsupported
-  }
 }
 
 impl Display for CheckKind {

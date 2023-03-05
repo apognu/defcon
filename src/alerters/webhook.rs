@@ -45,7 +45,7 @@ impl Webhook for WebhookAlerter {
     let request = match &self.0.username {
       Some(username) => {
         let password = self.0.password.clone().unwrap_or_default();
-        let credentials = b64.encode(&format!("{username}:{}", password));
+        let credentials = b64.encode(format!("{username}:{}", password));
 
         request.set("authorization", &format!("Basic {credentials}"))
       }
@@ -53,7 +53,7 @@ impl Webhook for WebhookAlerter {
       None => request,
     };
 
-    request.send_json(&payload).context("could not call alerter webhook")?;
+    request.send_json(payload).context("could not call alerter webhook")?;
 
     Ok(())
   }

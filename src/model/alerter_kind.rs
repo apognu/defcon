@@ -11,18 +11,13 @@ use sqlx::{
   Decode, Encode, MySql,
 };
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub enum AlerterKind {
   Webhook,
   Slack,
   Pagerduty,
+  #[default]
   Noop,
-}
-
-impl Default for AlerterKind {
-  fn default() -> AlerterKind {
-    AlerterKind::Noop
-  }
 }
 
 impl Display for AlerterKind {

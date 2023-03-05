@@ -1,6 +1,4 @@
 #![feature(async_closure, try_find)]
-#![deny(clippy::all)]
-#![allow(clippy::unit_arg)]
 
 #[macro_use]
 extern crate anyhow;

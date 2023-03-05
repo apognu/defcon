@@ -1,6 +1,6 @@
 #![feature(async_closure, try_find)]
 #![deny(clippy::all)]
-#![allow(clippy::let_unit_value)]
+#![allow(clippy::almost_swapped)]
 
 #[macro_use]
 extern crate async_trait;

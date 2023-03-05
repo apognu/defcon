@@ -17,7 +17,7 @@ jobs:
           key: cargo-clippy-cache-${{ matrix.arch.target }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-08-18
+          toolchain: nightly-2023-03-04
           override: true
           components: clippy
       - uses: actions-rs/cargo@v1
@@ -51,7 +51,7 @@ jobs:
           mkdir dist/
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2022-08-18
+          toolchain: nightly-2023-03-04
           override: true
       - name: Test suite
         run: sudo capsh --caps='cap_net_raw+eip cap_setpcap,cap_setuid,cap_setgid+ep' --keep=1 --user=runner --addamb=cap_net_raw -- -c "PATH=$PATH HOME=/home/runner JQ_LIB_DIR=/usr/lib/x86_64-linux-gnu DSN=mysql://root:${{ secrets.MYSQL_ROOT_PASSWORD }}@127.0.0.1/information_schema?ssl-mode=DISABLED cargo test --all-features"
