@@ -33,13 +33,13 @@ impl<'h> Handler for AppStoreHandler<'h> {
 
   async fn run(&self, spec: &AppStore, site: &str, _stash: Stash) -> Result<Event> {
     let url = format!("https://itunes.apple.com/lookup?bundleId={}", spec.bundle_id);
-    let response = reqwest::get(&url).await.context("did not receive a valid response")?;
+    let response = ureq::get(&url).call().context("did not receive a valid response")?;
 
-    if response.status().as_u16() != 200 {
+    if response.status() != 200 {
       return Err(anyhow!("did not receive a valid response"));
     }
 
-    let response: AppStoreResponse = response.json().await.context("did not receive a valid response")?;
+    let response: AppStoreResponse = response.into_json().context("did not receive a valid response")?;
 
     let (status, message) = if response.results > 0 {
       (OK, String::new())

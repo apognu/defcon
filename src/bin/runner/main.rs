@@ -41,11 +41,10 @@ async fn main() -> Result<()> {
 
   loop {
     let token = config.keys.generate(&claims)?.unwrap_or_default();
-    let client = reqwest::Client::new();
-    let request = client.get(format!("{}/api/runner/checks", config.base)).header("authorization", format!("Bearer {token}"));
+    let request = ureq::get(&format!("{}/api/runner/checks", config.base)).set("authorization", &format!("Bearer {token}"));
 
-    if let Ok(response) = request.send().await {
-      if let Ok(checks) = response.json::<Vec<api::RunnerCheck>>().await {
+    if let Ok(response) = request.call() {
+      if let Ok(checks) = response.into_json::<Vec<api::RunnerCheck>>() {
         log::debug!("got {} stale checks from the controller", checks.len());
 
         let mut rng = rand::thread_rng();
@@ -138,12 +137,10 @@ async fn run_check(config: Arc<Config>, stash: Stash, mut inhibitor: Inhibitor, 
       };
 
       let token = config.keys.generate(claims)?.unwrap_or_default();
-      let client = reqwest::Client::new();
-      let request = client
-        .post(format!("{}/api/runner/report", config.base))
-        .header("authorization", format!("Bearer {token}"))
-        .json(&report);
-      let _ = request.send().await;
+
+      let _ = ureq::post(&format!("{}/api/runner/report", config.base))
+        .set("authorization", &format!("Bearer {token}"))
+        .send_json(&report);
 
       inhibitor.release(&config.site, &check.uuid).await;
     }

@@ -27,10 +27,9 @@ impl<'h> Handler for PlayStoreHandler<'h> {
 
   async fn run(&self, spec: &PlayStore, site: &str, _stash: Stash) -> Result<Event> {
     let url = format!("https://play.google.com/store/apps/details?id={}", spec.app_id);
+    let response = ureq::get(&url).call();
 
-    let response = reqwest::get(&url).await.context("did not receive a valid response")?;
-
-    let (status, message) = if response.status().as_u16() == 200 {
+    let (status, message) = if response.is_ok() {
       (OK, String::new())
     } else {
       (CRITICAL, format!("Android app {} missing", spec.app_id))

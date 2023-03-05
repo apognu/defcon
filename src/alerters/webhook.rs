@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
+use base64::{engine::general_purpose::STANDARD as b64, Engine as _};
 use sqlx::MySqlConnection;
 
 use crate::{
@@ -38,15 +39,21 @@ impl Webhook for WebhookAlerter {
 
     let spec = check.spec(conn).await?;
     let payload = Payload { level, check, spec, outage };
-    let client = reqwest::Client::new();
 
-    let builder = client.post(url);
-    let builder = match &self.0.username {
-      Some(username) => builder.basic_auth(username, self.0.password.as_ref()),
-      None => builder,
+    let request = ureq::post(url);
+
+    let request = match &self.0.username {
+      Some(username) => {
+        let password = self.0.password.clone().unwrap_or_default();
+        let credentials = b64.encode(&format!("{username}:{}", password));
+
+        request.set("authorization", &format!("Basic {credentials}"))
+      }
+
+      None => request,
     };
 
-    builder.json(&payload).send().await.context("could not call alerter webhook")?;
+    request.send_json(&payload).context("could not call alerter webhook")?;
 
     Ok(())
   }

@@ -1,11 +1,7 @@
-use std::{str::FromStr, sync::Arc, time::Instant};
+use std::{sync::Arc, time::Instant};
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use reqwest::{
-  header::{HeaderMap, HeaderName, HeaderValue},
-  Client as HttpClient,
-};
 use sha2::{Digest, Sha512};
 use sqlx::MySqlConnection;
 
@@ -32,27 +28,26 @@ impl<'h> Handler for HttpHandler<'h> {
 
   async fn run(&self, spec: &Http, site: &str, _stash: Stash) -> Result<Event> {
     let timeout = spec.timeout.unwrap_or_else(|| Duration::from(5));
-    let mut headers: HeaderMap = spec
-      .headers
-      .iter()
-      .map(|(name, value)| (HeaderName::from_str(name), HeaderValue::from_str(value)))
-      .filter_map(|(name, value)| match (name, value) {
-        (Ok(name), Ok(value)) => Some((name, value)),
-        _ => None,
-      })
-      .collect();
+    let mut request = ureq::AgentBuilder::new().timeout(*timeout).build().get(&spec.url).set("user-agent", "defcon");
 
-    headers.append("user-agent", HeaderValue::from_str("defcon").unwrap());
+    for (header, value) in spec.headers.iter() {
+      request = request.set(header, value);
+    }
 
-    let client = HttpClient::builder().timeout(*timeout).build()?;
     let start = Instant::now();
-    let response = client.get(&spec.url).headers(headers).send().await;
+    let response = request.call();
     let duration = start.elapsed();
+
+    let response = match response {
+      Ok(response) => Ok(response),
+      Err(ureq::Error::Status(_, response)) => Ok(response),
+      Err(err) => Err(err),
+    };
 
     let event = match response {
       Ok(response) => {
-        let code = response.status().as_u16();
-        let body = response.text().await.unwrap_or_default();
+        let code = response.status();
+        let body = response.into_string().unwrap_or_default();
 
         let code_ok = code == spec.code.unwrap_or(code);
         let content_ok = match spec.content {
@@ -193,12 +188,36 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn handler_http_invalid_status() {
+  async fn handler_http_invalid_status_below_400() {
     let handler = HttpHandler { check: &Check::default() };
     let spec = Http {
       id: 0,
       check_id: 0,
-      url: "https://httpbin.org/status/200".to_string(),
+      url: "https://httpbin.org/status/300".to_string(),
+      headers: Default::default(),
+      timeout: None,
+      code: Some(301),
+      content: None,
+      digest: None,
+      json_query: None,
+      duration: None,
+    };
+
+    let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
+    assert!(matches!(&result, Ok(_)));
+
+    let result = result.unwrap();
+    assert_eq!(result.status, CRITICAL);
+    assert_eq!(result.message, "status code was 300".to_string());
+  }
+
+  #[tokio::test]
+  async fn handler_http_invalid_status_above_400() {
+    let handler = HttpHandler { check: &Check::default() };
+    let spec = Http {
+      id: 0,
+      check_id: 0,
+      url: "https://httpbin.org/status/400".to_string(),
       headers: Default::default(),
       timeout: None,
       code: Some(201),
@@ -213,7 +232,7 @@ mod tests {
 
     let result = result.unwrap();
     assert_eq!(result.status, CRITICAL);
-    assert_eq!(result.message, "status code was 200".to_string());
+    assert_eq!(result.message, "status code was 400".to_string());
   }
 
   #[tokio::test]
@@ -380,6 +399,6 @@ mod tests {
 
     let result = result.unwrap();
     assert_eq!(result.status, CRITICAL);
-    assert_eq!(result.message, "error sending request for url (http://192.0.2.1/): operation timed out".to_string());
+    assert_eq!(result.message, "http://192.0.2.1/: Connection Failed: Connect error: connection timed out".to_string());
   }
 }
