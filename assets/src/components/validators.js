@@ -5,7 +5,7 @@ const _json = (value) => {
     JSON.parse(value);
 
     return true;
-  } catch {
+  } catch (_) {
     return false;
   }
 };
@@ -26,10 +26,17 @@ const DNS_RECORD_TYPES = [
 
 const _dnsRecordType = (value) => DNS_RECORD_TYPES.includes(value);
 
-export const dnsRecordType = (value) => !helpers.req(value) || helpers.withMessage('Must be a valid DNS record types', _dnsRecordType(value));
-export const json = (value) => !helpers.req(value) || helpers.withMessage('Must a valid JSON value', _json(value));
+export const dnsRecordType = {
+  $validator: (value) => !helpers.req(value) || _dnsRecordType(value),
+  $message: 'Must be a valid DNS record types',
+};
 
-export const duration = helpers.withMessage(
-  'This must be a human-readable duration, such as "10m 30s"',
-  helpers.regex(/^([0-9]+(s|sec|second|seconds|m|min|minute|minutes|h|hr|hour|hours|d|day|days|w|week|weeks|M|month|months|y|year|years) *)*$/),
-);
+export const json = {
+  $message: 'Must a valid JSON value',
+  $validator: (value) => !helpers.req(value) || _json(value),
+};
+
+export const duration = {
+  $validator: (value) => !helpers.req(value) || helpers.regex(/^([0-9]+(s|sec|second|seconds|m|min|minute|minutes|h|hr|hour|hours|d|day|days|w|week|weeks|M|month|months|y|year|years) *)*$/),
+  $message: 'This must be a human-readable duration, such as "10m 30s"',
+};

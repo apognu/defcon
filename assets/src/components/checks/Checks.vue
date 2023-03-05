@@ -103,23 +103,25 @@ export default {
     },
 
     'filters.state': function stateWatcher() {
-      this.$router.push({ query: { ...this.$route.query, state: this.filters.state } });
+      if (this.filters.state !== 'enabled') {
+        this.$router.push({ query: { ...this.$route.query, state: this.filters.state } });
+      } else {
+        const query = { ...this.$route.query };
+        delete query.state;
+
+        this.$router.replace({ query });
+      }
+
       this.refresh();
+    },
+
+    '$route.query': function routeWatcher() {
+      this.setFiltersFromQuery();
     },
   },
 
   async mounted() {
-    if (this.$route.query.group) {
-      this.filters.group = this.$route.query.group;
-    }
-    if (this.$route.query.state) {
-      this.filters.state = this.$route.query.state;
-    }
-    if (this.$route.query.search) {
-      this.terms = this.$route.query.search;
-      this.filters.search = this.$route.query.search;
-    }
-
+    this.setFiltersFromQuery();
     this.refresh();
     this.refresher = setInterval(this.refresh, 5000);
 
@@ -133,6 +135,27 @@ export default {
   },
 
   methods: {
+    setFiltersFromQuery() {
+      if (this.$route.query.group) {
+        this.filters.group = this.$route.query.group;
+      } else {
+        this.filters.group = undefined;
+      }
+
+      if (this.$route.query.state) {
+        this.filters.state = this.$route.query.state;
+      } else {
+        this.filters.state = 'enabled';
+      }
+
+      if (this.$route.query.search) {
+        this.terms = this.$route.query.search;
+        this.filters.search = this.$route.query.search;
+      } else {
+        this.filters.search = '';
+      }
+    },
+
     refresh() {
       let all = 'all=false';
       if (this.filters.state === 'all') {
