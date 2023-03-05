@@ -7,7 +7,6 @@ use axum::{
 };
 use chrono::Utc;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
-use regex::Regex;
 
 use crate::api::{
   error::{AppError, ErrorResponse, Shortable},
@@ -92,10 +91,9 @@ where
     let TypedHeader(Authorization(bearer)) = parts.extract::<TypedHeader<Authorization<Bearer>>>().await.context(AppError::InvalidCredentials).short()?;
     let state = AppState::from_ref(state);
     let keys = state.keys.unwrap();
-    let rgx = Regex::new(r"^[a-z0-9-]+$").unwrap();
 
     if let Ok(payload) = keys.verify(Some(bearer.token())) {
-      if rgx.is_match(&payload.claims.site) {
+      if payload.claims.site.chars().all(|c| c == '-' || char::is_alphanumeric(c)) {
         return Ok(RunnerAuth { site: payload.claims.site });
       }
     }

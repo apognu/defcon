@@ -3,7 +3,6 @@ use std::{env, sync::Arc, time::Duration};
 use anyhow::{anyhow, Context, Result};
 use kvlogger::KvLoggerBuilder;
 use once_cell::sync::Lazy;
-use regex::Regex;
 
 use defcon::{api::auth::Keys, config::ChecksConfig, ext::EnvExt};
 
@@ -50,8 +49,7 @@ impl Config {
       duration => Some(duration),
     };
 
-    let rgx = Regex::new(r"^[a-z0-9-]+$").unwrap();
-    if !rgx.is_match(&site) {
+    if !site.chars().all(|c| c == '-' || char::is_alphanumeric(c)) {
       return Err(anyhow!("SITE should only contain lowercase alphanumeric characters and dashes"));
     }
 
