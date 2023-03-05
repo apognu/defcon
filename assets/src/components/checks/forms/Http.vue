@@ -89,10 +89,9 @@ import {
   integer,
   minLength,
   maxLength,
-  url,
 } from '@vuelidate/validators';
 
-import { json, duration } from '~/components/validators';
+import { json, duration, url } from '~/components/validators';
 
 import Field from '~/components/partials/Field.vue';
 
