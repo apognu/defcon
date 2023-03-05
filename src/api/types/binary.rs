@@ -1,5 +1,6 @@
 use std::fmt::{self, Formatter};
 
+use base64::{engine::general_purpose::STANDARD as b64, Engine as _};
 use serde::{de, ser};
 
 use crate::model::Binary;
@@ -9,7 +10,7 @@ impl ser::Serialize for Binary {
   where
     S: ser::Serializer,
   {
-    serializer.serialize_str(&base64::encode(self))
+    serializer.serialize_str(&b64.encode(self))
   }
 }
 
@@ -26,14 +27,14 @@ impl<'de> de::Visitor<'de> for BinaryVisitor {
   where
     E: de::Error,
   {
-    Ok(Binary::from(base64::decode(value).map_err(de::Error::custom)?))
+    Ok(Binary::from(b64.decode(value).map_err(de::Error::custom)?))
   }
 
   fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
   where
     E: de::Error,
   {
-    Ok(Binary::from(base64::decode(value).map_err(de::Error::custom)?))
+    Ok(Binary::from(b64.decode(value).map_err(de::Error::custom)?))
   }
 }
 

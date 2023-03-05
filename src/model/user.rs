@@ -1,5 +1,6 @@
 use anyhow::Result;
 use argon2::{password_hash::SaltString, Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use base64::{engine::general_purpose::STANDARD as b64, Engine as _};
 use rand::rngs::OsRng;
 use sqlx::{FromRow, MySqlConnection};
 
@@ -152,7 +153,7 @@ impl User {
   }
 
   pub async fn generate_api_key(&self, conn: &mut MySqlConnection) -> Result<String> {
-    let api_key = base64::encode((0..48).map(|_| rand::random::<u8>()).collect::<Vec<u8>>());
+    let api_key = b64.encode((0..48).map(|_| rand::random::<u8>()).collect::<Vec<u8>>());
     let salt = SaltString::generate(&mut OsRng);
     let argon = Argon2::default();
     let hash = argon.hash_password(api_key.as_bytes(), &salt).map_err(|_| AppError::ServerError)?;
