@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use kvlogger::KvLoggerBuilder;
 use once_cell::sync::Lazy;
 
-use crate::ext::EnvExt;
+use crate::{ext::EnvExt, model::CHECK_KINDS};
 
 pub const CONTROLLER_ID: &str = "@controller";
 
@@ -32,6 +32,7 @@ pub struct Config {
   pub checks: ChecksConfig,
   pub alerters: AlertersConfig,
   pub key: Option<&'static Vec<u8>>,
+  pub features: FeaturesConfig,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -178,6 +179,19 @@ impl Default for AlertersConfig {
   }
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct FeaturesConfig {
+  handlers: Vec<String>,
+}
+
+impl Default for FeaturesConfig {
+  fn default() -> Self {
+    FeaturesConfig {
+      handlers: CHECK_KINDS.iter().map(|kind| kind.to_string()).collect(),
+    }
+  }
+}
+
 impl Config {
   pub fn set_log_level() -> Result<()> {
     if env::var("RUST_LOG").is_err() {
@@ -199,6 +213,7 @@ impl Config {
       checks: ChecksConfig::new()?,
       alerters: AlertersConfig::default(),
       key: PUBLIC_KEY.as_ref(),
+      features: FeaturesConfig::default(),
     };
 
     Ok(Arc::new(config))

@@ -22,7 +22,7 @@ pub use self::{
   alerter_kind::AlerterKind,
   binary::Binary,
   check::Check,
-  check_kind::CheckKind,
+  check_kind::{CheckKind, KINDS as CHECK_KINDS},
   deadmanswitch_log::DeadManSwitchLog,
   duration::Duration,
   event::{status, Event},

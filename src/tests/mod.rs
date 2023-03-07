@@ -65,6 +65,7 @@ pub fn config(auth: bool) -> Arc<Config> {
     },
     alerters: AlertersConfig { default: None, fallback: None },
     key: None,
+    features: FeaturesConfig::default(),
   };
 
   Arc::new(config)

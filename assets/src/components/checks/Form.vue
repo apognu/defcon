@@ -238,7 +238,7 @@ export default {
     DeadManSwitch,
   },
 
-  inject: ['$http', '$filters', '$helpers'],
+  inject: ['store', '$http', '$filters', '$helpers'],
 
   data: () => ({
     check: undefined,
@@ -246,18 +246,6 @@ export default {
     alerters: [],
     sites: [{ text: '@controller' }],
     site: '',
-    kinds: [
-      'http',
-      'tls',
-      'dns',
-      'tcp',
-      'udp',
-      'ping',
-      'app_store',
-      'play_store',
-      'domain',
-      'deadmanswitch',
-    ],
   }),
 
   validations: () => ({
@@ -276,11 +264,21 @@ export default {
 
   watch: {
     'check.spec.kind': function kindWatcher(value) {
-      this.$router.push({ query: { kind: value } });
+      if (this.new_record) {
+        this.$router.replace({ query: { kind: value } });
+      }
     },
   },
 
   computed: {
+    kinds() {
+      if (this.store.config) {
+        return this.store.config.features.handlers;
+      }
+
+      return [];
+    },
+
     new_record() {
       return this.$route.meta.action === 'new';
     },

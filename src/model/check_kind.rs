@@ -11,6 +11,22 @@ use sqlx::{
   Decode, Encode, MySql,
 };
 
+pub const KINDS: &[&str] = &[
+  #[cfg(feature = "ping")]
+  "ping",
+  "dns",
+  "http",
+  "tcp",
+  "udp",
+  "tls",
+  "play_store",
+  "app_store",
+  "domain",
+  #[cfg(feature = "python")]
+  "python",
+  "deadmanswitch",
+];
+
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub enum CheckKind {
   #[cfg(feature = "ping")]
