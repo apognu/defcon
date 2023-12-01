@@ -1,4 +1,4 @@
 mod record;
 mod spec;
 
-pub use self::{record::*, spec::*};
+pub use self::spec::*;

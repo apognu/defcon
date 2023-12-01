@@ -61,7 +61,7 @@ mod tests {
     body::Body,
     http::{Request, StatusCode},
   };
-  use hyper::body;
+  use http_body_util::BodyExt;
   use tower::ServiceExt;
 
   use crate::{model::Event, tests};
@@ -81,7 +81,7 @@ mod tests {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let events: Vec<Event> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let events: Vec<Event> = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(events.len(), 1);
     assert_eq!(events[0].status, 1);
     assert_eq!(&events[0].message, "failure");

@@ -21,7 +21,8 @@ pub struct ListQuery {
   to: Option<api::DateTime>,
 }
 
-pub async fn list(_: Auth, ref pool: State<Pool<MySql>>, Query(ListQuery { from, to }): Query<ListQuery>) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
+pub async fn list(_: Auth, pool: State<Pool<MySql>>, Query(ListQuery { from, to }): Query<ListQuery>) -> ApiResponse<Json<Vec<api::SiteOutage>>> {
+  let pool = &pool;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let outages = if let Some((from, to)) = from.zip(to) {
@@ -39,7 +40,8 @@ pub async fn list(_: Auth, ref pool: State<Pool<MySql>>, Query(ListQuery { from,
   Ok(Json(outages))
 }
 
-pub async fn get(_: Auth, ref pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<Json<api::SiteOutage>> {
+pub async fn get(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<Json<api::SiteOutage>> {
+  let pool = &pool;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let outage = SiteOutage::by_uuid(&mut conn, &uuid).await.context("could not find outage").short()?.map(pool).await.short()?;
 
@@ -53,7 +55,7 @@ mod tests {
     body::Body,
     http::{Request, StatusCode},
   };
-  use hyper::body;
+  use http_body_util::BodyExt;
   use tower::ServiceExt;
   use uuid::Uuid;
 
@@ -70,7 +72,7 @@ mod tests {
     let response = client.oneshot(Request::builder().uri("/api/sites/outages").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let outages: Vec<SiteOutage> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let outages: Vec<SiteOutage> = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(outages.len(), 1);
     assert_eq!(&outages[0].uuid, "dd9a531a-1b0b-4a12-bc09-e5637f916261");
 
@@ -99,7 +101,7 @@ mod tests {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let outages: Vec<SiteOutage> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let outages: Vec<SiteOutage> = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(outages.len(), 2);
 
     pool.cleanup().await;
@@ -121,7 +123,7 @@ mod tests {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let outages: SiteOutage = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let outages: SiteOutage = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(&outages.uuid, "dd9a531a-1b0b-4a12-bc09-e5637f916261");
 
     pool.cleanup().await;

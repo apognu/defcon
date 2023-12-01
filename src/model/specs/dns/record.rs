@@ -3,6 +3,7 @@ use std::{
   fmt::{self, Display, Formatter},
 };
 
+use hickory_client::rr::RecordType;
 use sqlx::{
   encode::IsNull,
   error::BoxDynError,
@@ -10,7 +11,6 @@ use sqlx::{
   types::Type,
   Decode, Encode, MySql,
 };
-use trust_dns_client::rr::RecordType;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub enum DnsRecord {

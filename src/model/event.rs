@@ -192,7 +192,10 @@ mod tests {
       let outage = Outage {
         id: 1,
         check_id: 1,
-        started_on: Some(DateTime::<Utc>::from_utc(NaiveDate::from_ymd_opt(2019, 12, 1).unwrap().and_hms_opt(0, 0, 0).unwrap(), Utc)),
+        started_on: Some(DateTime::<Utc>::from_naive_utc_and_offset(
+          NaiveDate::from_ymd_opt(2019, 12, 1).unwrap().and_hms_opt(0, 0, 0).unwrap(),
+          Utc,
+        )),
         ..Default::default()
       };
       let events = Event::for_outage(&mut *conn, &outage, None, None).await?;

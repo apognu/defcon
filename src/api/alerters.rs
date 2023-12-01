@@ -85,7 +85,8 @@ mod tests {
     body::Body,
     http::{Request, StatusCode},
   };
-  use hyper::{body, Method};
+  use http_body_util::BodyExt;
+  use hyper::Method;
   use serde_json::json;
   use tower::ServiceExt;
 
@@ -103,7 +104,7 @@ mod tests {
     let response = client.oneshot(Request::builder().uri("/api/alerters").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let checks: Vec<Alerter> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let checks: Vec<Alerter> = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(checks.len(), 1);
     assert_eq!(checks[0].kind, AlerterKind::Webhook);
     assert!(matches!(checks[0].url.as_deref(), Some("https://webhooks.example.com/1")));
@@ -126,7 +127,7 @@ mod tests {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let alerter: Alerter = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let alerter: Alerter = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(alerter.kind, AlerterKind::Webhook);
     assert!(matches!(alerter.url.as_deref(), Some("https://webhooks.example.com/1")));
 

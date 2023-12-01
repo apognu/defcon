@@ -27,7 +27,8 @@ pub struct ListQuery {
   page: Option<u8>,
 }
 
-pub async fn list(_: Auth, ref pool: State<Pool<MySql>>, Query(ListQuery { check, from, to, limit, page }): Query<ListQuery>) -> ApiResponse<Json<Vec<api::Outage>>> {
+pub async fn list(_: Auth, pool: State<Pool<MySql>>, Query(ListQuery { check, from, to, limit, page }): Query<ListQuery>) -> ApiResponse<Json<Vec<api::Outage>>> {
+  let pool = &pool;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let outages = if let Some((from, to)) = from.zip(to) {
@@ -50,7 +51,8 @@ pub async fn list(_: Auth, ref pool: State<Pool<MySql>>, Query(ListQuery { check
   Ok(Json(outages))
 }
 
-pub async fn get(_: Auth, ref pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<Json<api::Outage>> {
+pub async fn get(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<Json<api::Outage>> {
+  let pool = &pool;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let outage = db::Outage::by_uuid(&mut conn, &uuid).await.context("could not retrieve outage").short()?.map(pool).await.short()?;
@@ -68,10 +70,11 @@ pub struct ListForOutageQuery {
 
 pub async fn list_for_check(
   _: Auth,
-  ref pool: State<Pool<MySql>>,
+  pool: State<Pool<MySql>>,
   Path(uuid): Path<String>,
   Query(ListForOutageQuery { from, to, limit, page }): Query<ListForOutageQuery>,
 ) -> ApiResponse<Json<Vec<api::Outage>>> {
+  let pool = &pool;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = db::Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?;
 

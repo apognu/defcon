@@ -1,9 +1,12 @@
 use anyhow::{Context, Error, Result};
 use axum::{
-  extract::{FromRef, FromRequestParts, TypedHeader},
-  headers::{authorization::Bearer, Authorization},
+  extract::{FromRef, FromRequestParts},
   http::request::Parts,
   RequestPartsExt,
+};
+use axum_extra::{
+  headers::{authorization::Bearer, Authorization},
+  TypedHeader,
 };
 use chrono::Utc;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};

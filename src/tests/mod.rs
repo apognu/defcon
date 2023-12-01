@@ -25,7 +25,7 @@ use crate::{
   tests::TestConnection,
 };
 
-pub use self::{alerters::*, checks::*, db::*, outages::*};
+pub use self::db::*;
 
 pub const JWT_SIGNING_KEY: &str = "dummysigningkey";
 

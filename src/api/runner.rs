@@ -16,7 +16,8 @@ use crate::{
   model::{Check, Event},
 };
 
-pub async fn list_stale(ref pool: State<Pool<MySql>>, credentials: RunnerAuth) -> ApiResponse<Json<Vec<api::RunnerCheck>>> {
+pub async fn list_stale(pool: State<Pool<MySql>>, credentials: RunnerAuth) -> ApiResponse<Json<Vec<api::RunnerCheck>>> {
+  let pool = &pool;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let checks: Vec<api::RunnerCheck> = Check::stale(&mut conn, &credentials.site)

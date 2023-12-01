@@ -111,9 +111,9 @@ async fn run_api(pool: Pool<MySql>, config: Arc<Config>, keys: Option<Keys>) -> 
 
   let addr = SocketAddr::from((config.api.listen.ip(), config.api.listen.port()));
   let app = api::server(config, pool, keys);
+  let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
 
-  axum::Server::bind(&addr)
-    .serve(app.into_make_service_with_connect_info::<SocketAddr>())
+  axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
     .await
     .context("could not launch api process")?;
 

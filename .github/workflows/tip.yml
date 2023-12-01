@@ -7,7 +7,6 @@ on:
 
 jobs:
   clippy:
-    if: "!contains(github.event.head_commit.message, 'skip ci')"
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
@@ -17,7 +16,7 @@ jobs:
           key: cargo-clippy-cache-${{ matrix.arch.target }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2023-03-04
+          toolchain: nightly-2023-11-29
           override: true
           components: clippy
       - uses: actions-rs/cargo@v1
@@ -25,11 +24,15 @@ jobs:
           command: clippy
 
   test:
-    if: "!contains(github.event.head_commit.message, 'skip ci')"
     strategy:
       matrix:
         arch:
-          - { name: 'x86_64', os: 'ubuntu-20.04', target: 'x86_64-unknown-linux-gnu', cross: false }
+          - {
+              name: "x86_64",
+              os: "ubuntu-20.04",
+              target: "x86_64-unknown-linux-gnu",
+              cross: false,
+            }
     runs-on: ${{ matrix.arch.os }}
     services:
       mysql:
@@ -48,7 +51,7 @@ jobs:
           key: cargo-test-cache-${{ matrix.arch.target }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2023-03-04
+          toolchain: nightly-2023-11-29
           override: true
       - name: Test suite
         run: |
@@ -56,11 +59,15 @@ jobs:
           sudo capsh --caps='cap_net_raw+eip cap_setpcap,cap_setuid,cap_setgid+ep' --keep=1 --user=runner --addamb=cap_net_raw -- -c "PATH=$PATH HOME=/home/runner JQ_LIB_DIR=/usr/lib/x86_64-linux-gnu DSN=mysql://root:${{ secrets.MYSQL_ROOT_PASSWORD }}@127.0.0.1/information_schema?ssl-mode=DISABLED cargo test --all-features"
 
   build:
-    if: "!contains(github.event.head_commit.message, 'skip ci')"
     strategy:
       matrix:
         arch:
-          - { name: 'x86_64', os: 'ubuntu-20.04', target: 'x86_64-unknown-linux-gnu', cross: false }
+          - {
+              name: "x86_64",
+              os: "ubuntu-20.04",
+              target: "x86_64-unknown-linux-gnu",
+              cross: false,
+            }
         python: ["3.8", "3.9", "3.10"]
     runs-on: ${{ matrix.arch.os }}
     steps:
@@ -75,14 +82,14 @@ jobs:
           key: cargo-build-cache-${{ matrix.arch.target }}
       - uses: actions/setup-node@v3
         with:
-          node-version: '14.x'
+          node-version: "14.x"
           registry-url: <registry url>
       - run: |
           yarn --cwd assets
           yarn --cwd assets build
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2023-03-04
+          toolchain: nightly-2023-11-29
           override: true
       - uses: actions/setup-python@v2
         with:
@@ -118,7 +125,7 @@ jobs:
       - name: Install mdbook
         uses: peaceiris/actions-mdbook@v1
         with:
-          mdbook-version: '0.4.6'
+          mdbook-version: "0.4.6"
       - name: Build user manual
         run: mdbook build docs/
       - name: Build API documentation

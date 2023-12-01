@@ -1,9 +1,12 @@
 use anyhow::{Context, Result};
 use axum::{
-  extract::{FromRef, FromRequestParts, TypedHeader},
-  headers::{authorization::Bearer, Authorization},
+  extract::{FromRef, FromRequestParts},
   http::request::Parts,
   RequestPartsExt,
+};
+use axum_extra::{
+  headers::{authorization::Bearer, Authorization},
+  TypedHeader,
 };
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
@@ -102,7 +105,10 @@ where
     let TypedHeader(Authorization(bearer)) = parts.extract::<TypedHeader<Authorization<Bearer>>>().await.context(AppError::InvalidCredentials).short()?;
     let secret = DecodingKey::from_secret(config.api.jwt_signing_key.as_ref());
 
-    if let Ok(claims) = jsonwebtoken::decode::<Claims>(bearer.token(), &secret, &Validation::default()) {
+    let mut validation = Validation::default();
+    validation.set_audience(&["urn:defcon:access"]);
+
+    if let Ok(claims) = jsonwebtoken::decode::<Claims>(bearer.token(), &secret, &validation) {
       if let Ok(mut conn) = pool.acquire().await {
         if let Ok(user) = User::by_uuid(&mut conn, &claims.claims.sub).await {
           return Ok(Auth { user });

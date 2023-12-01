@@ -31,7 +31,8 @@ pub struct ListQuery {
   site: Option<String>,
 }
 
-pub async fn list(_: Auth, ref pool: State<Pool<MySql>>, Query(ListQuery { all, group, kind, site }): Query<ListQuery>) -> ApiResponse<Json<Vec<api::Check>>> {
+pub async fn list(_: Auth, pool: State<Pool<MySql>>, Query(ListQuery { all, group, kind, site }): Query<ListQuery>) -> ApiResponse<Json<Vec<api::Check>>> {
+  let pool = &pool;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let group = match group {
@@ -55,7 +56,8 @@ pub async fn list(_: Auth, ref pool: State<Pool<MySql>>, Query(ListQuery { all, 
   Ok(Json(checks))
 }
 
-pub async fn get(_: Auth, ref pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<Json<api::Check>> {
+pub async fn get(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> ApiResponse<Json<api::Check>> {
+  let pool = &pool;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
   let check = Check::by_uuid(&mut conn, &uuid).await.context("could not retrieve check").short()?.map(pool).await.short()?;
 
@@ -248,7 +250,8 @@ mod tests {
     body::Body,
     http::{Request, StatusCode},
   };
-  use hyper::{body, Method};
+  use http_body_util::BodyExt;
+  use hyper::Method;
   use serde_json::json;
   use tower::{Service, ServiceExt};
   use uuid::Uuid;
@@ -265,7 +268,7 @@ mod tests {
     let response = client.oneshot(Request::builder().uri("/api/checks").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let checks: Vec<api::Check> = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(checks.len(), 1);
     assert_eq!(&checks[0].check.name, "list_checks_1()");
 
@@ -284,7 +287,7 @@ mod tests {
     let response = client.oneshot(Request::builder().uri("/api/checks?all=true").body(Body::empty()).unwrap()).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 
-    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let checks: Vec<api::Check> = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(checks.len(), 2);
 
     pool.cleanup().await;
@@ -299,6 +302,7 @@ mod tests {
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true), None).await?;
 
     let response = client
+      .as_service()
       .ready()
       .await
       .unwrap()
@@ -308,10 +312,11 @@ mod tests {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let checks: Vec<api::Check> = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(checks.len(), 1);
 
     let response = client
+      .as_service()
       .ready()
       .await
       .unwrap()
@@ -321,7 +326,7 @@ mod tests {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let checks: Vec<api::Check> = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(checks.len(), 0);
 
     pool.cleanup().await;
@@ -336,6 +341,7 @@ mod tests {
     pool.create_check(Some(1), Some(Uuid::new_v4().to_string()), "list_checks_1()", Some(true), Some(&["eu-1"])).await?;
 
     let response = client
+      .as_service()
       .ready()
       .await
       .unwrap()
@@ -345,10 +351,11 @@ mod tests {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let checks: Vec<api::Check> = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(checks.len(), 1);
 
     let response = client
+      .as_service()
       .ready()
       .await
       .unwrap()
@@ -358,7 +365,7 @@ mod tests {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let checks: Vec<api::Check> = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let checks: Vec<api::Check> = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(checks.len(), 0);
 
     pool.cleanup().await;
@@ -379,7 +386,7 @@ mod tests {
 
     assert_eq!(response.status(), StatusCode::OK);
 
-    let check: api::Check = serde_json::from_slice(body::to_bytes(response.into_body()).await.unwrap().as_ref())?;
+    let check: api::Check = serde_json::from_slice(response.into_body().collect().await.unwrap().to_bytes().as_ref())?;
     assert_eq!(&check.check.name, "get_check()");
 
     pool.cleanup().await;

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use axum::{
-  body::Full,
+  body::Body,
   extract::Path,
   http::{
     header::{CACHE_CONTROL, CONTENT_TYPE},
@@ -17,14 +17,14 @@ struct Asset;
 pub async fn robots() -> Result<impl IntoResponse, StatusCode> {
   Asset::get("robots.txt").map_or_else(
     || Err(StatusCode::NOT_FOUND),
-    |asset| Ok(Response::builder().header(CONTENT_TYPE, "text/plain").body(Full::from(asset.data)).unwrap()),
+    |asset| Ok(Response::builder().header(CONTENT_TYPE, "text/plain").body(Body::from(asset.data)).unwrap()),
   )
 }
 
 pub async fn index() -> Result<impl IntoResponse, StatusCode> {
   Asset::get("index.html").map_or_else(
     || Err(StatusCode::NOT_FOUND),
-    |asset| Ok(Response::builder().header(CONTENT_TYPE, "text/html").body(Full::from(asset.data)).unwrap()),
+    |asset| Ok(Response::builder().header(CONTENT_TYPE, "text/html").body(Body::from(asset.data)).unwrap()),
   )
 }
 
@@ -48,7 +48,7 @@ pub async fn assets(Path(path): Path<PathBuf>) -> Result<impl IntoResponse, Stat
         Response::builder()
           .header(CONTENT_TYPE, content_type.to_string())
           .header(CACHE_CONTROL, cache)
-          .body(Full::from(asset.data))
+          .body(Body::from(asset.data))
           .unwrap(),
       )
     },

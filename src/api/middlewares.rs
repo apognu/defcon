@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 
 use axum::{
+  body::Body,
   extract::ConnectInfo,
   http::{Request, StatusCode},
   middleware::Next,
@@ -11,7 +12,7 @@ use chrono::Local;
 
 use kvlogger::kvlog;
 
-pub async fn api_logger<B>(request: Request<B>, next: Next<B>) -> Result<Response, StatusCode> {
+pub async fn api_logger(request: Request<Body>, next: Next) -> Result<Response, StatusCode> {
   let time = Local::now().format("%Y-%m-%dT%H:%M:%S%z");
   let method = request.method().clone();
   let uri = request.uri().clone();

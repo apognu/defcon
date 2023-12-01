@@ -136,8 +136,6 @@ async fn configuration(_: Auth, State(config): State<Arc<Config>>) -> Json<Arc<C
 }
 
 async fn api_catchall() -> impl IntoResponse {
-  // StatusCode::NOT_FOUND
-
   Err::<(), _>(anyhow!(AppError::ResourceNotFound)).short()
 }
 

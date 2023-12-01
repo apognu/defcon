@@ -18,7 +18,7 @@ mod user;
 use anyhow::Result;
 use sqlx::{MySql, Pool};
 
-pub use self::{binary::*, check::*, date::*, duration::*, outage::*, query::*, report::*, site::*, site_outage::*, spec::*, status::*, timeline::*, user::*};
+pub use self::{check::*, date::*, outage::*, query::*, report::*, site::*, site_outage::*, spec::*, status::*, timeline::*, user::*};
 
 #[async_trait]
 pub trait ApiMapper {

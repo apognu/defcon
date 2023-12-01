@@ -50,7 +50,8 @@ pub struct StatisticsQuery {
   to: api::Date,
 }
 
-pub async fn statistics(_: Auth, ref pool: State<Pool<MySql>>, Query(StatisticsQuery { check, from, to }): Query<StatisticsQuery>) -> ApiResponse<Json<HashMap<NaiveDate, Vec<api::Outage>>>> {
+pub async fn statistics(_: Auth, pool: State<Pool<MySql>>, Query(StatisticsQuery { check, from, to }): Query<StatisticsQuery>) -> ApiResponse<Json<HashMap<NaiveDate, Vec<api::Outage>>>> {
+  let pool = &pool;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let check = match check {

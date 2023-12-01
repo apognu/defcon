@@ -6,9 +6,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use sqlx::MySqlConnection;
-use tokio::net::UdpSocket;
-use trust_dns_client::{
+use hickory_client::{
   client::{AsyncClient, ClientHandle},
   rr::{
     rdata::{caa::Value as CaaValue, CAA},
@@ -16,6 +14,8 @@ use trust_dns_client::{
   },
   udp::UdpClientStream,
 };
+use sqlx::MySqlConnection;
+use tokio::net::UdpSocket;
 
 use crate::{
   config::Config,
@@ -50,24 +50,25 @@ impl<'h> Handler for DnsHandler<'h> {
     let response = client.query(name, DNSClass::IN, spec.record.clone().into()).await.context("query failed")?;
     let records = response.answers();
 
-    let found = records.iter().fold(Ok(false), |acc: Result<bool, anyhow::Error>, record| match acc {
-      Err(_) => acc,
-      Ok(true) => acc,
-      Ok(false) => match record.data() {
-        Some(RData::NS(ref ns)) => Ok(ns == &Name::from_str(&spec.value)?),
-        Some(RData::MX(ref mx)) => Ok(mx.exchange() == &Name::from_str(&spec.value)?),
-        Some(RData::A(ref ip)) => Ok(ip == &spec.value.parse::<Ipv4Addr>()?),
-        Some(RData::AAAA(ref ip)) => Ok(ip == &spec.value.parse::<Ipv6Addr>()?),
-        Some(RData::CNAME(ref name)) => Ok(name == &Name::from_str(&spec.value)?),
-        Some(RData::SRV(ref srv)) => Ok(srv.target() == &Name::from_str(&spec.value)?),
+    let found = records.iter().try_fold(false, |acc, record| -> Result<_> {
+      match acc {
+        true => Ok(acc),
+        false => match record.data() {
+          Some(RData::NS(ref ns)) => Ok(ns.0 == Name::from_str(&spec.value)?),
+          Some(RData::MX(ref mx)) => Ok(mx.exchange() == &Name::from_str(&spec.value)?),
+          Some(RData::A(ref ip)) => Ok(ip.0 == spec.value.parse::<Ipv4Addr>()?),
+          Some(RData::AAAA(ref ip)) => Ok(ip.0 == spec.value.parse::<Ipv6Addr>()?),
+          Some(RData::CNAME(ref name)) => Ok(name.0 == Name::from_str(&spec.value)?),
+          Some(RData::SRV(ref srv)) => Ok(srv.target() == &Name::from_str(&spec.value)?),
 
-        Some(RData::CAA(CAA {
-          value: CaaValue::Issuer(Some(ref issuer), _),
-          ..
-        })) => Ok(issuer == &Name::from_str(&spec.value)?),
+          Some(RData::CAA(CAA {
+            value: CaaValue::Issuer(Some(ref issuer), _),
+            ..
+          })) => Ok(issuer == &Name::from_str(&spec.value)?),
 
-        _ => Ok(false),
-      },
+          _ => Ok(false),
+        },
+      }
     })?;
 
     let (status, message) = match found {

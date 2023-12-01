@@ -32,7 +32,10 @@ pub async fn token(State(config): State<Arc<Config>>, State(pool): State<Pool<My
 }
 
 pub async fn refresh(config: State<Arc<Config>>, pool: State<Pool<MySql>>, Json(payload): Json<RefreshToken>) -> ApiResponse<Json<Tokens>> {
-  let claims = jsonwebtoken::decode::<Claims>(&payload.refresh_token, &DecodingKey::from_secret(config.api.jwt_signing_key.as_ref()), &Validation::default())
+  let mut validation = Validation::default();
+  validation.set_audience(&["urn:defcon:refresh"]);
+
+  let claims = jsonwebtoken::decode::<Claims>(&payload.refresh_token, &DecodingKey::from_secret(config.api.jwt_signing_key.as_ref()), &validation)
     .context(AppError::InvalidCredentials)
     .short()?;
 
@@ -257,6 +260,8 @@ mod tests {
     };
 
     let token = jsonwebtoken::encode(&JwtHeader::default(), &claims, &EncodingKey::from_secret(JWT_SIGNING_KEY.as_ref())).unwrap();
+
+    println!("{token}");
 
     let response = client
       .oneshot(Request::builder().uri("/api/checks").header("authorization", format!("Bearer {token}")).body(Body::empty()).unwrap())

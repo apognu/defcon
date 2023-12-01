@@ -23,8 +23,9 @@ pub async fn run(pool: Pool<MySql>, config: Arc<Config>) -> Result<()> {
 
   let addr = SocketAddr::from((config.dms.listen.ip(), config.dms.listen.port()));
   let app = server(pool);
+  let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
 
-  axum::Server::bind(&addr).serve(app.into_make_service()).await.context("could not launch api process")?;
+  axum::serve(listener, app.into_make_service()).await.context("could not launch api process")?;
 
   Ok(())
 }

@@ -56,14 +56,10 @@ impl<'h> Handler for PythonHandler<'h> {
 
 #[cfg(test)]
 mod tests {
-  use super::{PythonHandler, Handler};
+  use super::{Handler, PythonHandler};
   use crate::{
     config::CONTROLLER_ID,
-    model::{
-      specs::Python,
-      status::*,
-      Check
-    },
+    model::{specs::Python, status::*, Check},
     stash::Stash,
   };
 
@@ -99,7 +95,7 @@ def check():
     let spec = Python {
       id: 0,
       check_id: 0,
-      script: "ok".to_string()
+      script: "ok".to_string(),
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -122,7 +118,7 @@ def check():
     let spec = Python {
       id: 0,
       check_id: 0,
-      script: "critical".to_string()
+      script: "critical".to_string(),
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -143,7 +139,7 @@ def check():
     let spec = Python {
       id: 0,
       check_id: 0,
-      script: "missing".to_string()
+      script: "missing".to_string(),
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -166,7 +162,7 @@ def check():
     let spec = Python {
       id: 0,
       check_id: 0,
-      script: "syntaxerror".to_string()
+      script: "syntaxerror".to_string(),
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -189,7 +185,7 @@ def check():
     let spec = Python {
       id: 0,
       check_id: 0,
-      script: "nocheck".to_string()
+      script: "nocheck".to_string(),
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -212,7 +208,7 @@ def check():
     let spec = Python {
       id: 0,
       check_id: 0,
-      script: "wrongtype".to_string()
+      script: "wrongtype".to_string(),
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -225,7 +221,7 @@ def check():
 
   fn write_script(name: &str, payload: &str) {
     use std::fs;
-    
+
     fs::write(&format!("/tmp/{name}.py"), payload).unwrap();
   }
 }
