@@ -188,11 +188,13 @@ pub async fn patch(_: Auth, pool: State<Pool<MySql>>, Path(uuid): Path<String>, 
   payload.silent.run(|value| check.silent = value);
 
   if let Some(value) = payload.group {
-    let group = Group::by_uuid(&mut txn, &value).await.context("could not retrieve group").short()?;
+    if value.is_empty() {
+      check.group_id = None;
+    } else {
+      let group = Group::by_uuid(&mut txn, &value).await.context("could not retrieve group").short()?;
 
-    check.group_id = Some(group.id);
-  } else {
-    check.group_id = None;
+      check.group_id = Some(group.id);
+    }
   }
 
   if let Some(value) = payload.alerter {
