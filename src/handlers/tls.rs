@@ -17,7 +17,7 @@ pub struct TlsHandler<'h> {
 }
 
 #[async_trait]
-impl<'h> Handler for TlsHandler<'h> {
+impl Handler for TlsHandler<'_> {
   type Spec = Tls;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {

@@ -165,7 +165,7 @@ You can check the continuous integration suite for more information on how to bu
  * `python` >= 3.7 (for the Python handle, with the `python` feature)
 
 ```shell
-$ rustup override set nightly-2021-01-21
+$ rustup override set nightly
 $ JQ_LIB_DIR=/usr/lib cargo build --all-features --release
 ```
 

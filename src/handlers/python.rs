@@ -1,8 +1,8 @@
-use std::{fs, sync::Arc};
+use std::{ffi::CString, fs, sync::Arc};
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use pyo3::prelude::*;
+use pyo3::{ffi::c_str, prelude::*};
 use sqlx::MySqlConnection;
 
 use crate::{
@@ -18,7 +18,7 @@ pub struct PythonHandler<'h> {
 }
 
 #[async_trait]
-impl<'h> Handler for PythonHandler<'h> {
+impl Handler for PythonHandler<'_> {
   type Spec = Python;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
@@ -32,7 +32,7 @@ impl<'h> Handler for PythonHandler<'h> {
     let code = fs::read_to_string(&file)?;
 
     let (status, message): (u8, String) = pyo3::Python::with_gil(|py| {
-      let module = PyModule::from_code(py, &code, &file, &file)?;
+      let module = PyModule::from_code(py, CString::new(code)?.as_c_str(), c_str!("check.py"), c_str!("check"))?;
       module.setattr("OK", OK)?;
       module.setattr("WARNING", WARNING)?;
       module.setattr("CRITICAL", CRITICAL)?;

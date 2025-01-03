@@ -1,4 +1,4 @@
-#![feature(async_closure, try_find)]
+#![feature(try_find)]
 #![deny(clippy::all)]
 #![allow(clippy::almost_swapped)]
 

@@ -1,5 +1,6 @@
 use std::{
   convert::TryFrom,
+  error::Error,
   fmt::{self, Display, Formatter},
 };
 
@@ -58,8 +59,8 @@ impl Type<MySql> for AlerterKind {
 }
 
 impl Encode<'_, MySql> for AlerterKind {
-  fn encode_by_ref(&self, buf: &mut Vec<u8>) -> IsNull {
-    <&str as sqlx::Encode<MySql>>::encode(&self.to_string(), buf)
+  fn encode_by_ref(&self, buf: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Send + Sync + 'static>> {
+    <String as sqlx::Encode<MySql>>::encode(self.to_string(), buf)
   }
 }
 

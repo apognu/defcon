@@ -86,12 +86,13 @@ pub async fn statistics(_: Auth, pool: State<Pool<MySql>>, Query(StatisticsQuery
 }
 
 #[cfg(feature = "web")]
-pub async fn status_page(ref pool: State<Pool<MySql>>) -> ApiResponse<Json<api::StatusPage>> {
+pub async fn status_page(pool: State<Pool<MySql>>) -> ApiResponse<Json<api::StatusPage>> {
   use std::ops::Sub;
 
   use chrono::Duration;
   use futures::{stream, StreamExt};
 
+  let pool = &pool;
   let mut conn = pool.acquire().await.context("could not retrieve database connection").short()?;
 
   let outages = Outage::count(&mut conn).await.short()?;

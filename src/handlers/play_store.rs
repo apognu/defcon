@@ -16,7 +16,7 @@ pub struct PlayStoreHandler<'h> {
 }
 
 #[async_trait]
-impl<'h> Handler for PlayStoreHandler<'h> {
+impl Handler for PlayStoreHandler<'_> {
   type Spec = PlayStore;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {

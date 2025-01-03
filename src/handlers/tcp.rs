@@ -17,7 +17,7 @@ pub struct TcpHandler<'h> {
 }
 
 #[async_trait]
-impl<'h> Handler for TcpHandler<'h> {
+impl Handler for TcpHandler<'_> {
   type Spec = Tcp;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {

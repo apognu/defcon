@@ -15,7 +15,7 @@ impl Deref for DateTime {
 
 struct DateTimeVisitor;
 
-impl<'de> Visitor<'de> for DateTimeVisitor {
+impl Visitor<'_> for DateTimeVisitor {
   type Value = DateTime;
 
   fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -53,7 +53,7 @@ impl Deref for Date {
 
 struct DateVisitor;
 
-impl<'de> Visitor<'de> for DateVisitor {
+impl Visitor<'_> for DateVisitor {
   type Value = Date;
 
   fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {

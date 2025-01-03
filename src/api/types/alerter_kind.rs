@@ -17,7 +17,7 @@ impl ser::Serialize for AlerterKind {
 
 struct AlerterKindVisitor;
 
-impl<'de> de::Visitor<'de> for AlerterKindVisitor {
+impl de::Visitor<'_> for AlerterKindVisitor {
   type Value = AlerterKind;
 
   fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {

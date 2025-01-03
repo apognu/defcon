@@ -73,7 +73,7 @@ pub trait Shortable<'a, T> {
   fn short(self) -> Self::Output;
 }
 
-impl<'a, T> Shortable<'a, T> for Result<T, Error> {
+impl<T> Shortable<'_, T> for Result<T, Error> {
   type Output = Result<T, ErrorResponse>;
 
   fn short(self) -> Self::Output {
@@ -88,7 +88,7 @@ impl<'a, T> Shortable<'a, T> for Result<T, Error> {
   }
 }
 
-impl<'a, T> Shortable<'a, T> for Result<T, sqlx::Error> {
+impl<T> Shortable<'_, T> for Result<T, sqlx::Error> {
   type Output = Result<T, Error>;
 
   fn short(self) -> Self::Output {

@@ -96,7 +96,7 @@ impl User {
     )
     .bind(&self.uuid)
     .bind(&self.email)
-    .bind(&hash.to_string())
+    .bind(hash.to_string())
     .bind(&self.name)
     .execute(&mut *conn)
     .await
@@ -165,7 +165,7 @@ impl User {
         WHERE uuid = ?
       ",
     )
-    .bind(&hash.to_string())
+    .bind(hash.to_string())
     .bind(&self.uuid)
     .execute(&mut *conn)
     .await?;

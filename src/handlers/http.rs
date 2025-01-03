@@ -17,7 +17,7 @@ pub struct HttpHandler<'h> {
 }
 
 #[async_trait]
-impl<'h> Handler for HttpHandler<'h> {
+impl Handler for HttpHandler<'_> {
   type Spec = Http;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {

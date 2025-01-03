@@ -2,7 +2,7 @@ use std::{net::ToSocketAddrs, sync::Arc, time::Duration};
 
 use anyhow::{Context, Result};
 use async_trait::async_trait;
-use caps::{Capability, CapSet};
+use caps::{CapSet, Capability};
 use sqlx::MySqlConnection;
 use surge_ping::{Client as PingClient, Config as PingConfig, PingIdentifier, PingSequence};
 
@@ -18,7 +18,7 @@ pub struct PingHandler<'h> {
 }
 
 #[async_trait]
-impl<'h> Handler for PingHandler<'h> {
+impl Handler for PingHandler<'_> {
   type Spec = Ping;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {

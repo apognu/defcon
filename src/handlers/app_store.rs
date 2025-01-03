@@ -22,7 +22,7 @@ struct AppStoreResponse {
 }
 
 #[async_trait]
-impl<'h> Handler for AppStoreHandler<'h> {
+impl Handler for AppStoreHandler<'_> {
   type Spec = AppStore;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {

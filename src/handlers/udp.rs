@@ -17,7 +17,7 @@ pub struct UdpHandler<'h> {
 }
 
 #[async_trait]
-impl<'h> Handler for UdpHandler<'h> {
+impl Handler for UdpHandler<'_> {
   type Spec = Udp;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {

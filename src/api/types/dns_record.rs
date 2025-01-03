@@ -18,7 +18,7 @@ impl ser::Serialize for DnsRecord {
 
 struct DnsRecordVisitor;
 
-impl<'de> de::Visitor<'de> for DnsRecordVisitor {
+impl de::Visitor<'_> for DnsRecordVisitor {
   type Value = DnsRecord;
 
   fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {

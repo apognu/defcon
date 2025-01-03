@@ -18,7 +18,7 @@ pub struct WhoisHandler<'h> {
 }
 
 #[async_trait]
-impl<'h> Handler for WhoisHandler<'h> {
+impl Handler for WhoisHandler<'_> {
   type Spec = Whois;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {

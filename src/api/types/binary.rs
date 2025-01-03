@@ -16,7 +16,7 @@ impl ser::Serialize for Binary {
 
 struct BinaryVisitor;
 
-impl<'de> de::Visitor<'de> for BinaryVisitor {
+impl de::Visitor<'_> for BinaryVisitor {
   type Value = Binary;
 
   fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {

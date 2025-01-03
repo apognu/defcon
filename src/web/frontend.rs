@@ -10,7 +10,7 @@ use axum::{
   response::{IntoResponse, Response},
 };
 
-#[derive(RustEmbed)]
+#[derive(Embed)]
 #[folder = "dist/"]
 struct Asset;
 

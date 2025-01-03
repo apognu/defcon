@@ -1,4 +1,4 @@
-use std::{convert::TryFrom, ops::Deref, time::Duration as StdDuration};
+use std::{convert::TryFrom, error::Error, ops::Deref, time::Duration as StdDuration};
 
 use humantime::parse_duration;
 use sqlx::{
@@ -53,14 +53,14 @@ impl Type<MySql> for Duration {
 }
 
 impl Encode<'_, MySql> for Duration {
-  fn encode(self, buf: &mut Vec<u8>) -> IsNull
+  fn encode(self, buf: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Send + Sync + 'static>>
   where
     Self: Sized,
   {
     <u64 as sqlx::Encode<MySql>>::encode(self.as_secs(), buf)
   }
 
-  fn encode_by_ref(&self, buf: &mut Vec<u8>) -> IsNull {
+  fn encode_by_ref(&self, buf: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Send + Sync + 'static>> {
     <u64 as sqlx::Encode<MySql>>::encode(self.as_secs(), buf)
   }
 }

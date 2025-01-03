@@ -76,7 +76,6 @@ pub struct RefreshToken {
   pub refresh_token: String,
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for Auth
 where
   AppState: FromRef<S>,

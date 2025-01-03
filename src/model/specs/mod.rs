@@ -5,7 +5,7 @@ mod http;
 #[cfg(feature = "ping")]
 mod ping;
 mod play_store;
-#[cfg(feature = "ping")]
+#[cfg(feature = "python")]
 mod python;
 mod tcp;
 mod tls;

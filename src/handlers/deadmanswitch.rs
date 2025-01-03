@@ -19,7 +19,7 @@ pub struct DeadManSwitchHandler<'h> {
 }
 
 #[async_trait]
-impl<'h> Handler for DeadManSwitchHandler<'h> {
+impl Handler for DeadManSwitchHandler<'_> {
   type Spec = DeadManSwitch;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
@@ -35,7 +35,7 @@ impl<'h> Handler for DeadManSwitchHandler<'h> {
       Some(log) => {
         let now = Utc::now();
         let last_at = -log.created_at.unwrap().signed_duration_since(now);
-        let max = Duration::from_std(spec.stale_after.0).unwrap_or_else(|_| Duration::max_value());
+        let max = Duration::from_std(spec.stale_after.0).unwrap_or(Duration::MAX);
 
         let (status, message) = if last_at <= max {
           (OK, String::new())

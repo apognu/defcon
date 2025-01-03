@@ -16,7 +16,7 @@ jobs:
           key: cargo-clippy-cache-${{ matrix.arch.target }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2023-11-29
+          toolchain: nightly-2024-12-31
           override: true
           components: clippy
       - uses: actions-rs/cargo@v1
@@ -27,12 +27,7 @@ jobs:
     strategy:
       matrix:
         arch:
-          - {
-              name: "x86_64",
-              os: "ubuntu-20.04",
-              target: "x86_64-unknown-linux-gnu",
-              cross: false,
-            }
+          - { name: "x86_64", os: "ubuntu-20.04", target: "x86_64-unknown-linux-gnu", cross: false }
     runs-on: ${{ matrix.arch.os }}
     services:
       mysql:
@@ -51,24 +46,23 @@ jobs:
           key: cargo-test-cache-${{ matrix.arch.target }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2023-11-29
+          toolchain: nightly-2024-12-31
           override: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: env
       - name: Test suite
         run: |
           mkdir dist/
-          sudo capsh --caps='cap_net_raw+eip cap_setpcap,cap_setuid,cap_setgid+ep' --keep=1 --user=runner --addamb=cap_net_raw -- -c "PATH=$PATH HOME=/home/runner JQ_LIB_DIR=/usr/lib/x86_64-linux-gnu DSN=mysql://root:${{ secrets.MYSQL_ROOT_PASSWORD }}@127.0.0.1/information_schema?ssl-mode=DISABLED cargo test --all-features"
+          sudo capsh --caps='cap_net_raw+eip cap_setpcap,cap_setuid,cap_setgid+ep' --keep=1 --user=runner --addamb=cap_net_raw -- -c "PATH=$PATH HOME=/home/runner LD_LIBRARY_PATH=${pythonLocation}/lib JQ_LIB_DIR=/usr/lib/x86_64-linux-gnu DSN=mysql://root:${{ secrets.MYSQL_ROOT_PASSWORD }}@127.0.0.1/information_schema?ssl-mode=DISABLED cargo test --all-features"
 
   build:
     strategy:
       matrix:
         arch:
-          - {
-              name: "x86_64",
-              os: "ubuntu-20.04",
-              target: "x86_64-unknown-linux-gnu",
-              cross: false,
-            }
-        python: ["3.8", "3.9", "3.10"]
+          - { name: "x86_64", os: "ubuntu-20.04", target: "x86_64-unknown-linux-gnu", cross: false }
+        python: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     runs-on: ${{ matrix.arch.os }}
     steps:
       - name: Install dependencies
@@ -89,14 +83,11 @@ jobs:
           yarn --cwd assets build
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly-2023-11-29
+          toolchain: nightly-2024-12-31
           override: true
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - run: |
-          which python
-          python --version
       - name: Build
         uses: actions-rs/cargo@v1
         with:
@@ -110,9 +101,9 @@ jobs:
           mv target/${{ matrix.arch.target }}/release/defcon target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}-py${{ matrix.python }}
           mv target/${{ matrix.arch.target }}/release/defcon-runner target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}-py${{ matrix.python }}
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: defcon-tip-${{ matrix.arch.name }}
+          name: defcon-tip-${{ matrix.arch.name }}-py${{ matrix.python }}
           path: |
             target/${{ matrix.arch.target }}/release/defcon-tip-${{ matrix.arch.name }}-py${{ matrix.python }}
             target/${{ matrix.arch.target }}/release/defcon-runner-tip-${{ matrix.arch.name }}-py${{ matrix.python }}
@@ -143,7 +134,7 @@ jobs:
     needs: [clippy, test, build]
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           path: target/out
       - name: Create release

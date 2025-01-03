@@ -1,4 +1,4 @@
-#![feature(async_closure, try_find)]
+#![feature(try_find)]
 
 #[macro_use]
 extern crate anyhow;

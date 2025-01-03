@@ -82,7 +82,6 @@ pub struct RunnerAuth {
   pub site: String,
 }
 
-#[async_trait]
 impl<S> FromRequestParts<S> for RunnerAuth
 where
   AppState: FromRef<S>,

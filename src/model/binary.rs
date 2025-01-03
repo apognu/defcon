@@ -1,4 +1,5 @@
 use std::{
+  error::Error,
   fmt::{self, Display, Formatter},
   ops::Deref,
 };
@@ -57,7 +58,7 @@ impl Type<MySql> for Binary {
 }
 
 impl Encode<'_, MySql> for Binary {
-  fn encode_by_ref(&self, buf: &mut Vec<u8>) -> IsNull {
+  fn encode_by_ref(&self, buf: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Send + Sync + 'static>> {
     <&Vec<u8> as sqlx::Encode<MySql>>::encode(self, buf)
   }
 }

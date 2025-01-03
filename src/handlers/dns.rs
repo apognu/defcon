@@ -30,7 +30,7 @@ pub struct DnsHandler<'h> {
 }
 
 #[async_trait]
-impl<'h> Handler for DnsHandler<'h> {
+impl Handler for DnsHandler<'_> {
   type Spec = Dns;
 
   async fn check(&self, conn: &mut MySqlConnection, _config: Arc<Config>, site: &str, stash: Stash) -> Result<Event> {
@@ -159,7 +159,7 @@ mod tests {
       check_id: 0,
       record: DnsRecord::A,
       domain: "example.com".to_string(),
-      value: "93.184.216.34".to_string(),
+      value: "93.184.215.14".to_string(),
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;
@@ -181,7 +181,7 @@ mod tests {
       check_id: 0,
       record: DnsRecord::AAAA,
       domain: "example.com".to_string(),
-      value: "2606:2800:220:1:248:1893:25c8:1946".to_string(),
+      value: "2606:2800:21f:cb07:6820:80da:af6b:8b2c".to_string(),
     };
 
     let result = handler.run(&spec, CONTROLLER_ID, Stash::new()).await;

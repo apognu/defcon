@@ -31,7 +31,7 @@ pub async fn run(pool: Pool<MySql>, config: Arc<Config>) -> Result<()> {
 }
 
 fn server(pool: Pool<MySql>) -> Router {
-  Router::new().route("/checkin/:uuid", get(checkin)).with_state(pool)
+  Router::new().route("/checkin/{uuid}", get(checkin)).with_state(pool)
 }
 
 async fn checkin(pool: State<Pool<MySql>>, Path(uuid): Path<String>) -> Result<StatusCode, ErrorResponse> {

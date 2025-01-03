@@ -18,7 +18,7 @@ impl ser::Serialize for CheckKind {
 
 struct CheckKindVisitor;
 
-impl<'de> de::Visitor<'de> for CheckKindVisitor {
+impl de::Visitor<'_> for CheckKindVisitor {
   type Value = CheckKind;
 
   fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {

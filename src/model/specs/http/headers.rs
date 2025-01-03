@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap, error::Error, ops::Deref};
 
 use sqlx::{
   encode::IsNull,
@@ -30,8 +30,8 @@ impl Type<MySql> for HttpHeaders {
 }
 
 impl Encode<'_, MySql> for HttpHeaders {
-  fn encode_by_ref(&self, buf: &mut Vec<u8>) -> IsNull {
-    <&str as sqlx::Encode<MySql>>::encode(&serde_json::to_string(&self).unwrap(), buf)
+  fn encode_by_ref(&self, buf: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Send + Sync + 'static>> {
+    <String as sqlx::Encode<MySql>>::encode(serde_json::to_string(&self).unwrap(), buf)
   }
 }
 
